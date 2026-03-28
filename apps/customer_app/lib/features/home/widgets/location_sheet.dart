@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_core/theme/app_colors.dart';
 import 'package:shared_core/services/location_service.dart';
+import 'add_address_sheet.dart';
 
 class LocationSheet extends ConsumerStatefulWidget {
   const LocationSheet({super.key});
@@ -208,7 +209,15 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
             // Add / Manage Addresses Button
             ElevatedButton.icon(
               onPressed: () {
-                // TODO: Implement Manage Addresses functionality (Phase 3)
+                final loc = locationState.location;
+                if (loc != null) {
+                  AddAddressSheet.show(
+                    context,
+                    lat: loc.latitude,
+                    lng: loc.longitude,
+                    address: loc.displayString,
+                  );
+                }
               },
               icon: const Icon(Icons.add, size: 20, color: Colors.white),
               label: const Text(

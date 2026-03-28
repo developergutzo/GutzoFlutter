@@ -98,6 +98,100 @@ class AutocompletePrediction {
   }
 }
 
+/// Detailed address components for form auto-population
+class DetailedAddress {
+  final String formattedAddress;
+  final String? streetNumber;
+  final String? route;
+  final String? sublocality;
+  final String? locality;
+  final String? area;
+  final String? city;
+  final String? state;
+  final String? country;
+  final String? postalCode;
+  final double latitude;
+  final double longitude;
+
+  DetailedAddress({
+    required this.formattedAddress,
+    this.streetNumber,
+    this.route,
+    this.sublocality,
+    this.locality,
+    this.area,
+    this.city,
+    this.state,
+    this.country,
+    this.postalCode,
+    required this.latitude,
+    required this.longitude,
+  });
+
+  factory DetailedAddress.fromGoogleJson(Map<String, dynamic> json) {
+    final components = json['address_components'] as List;
+    final geometry = json['geometry']['location'];
+    
+    String? streetNumber;
+    String? route;
+    String? sublocality;
+    String? locality;
+    String? area;
+    String? city;
+    String? state;
+    String? country;
+    String? postalCode;
+
+    for (var component in components) {
+      final types = component['types'] as List;
+      final name = component['long_name'] as String;
+
+      if (types.contains('street_number')) streetNumber = name;
+      if (types.contains('route')) route = name;
+      if (types.contains('sublocality_level_1') || types.contains('sublocality')) {
+        sublocality = name;
+        area ??= name;
+      }
+      if (types.contains('locality')) {
+        locality = name;
+        city ??= name;
+      }
+      if (types.contains('administrative_area_level_2')) {
+        city ??= name;
+      }
+      if (types.contains('administrative_area_level_1')) state = name;
+      if (types.contains('country')) country = name;
+      if (types.contains('postal_code')) postalCode = name;
+    }
+
+    // Fallback for area
+    if (area == null) {
+      for (var component in components) {
+        final types = component['types'] as List;
+        if (types.contains('political') && !types.contains('country') && !types.contains('administrative_area_level_1')) {
+          area = component['long_name'] as String;
+          break;
+        }
+      }
+    }
+
+    return DetailedAddress(
+      formattedAddress: json['formatted_address'] as String,
+      streetNumber: streetNumber,
+      route: route,
+      sublocality: sublocality,
+      locality: locality,
+      area: area,
+      city: city,
+      state: state,
+      country: country,
+      postalCode: postalCode,
+      latitude: geometry['lat'] as double,
+      longitude: geometry['lng'] as double,
+    );
+  }
+}
+
 class LocationService {
   // Use the API key extracted from the web app's .env file
   static const String _googleMapsApiKey = 'AIzaSyA5P5eNfyXHcd-Qoy5NDlDQPmTg5olfHZY';
@@ -133,6 +227,55 @@ class LocationService {
       debugPrint('Error searching location: $e');
     }
     return [];
+  }
+
+  /// Get detailed place information (coordinates + address components) from placeId
+  static Future<DetailedAddress?> fetchPlaceDetails(String placeId) async {
+    try {
+      final uri = Uri.parse(
+        'https://maps.googleapis.com/maps/api/place/details/json'
+        '?place_id=$placeId'
+        '&fields=name,geometry,formatted_address,address_components'
+        '&key=$_googleMapsApiKey'
+      );
+
+      final response = await http.get(uri);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == 'OK' && data['result'] != null) {
+          return DetailedAddress.fromGoogleJson(data['result']);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching place details: $e');
+    }
+    return null;
+  }
+
+  /// Reverse geocode coordinates using Google Maps for detailed components
+  static Future<DetailedAddress?> reverseGeocodeDetailed(double lat, double lng) async {
+    try {
+      final uri = Uri.parse(
+        'https://maps.googleapis.com/maps/api/geocode/json'
+        '?latlng=$lat,$lng'
+        '&key=$_googleMapsApiKey'
+        '&language=en'
+        '&region=IN'
+      );
+
+      final response = await http.get(uri);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == 'OK' && data['results'] != null && (data['results'] as List).isNotEmpty) {
+          return DetailedAddress.fromGoogleJson(data['results'][0]);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error reverse geocoding detailed: $e');
+    }
+    return null;
   }
 
   /// Reverse geocode coordinates using BigDataCloud API (same as web app)
