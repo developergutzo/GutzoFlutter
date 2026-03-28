@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shared_core/models/vendor.dart';
 import 'package:shared_core/models/product.dart';
 import 'package:shared_core/theme/app_colors.dart';
@@ -29,14 +30,27 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
   Future<List<Product>> _loadProducts() async {
     try {
       final response = await ref.read(nodeApiServiceProvider).getVendorProducts(widget.vendor.id);
+      debugPrint('VendorDetailScreen: Products response: $response');
+      
       List<dynamic> productList = [];
       if (response is List) {
         productList = response;
-      } else if (response is Map && response['data'] is List) {
-        productList = response['data'];
+      } else if (response is Map) {
+        if (response['data'] is List) {
+          productList = response['data'];
+        } else if (response['products'] is List) {
+          productList = response['products'];
+        } else if (response['data'] is Map && response['data']['products'] is List) {
+          productList = response['data']['products'];
+        }
       }
-      return productList.map((p) => Product.fromJson(p)).toList();
-    } catch (e) {
+      
+      final products = productList.map((p) => Product.fromJson(p as Map<String, dynamic>)).toList();
+      debugPrint('VendorDetailScreen: Parsed ${products.length} products');
+      return products;
+    } catch (e, stack) {
+      debugPrint('VendorDetailScreen: Error loading products: $e');
+      debugPrint('Stack trace: $stack');
       return widget.vendor.products ?? [];
     }
   }
@@ -48,11 +62,13 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
         future: _productsFuture,
         builder: (context, snapshot) {
           final products = snapshot.data ?? [];
-          final categories = ['All', ...products.map((p) => p.category).toSet()];
+          // Normalize categories for the tab list (unique, trimmed, properly capitalized)
+          final categorySet = products.map((p) => p.category.trim()).where((c) => c.isNotEmpty).toSet();
+          final categories = ['All', ...categorySet.toList()..sort()];
           
           final filteredProducts = _selectedCategory == 'All' 
               ? products 
-              : products.where((p) => p.category == _selectedCategory).toList();
+              : products.where((p) => p.category.trim().toLowerCase() == _selectedCategory.trim().toLowerCase()).toList();
 
           return CustomScrollView(
             slivers: [
@@ -132,16 +148,35 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
 
               // Product List
               snapshot.connectionState == ConnectionState.waiting
-                  ? const SliverFillRemaining(child: Center(child: CircularProgressIndicator()))
-                  : SliverPadding(
-                      padding: const EdgeInsets.all(16),
-                      sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) => _productCard(filteredProducts[index]),
-                          childCount: filteredProducts.length,
+                  ? const SliverFillRemaining(
+                      child: Center(child: CircularProgressIndicator(color: AppColors.brandGreen)),
+                    )
+                  : filteredProducts.isEmpty
+                      ? SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.restaurant_menu_outlined, size: 64, color: Colors.grey[300]),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'No products found in this category',
+                                  style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      : SliverPadding(
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                          sliver: SliverList(
+                            delegate: SliverChildBuilderDelegate(
+                              (context, index) => _productCard(filteredProducts[index]),
+                              childCount: filteredProducts.length,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
             ],
           );
         },
@@ -203,12 +238,37 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  product.image.isNotEmpty ? product.image : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c',
-                  width: 100,
-                  height: 100,
-                  fit: BoxFit.cover,
-                ),
+                child: product.displayImage.toLowerCase().endsWith('.svg')
+                    ? SvgPicture.network(
+                        product.displayImage,
+                        width: 100,
+                        height: 100,
+                        fit: BoxFit.cover,
+                        placeholderBuilder: (context) => Container(
+                          width: 100,
+                          height: 100,
+                          color: Colors.grey[200],
+                          child: const Center(
+                            child: SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brandGreen),
+                            ),
+                          ),
+                        ),
+                      )
+                    : Image.network(
+                        product.displayImage,
+                        width: 100,
+                        height: 100,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          width: 100,
+                          height: 100,
+                          color: Colors.grey[200],
+                          child: const Icon(Icons.restaurant, color: Colors.grey),
+                        ),
+                      ),
               ),
               Positioned(
                 bottom: -10,

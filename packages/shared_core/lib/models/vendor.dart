@@ -55,7 +55,7 @@ class Vendor {
 
   factory Vendor.fromJson(Map<String, dynamic> json) {
     return Vendor(
-      id: json['id'] as String? ?? '',
+      id: json['id']?.toString() ?? '',
       name: json['name'] as String? ?? '',
       description: json['description'] as String? ?? '',
       location: json['location'] as String? ?? '',

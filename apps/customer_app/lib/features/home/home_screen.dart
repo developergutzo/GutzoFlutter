@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_core/services/auth_service.dart';
 import 'package:shared_core/services/vendor_service.dart';
+import 'package:shared_core/services/location_service.dart';
 import 'package:shared_core/theme/app_colors.dart';
 import '../auth/auth_sheet.dart';
 import '../../widgets/vendor_card.dart';
@@ -22,40 +23,17 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  int _selectedIndex = 0;
-
-  final List<Widget> _pages = [
-    const _MarketplaceBody(),
-    const Center(child: Text('Search screen coming soon')),
-    const OrdersHistoryScreen(),
-    const ProfileScreen(),
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_selectedIndex],
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
+      body: Stack(
         children: [
-          const SafeArea(child: CartStrip()),
-          BottomNavigationBar(
-            currentIndex: _selectedIndex,
-            onTap: (index) {
-              setState(() {
-                _selectedIndex = index;
-              });
-            },
-            selectedItemColor: AppColors.brandGreen,
-            unselectedItemColor: AppColors.textDisabled,
-            showUnselectedLabels: true,
-            type: BottomNavigationBarType.fixed,
-            items: const [
-              BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
-              BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
-              BottomNavigationBarItem(icon: Icon(Icons.shopping_bag_outlined), label: 'Orders'),
-              BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profile'),
-            ],
+          const _MarketplaceBody(),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: SafeArea(child: const CartStrip()),
           ),
         ],
       ),
@@ -89,26 +67,54 @@ class _MarketplaceBody extends ConsumerWidget {
                  Row(
                     children: [
                       const SizedBox(width: 16),
-                      // Logo
-                      SvgPicture.network(
-                          "https://gutzo.in/logo.svg",// bring original icon here.
-                          height: 32,
-                          fit: BoxFit.contain,
-                          placeholderBuilder: (context) => const Row(
-                            children: [
-                              Icon(Icons.shopping_bag_outlined, color: AppColors.brandGreen, size: 28),
-                              SizedBox(width: 8),
-                              Text(
-                                'Gutzo',
+                      // Logo matching web design
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: AppColors.brandGreen,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Center(
+                              child: Text(
+                                'G',
                                 style: TextStyle(
-                                  fontSize: 24,
+                                  color: Colors.white,
+                                  fontSize: 20,
                                   fontWeight: FontWeight.bold,
-                                  color: AppColors.brandGreen,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text(
+                                'GUTZO',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1F2937),
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                              Text(
+                                'Feels Lighter',
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  color: Colors.grey[500],
+                                  letterSpacing: 0.5,
                                 ),
                               ),
                             ],
                           ),
-                        ),
+                        ],
+                      ),
                       
                       const Spacer(),
                       // Profile Button
@@ -132,11 +138,53 @@ class _MarketplaceBody extends ConsumerWidget {
                           onSelected: (val) {
                              if (val == 'logout') {
                                 ref.read(authServiceProvider).signOut();
+                             } else if (val == 'profile') {
+                                Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
+                             } else if (val == 'orders') {
+                                Navigator.push(context, MaterialPageRoute(builder: (_) => const OrdersHistoryScreen()));
                              }
                           },
                           itemBuilder: (context) => [
-                            PopupMenuItem(value: 'profile', child: Text('Profile (${currentUser.name})')),
-                            const PopupMenuItem(value: 'logout', child: Text('Logout')),
+                            PopupMenuItem(
+                              value: 'profile',
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.person_outline, size: 20, color: Color(0xFF374151)),
+                                  const SizedBox(width: 12),
+                                  Text('My Profile', style: const TextStyle(fontSize: 14, color: Color(0xFF374151))),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: 'orders',
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.receipt_long_outlined, size: 20, color: Color(0xFF374151)),
+                                  const SizedBox(width: 12),
+                                  Text('My Orders', style: const TextStyle(fontSize: 14, color: Color(0xFF374151))),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: 'address',
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.location_on_outlined, size: 20, color: Color(0xFF374151)),
+                                  const SizedBox(width: 12),
+                                  Text('My Address', style: const TextStyle(fontSize: 14, color: Color(0xFF374151))),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: 'logout',
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.logout, size: 20, color: Color(0xFF374151)),
+                                  const SizedBox(width: 12),
+                                  Text('Log Out', style: const TextStyle(fontSize: 14, color: Color(0xFF374151))),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
                       const SizedBox(width: 8),
@@ -146,40 +194,66 @@ class _MarketplaceBody extends ConsumerWidget {
                   // Search & Location Simplified Row
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                       decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppColors.border),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            )
-                          ]
+                    child: InkWell(
+                      onTap: () {
+                        ref.read(locationProvider.notifier).refreshLocation();
+                      },
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                         decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: AppColors.border),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.04),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              )
+                            ]
+                          ),
+                          child: Builder(
+                          builder: (context) {
+                            final locationState = ref.watch(locationProvider);
+                            final areaName = locationState.location?.areaName ?? 'Detecting...';
+                            final stateName = locationState.location?.stateName ?? '';
+                            return Row(
+                              children: [
+                                const Icon(Icons.location_on, color: AppColors.brandGreen, size: 20),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          if (locationState.isLoading)
+                                            const SizedBox(
+                                              width: 12, height: 12,
+                                              child: CircularProgressIndicator(strokeWidth: 1.5, color: AppColors.brandGreen),
+                                            )
+                                          else
+                                            Text(areaName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                                          const SizedBox(width: 2),
+                                          Icon(Icons.keyboard_arrow_down, size: 18, color: Colors.grey[600]),
+                                        ],
+                                      ),
+                                      if (stateName.isNotEmpty)
+                                        Text(stateName, style: const TextStyle(fontSize: 11, color: AppColors.textSub)),
+                                    ],
+                                  ),
+                                ),
+                                const VerticalDivider(width: 1, indent: 4, endIndent: 4, color: AppColors.border),
+                                const SizedBox(width: 8),
+                                const Icon(Icons.search, color: AppColors.textDisabled, size: 20),
+                                const SizedBox(width: 8),
+                                const Text('Search food...', style: TextStyle(color: AppColors.textDisabled, fontSize: 13)),
+                              ],
+                            );
+                          },
                         ),
-                        child: const Row(
-                          children: [
-                            Icon(Icons.location_on, color: AppColors.brandGreen, size: 20),
-                            SizedBox(width: 8),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('HOME', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                                  Text('Coimbatore, Tamil Nadu', style: TextStyle(fontSize: 12, color: AppColors.textSub, overflow: TextOverflow.ellipsis)),
-                                ],
-                              ),
-                            ),
-                            VerticalDivider(width: 1, indent: 4, endIndent: 4, color: AppColors.border),
-                            SizedBox(width: 8),
-                            Icon(Icons.search, color: AppColors.textDisabled, size: 20),
-                            SizedBox(width: 8),
-                            Text('Search food...', style: TextStyle(color: AppColors.textDisabled, fontSize: 13)),
-                          ],
-                        ),
+                      ),
                     ),
                   ),
               ],
@@ -259,23 +333,28 @@ class _MarketplaceBody extends ConsumerWidget {
           data: (categories) => SliverToBoxAdapter(
             child: Container(
               color: const Color(0xFFFAFAFA),
-              padding: const EdgeInsets.only(top: 20, bottom: 20),
-              height: 170, // Increased to 170 to be extra safe
-              child: ListView.builder(
+              padding: const EdgeInsets.only(top: 16, bottom: 16),
+              height: 280,
+              child: GridView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 scrollDirection: Axis.horizontal,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 8,
+                  crossAxisSpacing: 8,
+                  childAspectRatio: 1.1,
+                ),
                 itemCount: categories.length,
                 itemBuilder: (context, index) {
                   final category = categories[index];
-                  return Container(
+                  return SizedBox(
                     width: 90,
-                    margin: const EdgeInsets.only(right: 12),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
-                          height: 80,
-                          width: 80,
+                          height: 72,
+                          width: 72,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             image: category.imageUrl != null
@@ -290,12 +369,12 @@ class _MarketplaceBody extends ConsumerWidget {
                               ? const Icon(Icons.restaurant_menu, color: Colors.grey)
                               : null,
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 6),
                         Text(
                           category.name,
                           textAlign: TextAlign.center,
                           style: const TextStyle(
-                            fontSize: 13,
+                            fontSize: 12,
                             fontWeight: FontWeight.w400,
                             color: Color(0xFF6B7280),
                             fontFamily: 'Poppins',
@@ -313,36 +392,39 @@ class _MarketplaceBody extends ConsumerWidget {
           loading: () => SliverToBoxAdapter(
             child: Container(
               color: const Color(0xFFFAFAFA),
-              padding: const EdgeInsets.only(top: 20, bottom: 20),
-              height: 170,
-              child: ListView.builder(
+              padding: const EdgeInsets.only(top: 16, bottom: 16),
+              height: 280,
+              child: GridView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 scrollDirection: Axis.horizontal,
-                itemCount: 5,
-                itemBuilder: (context, index) => Container(
-                  width: 90,
-                  margin: const EdgeInsets.only(right: 12),
-                  child: Column(
-                    children: [
-                      Container(
-                        height: 80,
-                        width: 80,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
-                          shape: BoxShape.circle,
-                        ),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 8,
+                  crossAxisSpacing: 8,
+                  childAspectRatio: 1.1,
+                ),
+                itemCount: 10,
+                itemBuilder: (context, index) => Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      height: 72,
+                      width: 72,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        shape: BoxShape.circle,
                       ),
-                      const SizedBox(height: 8),
-                      Container(
-                        height: 10,
-                        width: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
-                          borderRadius: BorderRadius.circular(2),
-                        ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      height: 10,
+                      width: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(2),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -355,7 +437,7 @@ class _MarketplaceBody extends ConsumerWidget {
           padding: EdgeInsets.fromLTRB(16, 32, 16, 12),
           sliver: SliverToBoxAdapter(
             child: Text(
-              'Top rated kitchens near you',
+              'Kitchens Near You',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,

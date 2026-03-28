@@ -56,17 +56,21 @@ class VendorCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
+            // Title + Location
             Text(
-              title,
+              vendorModel?.location != null && vendorModel!.location.isNotEmpty
+                  ? '$title, ${vendorModel!.location.split(',').first}'
+                  : title,
               style: const TextStyle(
-                fontSize: 20,
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF111827),
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
+            // Rating + Delivery Time
             Row(
               children: [
                 const Icon(Icons.star, color: Color(0xFF43A047), size: 18),
@@ -76,42 +80,49 @@ class VendorCard extends StatelessWidget {
                   style: const TextStyle(
                     color: Color(0xFF222222),
                     fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                const Text('•', style: TextStyle(color: Colors.grey, fontSize: 16)),
-                const SizedBox(width: 8),
-                Text(
-                  deliveryTime,
-                  style: const TextStyle(
-                    color: Color(0xFF222222),
                     fontSize: 15,
                   ),
                 ),
+                if (deliveryTime.isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  const Text('•', style: TextStyle(color: Colors.grey, fontSize: 16)),
+                  const SizedBox(width: 8),
+                  Text(
+                    deliveryTime,
+                    style: const TextStyle(
+                      color: Color(0xFF222222),
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
               ],
             ),
-            const SizedBox(height: 4),
-            if (vendorModel?.tags != null && vendorModel!.tags!.isNotEmpty)
+            // Cuisine type
+            if (cuisine.isNotEmpty) ...[
+              const SizedBox(height: 4),
               Text(
-                vendorModel!.tags!.join(', '),
+                cuisine,
                 style: const TextStyle(
                   color: Color(0xFF6B7280),
-                  fontSize: 15,
+                  fontSize: 14,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-            const SizedBox(height: 2),
-            Text(
-              vendorModel?.location ?? '',
-              style: const TextStyle(
-                color: Color(0xFF6B7280),
-                fontSize: 15,
+            ],
+            // Full address
+            if (vendorModel?.location != null && vendorModel!.location.isNotEmpty) ...[
+              const SizedBox(height: 2),
+              Text(
+                vendorModel!.location,
+                style: const TextStyle(
+                  color: Color(0xFF6B7280),
+                  fontSize: 13,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+            ],
           ],
         ),
       ),

@@ -41,8 +41,8 @@ class Product {
 
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
-      id: json['id'] as String? ?? '',
-      vendorId: (json['vendor_id'] ?? json['vendorId']) as String? ?? '',
+      id: json['id']?.toString() ?? '',
+      vendorId: (json['vendor_id'] ?? json['vendorId'])?.toString() ?? '',
       name: json['name'] as String? ?? '',
       description: json['description'] as String? ?? '',
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
@@ -55,12 +55,16 @@ class Product {
       updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
       rating: (json['rating'] as num?)?.toDouble(),
       ratingCount: (json['ratingCount'] ?? json['rating_count'] as num?)?.toInt(),
-      dietTags: (json['diet_tags'] ?? json['dietTags'] as List<dynamic>?)?.cast<String>(),
-      tags: (json['tags'] as List<dynamic>?)?.cast<String>(),
-      variants: json['variants'] as Map<String, dynamic>?,
-      addons: json['addons'] as Map<String, dynamic>?,
+      dietTags: (json['diet_tags'] as List? ?? json['dietTags'] as List?)?.cast<String>(),
+      tags: (json['tags'] as List?)?.cast<String>(),
+      variants: json['variants'] is Map ? json['variants'] as Map<String, dynamic> : null,
+      addons: json['addons'] is Map ? json['addons'] as Map<String, dynamic> : null,
     );
   }
+
+  String get displayImage => (imageUrl != null && imageUrl!.isNotEmpty) 
+    ? imageUrl! 
+    : (image.isNotEmpty ? image : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c');
 
   Map<String, dynamic> toJson() {
     return {
