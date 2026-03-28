@@ -335,7 +335,18 @@ class _AddAddressSheetState extends ConsumerState<AddAddressSheet> {
                                 right: 12,
                                 child: FloatingActionButton.small(
                                   onPressed: () async {
-                                    // Should ideally center on device location
+                                    try {
+                                      final location = await LocationService.getCurrentLocation();
+                                      _mapController?.animateCamera(
+                                        CameraUpdate.newLatLng(LatLng(location.latitude, location.longitude)),
+                                      );
+                                    } catch (e) {
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Error getting location: $e')),
+                                        );
+                                      }
+                                    }
                                   },
                                   backgroundColor: Colors.white,
                                   child: const Icon(Icons.my_location, color: AppColors.brandGreen, size: 18),
