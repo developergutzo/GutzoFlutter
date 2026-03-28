@@ -1,0 +1,6 @@
+# Agent Rules for GutzoFlutter
+
+1. **Project Goal**: This Flutter project is intended to recreate the existing TypeScript web applications located in `webapp/GutzoMain/apps/customer` and `webapp/GutzoMain/apps/partner`.
+2. **Backend Reference**: Always refer to the Node.js backend at `webapp/GutzoMain/nodebackend` to deeply understand the API structure, endpoints, and data models when building the Flutter frontend.
+3. **Feature Parity**: The Flutter apps must mirror the functionality, User Experience (UX), and business logic of their web app counterparts located in `webapp/GutzoMain/apps/customer` and `webapp/GutzoMain/apps/partner`.
+4. **Context Gathering**: Before implementing new logic in the Flutter apps, proactively read and understand the existing implementations directly from the complete webapp project to ensure exact behavioral matches.
