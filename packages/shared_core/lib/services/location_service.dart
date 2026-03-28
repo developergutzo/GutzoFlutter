@@ -73,7 +73,68 @@ class LocationState {
 }
 
 /// Location service — mirrors the web app's LocationService
+/// Model for Autocomplete predictions
+class AutocompletePrediction {
+  final String placeId;
+  final String description;
+  final String mainText;
+  final String secondaryText;
+
+  AutocompletePrediction({
+    required this.placeId,
+    required this.description,
+    required this.mainText,
+    required this.secondaryText,
+  });
+
+  factory AutocompletePrediction.fromJson(Map<String, dynamic> json) {
+    final structured = json['structured_formatting'] ?? {};
+    return AutocompletePrediction(
+      placeId: json['place_id'] as String,
+      description: json['description'] as String,
+      mainText: structured['main_text'] as String? ?? json['description'] as String,
+      secondaryText: structured['secondary_text'] as String? ?? '',
+    );
+  }
+}
+
 class LocationService {
+  // Use the API key extracted from the web app's .env file
+  static const String _googleMapsApiKey = 'AIzaSyA5P5eNfyXHcd-Qoy5NDlDQPmTg5olfHZY';
+
+  /// Get places autocomplete suggestions
+  static Future<List<AutocompletePrediction>> searchLocation(String query) async {
+    if (query.trim().isEmpty) return [];
+
+    try {
+      final uri = Uri.parse(
+        'https://maps.googleapis.com/maps/api/place/autocomplete/json'
+        '?input=${Uri.encodeComponent(query)}'
+        '&key=$_googleMapsApiKey'
+        '&components=country:in', // assuming India based on context
+      );
+
+      final response = await http.get(uri);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == 'OK') {
+          final predictions = data['predictions'] as List;
+          return predictions
+              .map((p) => AutocompletePrediction.fromJson(p as Map<String, dynamic>))
+              .toList();
+        } else {
+          debugPrint('Google Maps Autocomplete Error: ${data['status']}');
+        }
+      } else {
+        debugPrint('Google Maps Autocomplete HTTP Error: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Error searching location: $e');
+    }
+    return [];
+  }
+
   /// Reverse geocode coordinates using BigDataCloud API (same as web app)
   static Future<LocationData> reverseGeocode(double latitude, double longitude) async {
     try {

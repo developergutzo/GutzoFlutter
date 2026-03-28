@@ -14,6 +14,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../orders/orders_history_screen.dart';
 import '../profile/profile_screen.dart';
+import 'widgets/location_sheet.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -196,7 +197,7 @@ class _MarketplaceBody extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: InkWell(
                       onTap: () {
-                        ref.read(locationProvider.notifier).refreshLocation();
+                        LocationSheet.show(context);
                       },
                       borderRadius: BorderRadius.circular(10),
                       child: Container(
