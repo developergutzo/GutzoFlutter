@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:shared_core/theme/app_colors.dart';
@@ -311,12 +313,22 @@ class _AddAddressSheetState extends ConsumerState<AddAddressSheet> {
                                 },
                                 myLocationButtonEnabled: false,
                                 zoomControlsEnabled: false,
-                                markers: {
-                                  Marker(
-                                    markerId: const MarkerId('selected'),
-                                    position: LatLng(_currentLat, _currentLng),
+                                gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
+                                  Factory<OneSequenceGestureRecognizer>(
+                                    () => EagerGestureRecognizer(),
                                   ),
                                 },
+                              ),
+                              // Fixed Center Marker
+                              const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.only(bottom: 24), // Offset for pin foot
+                                  child: Icon(
+                                    Icons.location_on,
+                                    color: AppColors.ctaOrange,
+                                    size: 36,
+                                  ),
+                                ),
                               ),
                               Positioned(
                                 bottom: 12,
@@ -433,33 +445,80 @@ class _AddAddressSheetState extends ConsumerState<AddAddressSheet> {
                     left: 20,
                     right: 20,
                     child: Container(
-                      constraints: const BoxConstraints(maxHeight: 300),
+                      constraints: const BoxConstraints(maxHeight: 400),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
+                            color: Colors.black.withValues(alpha: 0.15),
+                            blurRadius: 15,
+                            offset: const Offset(0, 8),
                           ),
                         ],
                       ),
-                      child: ListView.separated(
-                        shrinkWrap: true,
-                        padding: EdgeInsets.zero,
-                        itemCount: _predictions.length,
-                        separatorBuilder: (context, index) => const Divider(height: 1),
-                        itemBuilder: (context, index) {
-                          final p = _predictions[index];
-                          return ListTile(
-                            dense: true,
-                            leading: const Icon(Icons.location_on_outlined, size: 18),
-                            title: Text(p.mainText, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                            subtitle: Text(p.secondaryText, style: const TextStyle(fontSize: 11)),
-                            onTap: () => _selectPrediction(p),
-                          );
-                        },
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                            child: Text(
+                              'Search Results',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textSub,
+                              ),
+                            ),
+                          ),
+                          Flexible(
+                            child: ListView.separated(
+                              shrinkWrap: true,
+                              padding: EdgeInsets.zero,
+                              itemCount: _predictions.length,
+                              separatorBuilder: (context, index) => Divider(
+                                height: 1,
+                                color: Colors.grey.shade100,
+                                indent: 48,
+                              ),
+                              itemBuilder: (context, index) {
+                                final p = _predictions[index];
+                                return ListTile(
+                                  dense: true,
+                                  leading: CircleAvatar(
+                                    radius: 14,
+                                    backgroundColor: Colors.grey.shade50,
+                                    child: const Icon(Icons.location_on_outlined, size: 16, color: AppColors.textSub),
+                                  ),
+                                  title: Text(
+                                    p.mainText,
+                                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textMain),
+                                  ),
+                                  subtitle: Text(
+                                    p.secondaryText,
+                                    style: const TextStyle(fontSize: 11, color: AppColors.textSub),
+                                  ),
+                                  onTap: () => _selectPrediction(p),
+                                );
+                              },
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                'powered by Google',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.grey.shade400,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
