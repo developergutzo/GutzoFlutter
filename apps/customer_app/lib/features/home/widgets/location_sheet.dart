@@ -79,12 +79,12 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
         left: 20,
         right: 20,
       ),
+      height: MediaQuery.of(context).size.height * 0.9,
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Header Row
@@ -211,6 +211,8 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
               onPressed: () {
                 final loc = locationState.location;
                 if (loc != null) {
+                  // Pop the current sheet first to avoid visual overlap
+                  Navigator.pop(context);
                   AddAddressSheet.show(
                     context,
                     lat: loc.latitude,
