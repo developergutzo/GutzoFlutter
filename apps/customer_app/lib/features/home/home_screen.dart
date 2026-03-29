@@ -18,6 +18,7 @@ import '../orders/orders_history_screen.dart';
 import '../profile/profile_screen.dart';
 import 'widgets/location_sheet.dart';
 import 'widgets/search_sheet.dart';
+import '../search/search_results_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -380,7 +381,12 @@ class _MarketplaceBody extends ConsumerWidget {
                   final category = categories[index];
                   return InkWell(
                     onTap: () {
-                      // Handle category tap
+                       Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SearchResultsScreen(initialQuery: category.name),
+                        ),
+                      );
                     },
                     borderRadius: BorderRadius.circular(12),
                     child: Column(
