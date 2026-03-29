@@ -58,7 +58,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back, color: AppColors.textMain),
+                    icon: const Icon(Icons.chevron_left, color: AppColors.textMain, size: 28),
                     onPressed: () => Navigator.pop(context),
                   ),
                   const SizedBox(width: 8),

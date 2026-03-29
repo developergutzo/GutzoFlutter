@@ -106,6 +106,10 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
                 expandedHeight: 200,
                 pinned: true,
                 backgroundColor: AppColors.surface,
+                leading: IconButton(
+                  icon: const Icon(Icons.chevron_left, color: Colors.white, size: 32),
+                  onPressed: () => Navigator.pop(context),
+                ),
                 flexibleSpace: FlexibleSpaceBar(
                   background: Stack(
                     fit: StackFit.expand,
