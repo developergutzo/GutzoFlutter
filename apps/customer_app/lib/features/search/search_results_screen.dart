@@ -181,14 +181,36 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                       if (filteredVendors.isEmpty)
                         Center(
                           child: Padding(
-                            padding: const EdgeInsets.only(top: 60),
+                            padding: const EdgeInsets.only(top: 80),
                             child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.search_off, size: 64, color: AppColors.textDisabled.withValues(alpha: 0.5)),
+                                Icon(
+                                  Icons.eco_outlined, 
+                                  size: 48, 
+                                  color: AppColors.brandGreen.withValues(alpha: 0.2)
+                                ),
                                 const SizedBox(height: 16),
                                 const Text(
-                                  "No kitchens found matching your search",
-                                  style: TextStyle(color: AppColors.textSub, fontSize: 16),
+                                  "No kitchens found for this craving",
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textMain,
+                                    letterSpacing: -0.2,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                const Text(
+                                  "Try searching for another healthy item",
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: AppColors.textSub,
+                                    fontWeight: FontWeight.w500,
+                                    letterSpacing: 0.1,
+                                  ),
                                 ),
                               ],
                             ),
