@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_core/services/auth_service.dart';
 import 'package:shared_core/services/node_api_service.dart';
@@ -24,6 +25,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   String? _lastPhoneNumber;
   int _timerSeconds = 60;
   Timer? _timer;
+  bool _hasShownQuickLogin = false;
 
   @override
   void initState() {
@@ -91,6 +93,94 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _showQuickLoginSheet() {
+    if (_lastPhoneNumber == null || _hasShownQuickLogin) return;
+
+    _hasShownQuickLogin = true;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Continue with',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textSub,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 16),
+            InkWell(
+              onTap: () {
+                Navigator.pop(context);
+                _phoneController.text = _lastPhoneNumber!;
+                _handlePhoneSubmit();
+              },
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  border: Border.all(color: AppColors.border, width: 1.5),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.brandGreen.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.phone_android, color: AppColors.brandGreen, size: 24),
+                    ),
+                    const SizedBox(width: 20),
+                    Expanded(
+                      child: Text(
+                        '+91 $_lastPhoneNumber',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textMain,
+                        ),
+                      ),
+                    ),
+                    const Icon(Icons.arrow_forward_ios, color: AppColors.brandGreen, size: 16),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Center(
+              child: TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  'NONE OF THE ABOVE',
+                  style: TextStyle(
+                    color: Colors.blue,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _handleOTPSubmit() async {
@@ -203,7 +293,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _step == AuthStep.phone ? 'Welcome to Gutzo' : 'Verify your number',
+                          _step == AuthStep.phone ? 'Welcome to Gutzo' : 'Verify your WhatsApp',
                           style: const TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.w800,
@@ -211,9 +301,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        const Text(
-                          'Enter your WhatsApp number to get started',
-                          style: TextStyle(
+                        Text(
+                          _step == AuthStep.phone 
+                            ? 'Enter your WhatsApp number to get started'
+                            : 'We\'ve sent a 6-digit code to +91 $_phoneNumber on WhatsApp.',
+                          style: const TextStyle(
                             fontSize: 14,
                             color: AppColors.textSub,
                           ),
@@ -230,80 +322,34 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       if (_step == AuthStep.phone) ...[
                         TextField(
                           controller: _phoneController,
-                          keyboardType: TextInputType.phone,
+                          keyboardType: TextInputType.number,
                           autofocus: true,
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1),
+                          maxLength: 10,
+                          onTap: _showQuickLoginSheet,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1),
                           decoration: InputDecoration(
                             prefixText: '+91 ',
-                            prefixStyle: const TextStyle(color: AppColors.textMain, fontWeight: FontWeight.bold),
+                            prefixStyle: const TextStyle(fontSize: 18, color: AppColors.textMain, fontWeight: FontWeight.bold),
                             hintText: 'WhatsApp Number',
+                            counterText: '',
                             hintStyle: TextStyle(color: AppColors.textDisabled.withValues(alpha: 0.5)),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
                             enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: AppColors.border),
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: const BorderSide(color: AppColors.border, width: 1.5),
                             ),
                             focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: AppColors.brandGreen, width: 2),
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: const BorderSide(color: AppColors.brandGreen, width: 2.5),
                             ),
                           ),
                           onChanged: (val) => setState(() {}),
                         ),
                         const SizedBox(height: 16),
-                        if (_lastPhoneNumber != null && _phoneController.text.isEmpty) ...[
-                          const SizedBox(height: 8),
-                          InkWell(
-                            onTap: () {
-                              _phoneController.text = _lastPhoneNumber!;
-                              _handlePhoneSubmit();
-                            },
-                            borderRadius: BorderRadius.circular(12),
-                            child: Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: AppColors.brandGreen.withValues(alpha: 0.05),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: AppColors.brandGreen.withValues(alpha: 0.2)),
-                              ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: const BoxDecoration(
-                                      color: Colors.white,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(Icons.person_outline, color: AppColors.brandGreen, size: 20),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        const Text(
-                                          'Continue with',
-                                          style: TextStyle(color: AppColors.textSub, fontSize: 12),
-                                        ),
-                                        Text(
-                                          '+91 $_lastPhoneNumber',
-                                          style: const TextStyle(
-                                            color: AppColors.textMain,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const Icon(Icons.arrow_forward_ios, color: AppColors.brandGreen, size: 14),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 32),
                         SizedBox(
                           width: double.infinity,
                           height: 56,
@@ -323,8 +369,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                           ),
                         ),
                       ] else ...[
-                        Center(child: Text('Sent to +91 $_phoneNumber', style: const TextStyle(color: AppColors.textSub))),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 12),
                         TextField(
                           controller: _otpController,
                           keyboardType: TextInputType.number,
