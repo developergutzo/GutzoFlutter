@@ -25,4 +25,8 @@ class AppColors {
   static const Color border = Color(0xFFE0E0E0);
   static const Color bg = Color(0xFFFAFAFA);
   static const Color surface = Color(0xFFFFFFFF);
+
+  // Shimmer Constants
+  static const Color shimmerBase = Color(0xFFF3F4F6);
+  static const Color shimmerHighlight = Color(0xFFFFFFFF);
 }

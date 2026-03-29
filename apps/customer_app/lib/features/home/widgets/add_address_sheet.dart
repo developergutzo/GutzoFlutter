@@ -48,6 +48,12 @@ class _AddAddressSheetState extends ConsumerState<AddAddressSheet> {
   final TextEditingController _customLabelController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
 
+  final FocusNode _streetFocus = FocusNode();
+  final FocusNode _areaFocus = FocusNode();
+  final FocusNode _phoneFocus = FocusNode();
+  final FocusNode _customLabelFocus = FocusNode();
+  final FocusNode _searchFocus = FocusNode();
+
   String _selectedType = 'home';
   String _fullAddress = '';
   double _currentLat = 0;
@@ -62,6 +68,14 @@ class _AddAddressSheetState extends ConsumerState<AddAddressSheet> {
     _currentLat = widget.initialLat;
     _currentLng = widget.initialLng;
     _fullAddress = widget.initialAddress;
+
+    // Add listeners for reactive glow
+    _streetFocus.addListener(() => setState(() {}));
+    _areaFocus.addListener(() => setState(() {}));
+    _phoneFocus.addListener(() => setState(() {}));
+    _customLabelFocus.addListener(() => setState(() {}));
+    _searchFocus.addListener(() => setState(() {}));
+
     // Initial auto-fill
     _reverseGeocode(_currentLat, _currentLng);
   }
@@ -73,6 +87,13 @@ class _AddAddressSheetState extends ConsumerState<AddAddressSheet> {
     _phoneController.dispose();
     _customLabelController.dispose();
     _searchController.dispose();
+
+    _streetFocus.dispose();
+    _areaFocus.dispose();
+    _phoneFocus.dispose();
+    _customLabelFocus.dispose();
+    _searchFocus.dispose();
+
     _debounce?.cancel();
     super.dispose();
   }
@@ -149,9 +170,11 @@ class _AddAddressSheetState extends ConsumerState<AddAddressSheet> {
     required String label,
     required String hint,
     required TextEditingController controller,
+    required FocusNode focusNode,
     bool isRequired = false,
     TextInputType type = TextInputType.text,
   }) {
+    final hasFocus = focusNode.hasFocus;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -164,20 +187,39 @@ class _AddAddressSheetState extends ConsumerState<AddAddressSheet> {
           ),
         ),
         const SizedBox(height: 8),
-        Container(
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
           decoration: BoxDecoration(
-            color: Colors.grey.shade50,
+            color: hasFocus ? Colors.white : Colors.grey.shade50,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(
+              color: hasFocus ? AppColors.brandGreen : AppColors.border,
+              width: hasFocus ? 2.5 : 1.0,
+            ),
+            boxShadow: hasFocus
+                ? [
+                    BoxShadow(
+                      color: AppColors.brandGreen.withValues(alpha: 0.25),
+                      blurRadius: 16,
+                      spreadRadius: 2,
+                      offset: const Offset(0, 4),
+                    )
+                  ]
+                : [],
           ),
           child: TextField(
             controller: controller,
+            focusNode: focusNode,
             keyboardType: type,
             style: const TextStyle(fontSize: 14),
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: const TextStyle(color: AppColors.textDisabled, fontSize: 13),
+              filled: false,
               border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             ),
           ),
@@ -271,20 +313,44 @@ class _AddAddressSheetState extends ConsumerState<AddAddressSheet> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       // Search Input
-                      Container(
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeInOut,
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.border),
+                          border: Border.all(
+                            color: _searchFocus.hasFocus ? AppColors.brandGreen : AppColors.border,
+                            width: _searchFocus.hasFocus ? 2.5 : 1.0,
+                          ),
+                          boxShadow: _searchFocus.hasFocus
+                              ? [
+                                  BoxShadow(
+                                    color: AppColors.brandGreen.withValues(alpha: 0.25),
+                                    blurRadius: 16,
+                                    spreadRadius: 2,
+                                    offset: const Offset(0, 4),
+                                  )
+                                ]
+                              : [],
                         ),
                         child: TextField(
                           controller: _searchController,
+                          focusNode: _searchFocus,
+                          onTap: () => setState(() {}),
+                          onTapOutside: (_) {
+                            _searchFocus.unfocus();
+                            setState(() {});
+                          },
                           onChanged: _onSearchChanged,
                           decoration: const InputDecoration(
                             hintText: 'Search for area, street name...',
                             hintStyle: TextStyle(color: AppColors.textDisabled, fontSize: 14),
                             prefixIcon: Icon(Icons.search, color: AppColors.brandGreen, size: 20),
+                            filled: false,
                             border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
                             contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                           ),
                         ),
@@ -398,6 +464,7 @@ class _AddAddressSheetState extends ConsumerState<AddAddressSheet> {
                         label: 'House / Flat / Block No.',
                         hint: 'Enter house/flat number',
                         controller: _streetController,
+                        focusNode: _streetFocus,
                         isRequired: true,
                       ),
                       const SizedBox(height: 16),
@@ -405,12 +472,14 @@ class _AddAddressSheetState extends ConsumerState<AddAddressSheet> {
                         label: 'Apartment / Road / Area (Optional)',
                         hint: 'Enter area details',
                         controller: _areaController,
+                        focusNode: _areaFocus,
                       ),
                       const SizedBox(height: 16),
                       _buildTextField(
                         label: 'Phone Number (Alternative Contact)',
                         hint: 'Enter phone number',
                         controller: _phoneController,
+                        focusNode: _phoneFocus,
                         type: TextInputType.phone,
                       ),
                       const SizedBox(height: 24),
@@ -441,6 +510,7 @@ class _AddAddressSheetState extends ConsumerState<AddAddressSheet> {
                           label: 'Custom Label',
                           hint: "Enter label (e.g. Mom's House)",
                           controller: _customLabelController,
+                          focusNode: _customLabelFocus,
                           isRequired: true,
                         ),
                       

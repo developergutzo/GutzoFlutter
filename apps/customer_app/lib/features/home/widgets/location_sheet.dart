@@ -23,13 +23,21 @@ class LocationSheet extends ConsumerStatefulWidget {
 
 class _LocationSheetState extends ConsumerState<LocationSheet> {
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocus = FocusNode();
   List<AutocompletePrediction> _predictions = [];
   bool _isSearching = false;
   Timer? _debounce;
 
   @override
+  void initState() {
+    super.initState();
+    _searchFocus.addListener(() => setState(() {}));
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
+    _searchFocus.dispose();
     _debounce?.cancel();
     super.dispose();
   }
@@ -109,27 +117,44 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
           const SizedBox(height: 16),
 
           // Search Field
-          Container(
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.border),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.02),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              border: Border.all(
+                color: _searchFocus.hasFocus ? AppColors.brandGreen : AppColors.border,
+                width: _searchFocus.hasFocus ? 2.5 : 1.0,
+              ),
+              boxShadow: _searchFocus.hasFocus
+                  ? [
+                      BoxShadow(
+                        color: AppColors.brandGreen.withValues(alpha: 0.25),
+                        blurRadius: 16,
+                        spreadRadius: 2,
+                        offset: const Offset(0, 4),
+                      )
+                    ]
+                  : [],
             ),
             child: TextField(
               controller: _searchController,
+              focusNode: _searchFocus,
+              onTap: () => setState(() {}),
+              onTapOutside: (_) {
+                _searchFocus.unfocus();
+                setState(() {});
+              },
               onChanged: _onSearchChanged,
               decoration: const InputDecoration(
                 hintText: 'Search for area, street name...',
                 hintStyle: TextStyle(color: AppColors.textDisabled, fontSize: 15),
                 prefixIcon: Icon(Icons.search, color: AppColors.brandGreen, size: 20),
+                filled: false,
                 border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
                 contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               ),
             ),

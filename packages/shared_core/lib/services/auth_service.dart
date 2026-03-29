@@ -88,6 +88,7 @@ class AuthService {
     };
     
     await _prefs.setString('gutzo_auth', jsonEncode(authData));
+    await _prefs.setString('last_phone_number', phone);
     
     // Update state immediately for reactivity
     final user = model.User(
@@ -107,6 +108,10 @@ class AuthService {
   }
   
   User? get currentSupabaseUser => _supabase.auth.currentUser;
+  
+  String? getLastPhone() => _prefs.getString('last_phone_number');
+  
+  Future<void> clearLastPhone() async => await _prefs.remove('last_phone_number');
 }
 
 final authServiceProvider = Provider<AuthService>((ref) {

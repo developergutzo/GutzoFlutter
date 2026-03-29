@@ -7,21 +7,21 @@ import 'package:shared_core/theme/app_colors.dart';
 
 enum AuthStep { phone, otp, signup }
 
-class AuthStepNotifier extends Notifier<AuthStep> {
+class AuthStepNotifier extends AutoDisposeNotifier<AuthStep> {
   @override
   AuthStep build() => AuthStep.phone;
   void update(AuthStep step) => state = step;
 }
 
-final authStepProvider = NotifierProvider<AuthStepNotifier, AuthStep>(AuthStepNotifier.new);
+final authStepProvider = NotifierProvider.autoDispose<AuthStepNotifier, AuthStep>(AuthStepNotifier.new);
 
-class PhoneNotifier extends Notifier<String> {
+class PhoneNotifier extends AutoDisposeNotifier<String> {
   @override
   String build() => '';
   void update(String phone) => state = phone;
 }
 
-final phoneProvider = NotifierProvider<PhoneNotifier, String>(PhoneNotifier.new);
+final phoneProvider = NotifierProvider.autoDispose<PhoneNotifier, String>(PhoneNotifier.new);
 
 class AuthSheet extends ConsumerStatefulWidget {
   const AuthSheet({super.key});
