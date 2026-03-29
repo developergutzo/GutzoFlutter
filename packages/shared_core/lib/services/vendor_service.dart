@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/vendor.dart';
-import 'node_api_service.dart';
+import 'package:shared_core/models/vendor.dart';
+import 'package:shared_core/models/product.dart';
+import 'package:shared_core/services/node_api_service.dart';
 
 final vendorProvider = NotifierProvider<VendorNotifier, AsyncValue<List<Vendor>>>(() {
   return VendorNotifier();
@@ -31,15 +32,30 @@ class VendorNotifier extends Notifier<AsyncValue<List<Vendor>>> {
 
       final vendors = vendorList.map((json) => Vendor.fromJson(json)).where((v) => !(v.isBlacklisted ?? false)).toList();
       
-      // Fetch products for each vendor (as per useVendors.ts logic)
+      // Fetch products for each vendor and merge them
       final vendorsWithProducts = await Future.wait(
         vendors.map((vendor) async {
           try {
             final productsResponse = await apiService.getVendorProducts(vendor.id);
-            // Products are already handled by Vendor.fromJson if present, 
-            // but useVendors.ts does an explicit secondary fetch.
-            // For now, we'll assume the initial list is sufficient OR update if products empty.
-            return vendor;
+            List<dynamic> productList = [];
+            
+            if (productsResponse is List) {
+              productList = productsResponse;
+            } else if (productsResponse is Map) {
+              if (productsResponse['data'] is List) {
+                productList = productsResponse['data'];
+              } else if (productsResponse['products'] is List) {
+                productList = productsResponse['products'];
+              } else if (productsResponse['data'] is Map && productsResponse['data']['products'] is List) {
+                productList = productsResponse['data']['products'];
+              }
+            }
+
+            final List<Product> products = productList
+                .map((json) => Product.fromJson(json as Map<String, dynamic>))
+                .toList();
+                
+            return vendor.copyWith(products: products);
           } catch (e) {
             return vendor;
           }

@@ -125,9 +125,24 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
               child: vendorsAsync.when(
                 data: (vendors) {
                   final filteredVendors = vendors.where((v) {
-                    final nameMatch = v.name.toLowerCase().contains(query);
-                    final cuisineMatch = v.cuisineType.toLowerCase().contains(query);
-                    return nameMatch || cuisineMatch;
+                    final queryLower = query.toLowerCase();
+                    
+                    // Match kitchen name or cuisine
+                    final nameMatch = v.name.toLowerCase().contains(queryLower);
+                    final cuisineMatch = v.cuisineType.toLowerCase().contains(queryLower);
+                    
+                    // Match kitchen tags
+                    final vendorTagMatch = v.tags?.any((tag) => tag.toLowerCase().contains(queryLower)) ?? false;
+                    
+                    // Match products (name, description, or tags)
+                    final productMatch = v.products?.any((p) {
+                      final pNameMatch = p.name.toLowerCase().contains(queryLower);
+                      final pDescMatch = p.description.toLowerCase().contains(queryLower);
+                      final pTagMatch = p.tags?.any((tag) => tag.toLowerCase().contains(queryLower)) ?? false;
+                      return pNameMatch || pDescMatch || pTagMatch;
+                    }) ?? false;
+
+                    return nameMatch || cuisineMatch || vendorTagMatch || productMatch;
                   }).toList();
 
                   return ListView(
@@ -189,6 +204,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                                 deliveryTime: vendor.deliveryTime,
                                 rating: vendor.rating,
                                 vendorModel: vendor,
+                                searchQuery: _searchController.text,
                               ),
                             )),
                     ],

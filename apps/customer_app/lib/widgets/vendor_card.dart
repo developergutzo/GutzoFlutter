@@ -11,6 +11,7 @@ class VendorCard extends StatelessWidget {
   final String deliveryTime;
   final double rating;
   final Vendor? vendorModel;
+  final String? searchQuery;
 
   const VendorCard({
     super.key,
@@ -21,6 +22,7 @@ class VendorCard extends StatelessWidget {
     required this.rating,
     this.vendorModel,
     this.rawVendor,
+    this.searchQuery,
   });
 
   @override
@@ -31,7 +33,10 @@ class VendorCard extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => VendorDetailScreen(vendor: vendorModel!),
+              builder: (context) => VendorDetailScreen(
+                vendor: vendorModel!,
+                searchQuery: searchQuery,
+              ),
             ),
           );
         }

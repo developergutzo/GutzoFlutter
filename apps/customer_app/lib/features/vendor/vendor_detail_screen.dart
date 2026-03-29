@@ -10,8 +10,9 @@ import 'widgets/product_details_sheet.dart';
 
 class VendorDetailScreen extends ConsumerStatefulWidget {
   final Vendor vendor;
+  final String? searchQuery;
 
-  const VendorDetailScreen({super.key, required this.vendor});
+  const VendorDetailScreen({super.key, required this.vendor, this.searchQuery});
 
   @override
   ConsumerState<VendorDetailScreen> createState() => _VendorDetailScreenState();
@@ -24,6 +25,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
   @override
   void initState() {
     super.initState();
+    _selectedCategory = widget.searchQuery != null ? 'Best Matches' : 'All';
     _productsFuture = _loadProducts();
   }
 
@@ -62,13 +64,40 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
         future: _productsFuture,
         builder: (context, snapshot) {
           final products = snapshot.data ?? [];
-          // Normalize categories for the tab list (unique, trimmed, properly capitalized)
-          final categorySet = products.map((p) => p.category.trim()).where((c) => c.isNotEmpty).toSet();
-          final categories = ['All', ...categorySet.toList()..sort()];
+          final query = widget.searchQuery?.trim().toLowerCase();
           
-          final filteredProducts = _selectedCategory == 'All' 
-              ? products 
-              : products.where((p) => p.category.trim().toLowerCase() == _selectedCategory.trim().toLowerCase()).toList();
+          // Identify matching products for the virtual "Best Matches" category
+          final matchingProducts = query != null && query.isNotEmpty
+              ? products.where((p) {
+                  return p.name.toLowerCase().contains(query) || 
+                         p.description.toLowerCase().contains(query) ||
+                         (p.tags?.any((t) => t.toLowerCase().contains(query)) ?? false);
+                }).toList()
+              : <Product>[];
+
+          // Normalize categories
+          final categorySet = products.map((p) => p.category.trim()).where((c) => c.isNotEmpty).toSet();
+          final List<String> categories = [];
+          
+          if (matchingProducts.isNotEmpty) {
+            categories.add('Best Matches');
+          }
+          categories.add('All');
+          categories.addAll(categorySet.toList()..sort());
+          
+          // Ensure _selectedCategory is valid if data just loaded
+          if (!categories.contains(_selectedCategory)) {
+             _selectedCategory = categories.first;
+          }
+
+          final List<Product> filteredProducts;
+          if (_selectedCategory == 'Best Matches') {
+            filteredProducts = matchingProducts;
+          } else if (_selectedCategory == 'All') {
+            filteredProducts = products;
+          } else {
+            filteredProducts = products.where((p) => p.category.trim().toLowerCase() == _selectedCategory.trim().toLowerCase()).toList();
+          }
 
           return CustomScrollView(
             slivers: [
@@ -219,13 +248,13 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
               children: [
                 Icon(Icons.circle, color: product.isVeg ? Colors.green : Colors.red, size: 12),
                 const SizedBox(height: 4),
-                Text(product.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                _highlightedText(product.name, widget.searchQuery, const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
-                Text(
+                _highlightedText(
                   product.description,
+                  widget.searchQuery,
+                  const TextStyle(fontSize: 12, color: AppColors.textSub),
                   maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 12, color: AppColors.textSub),
                 ),
                 const SizedBox(height: 8),
                 Text('₹${product.price}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
@@ -293,6 +322,40 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _highlightedText(String text, String? query, TextStyle baseStyle, {int? maxLines}) {
+    if (query == null || query.isEmpty) {
+      return Text(text, style: baseStyle, maxLines: maxLines, overflow: TextOverflow.ellipsis);
+    }
+
+    final queryLower = query.toLowerCase();
+    final textLower = text.toLowerCase();
+    final List<TextSpan> spans = [];
+    int start = 0;
+
+    int matchIndex = textLower.indexOf(queryLower);
+    while (matchIndex != -1) {
+      if (matchIndex > start) {
+        spans.add(TextSpan(text: text.substring(start, matchIndex)));
+      }
+      spans.add(TextSpan(
+        text: text.substring(matchIndex, matchIndex + query.length),
+        style: const TextStyle(color: AppColors.brandGreen, fontWeight: FontWeight.w900, backgroundColor: Color(0xFFE6F4EA)),
+      ));
+      start = matchIndex + query.length;
+      matchIndex = textLower.indexOf(queryLower, start);
+    }
+
+    if (start < text.length) {
+      spans.add(TextSpan(text: text.substring(start)));
+    }
+
+    return Text.rich(
+      TextSpan(children: spans, style: baseStyle),
+      maxLines: maxLines,
+      overflow: TextOverflow.ellipsis,
     );
   }
 }
