@@ -45,6 +45,25 @@ class LocationData {
     if (state.isNotEmpty) return state;
     return '';
   }
+  LocationData copyWith({
+    String? city,
+    String? state,
+    String? country,
+    String? formattedAddress,
+    double? latitude,
+    double? longitude,
+    DateTime? timestamp,
+  }) {
+    return LocationData(
+      city: city ?? this.city,
+      state: state ?? this.state,
+      country: country ?? this.country,
+      formattedAddress: formattedAddress ?? this.formattedAddress,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      timestamp: timestamp ?? this.timestamp,
+    );
+  }
 }
 
 /// Location state for the provider
@@ -371,10 +390,27 @@ class LocationNotifier extends Notifier<LocationState> {
 
     try {
       final locationData = await LocationService.getCurrentLocation();
-      state = LocationState(
-        location: locationData,
-        isLoading: false,
+      state = state.copyWith(location: locationData);
+
+      // Attempt to get a more detailed address via Google Maps
+      final detailed = await LocationService.reverseGeocodeDetailed(
+        locationData.latitude,
+        locationData.longitude,
       );
+
+      if (detailed != null) {
+        state = LocationState(
+          location: locationData.copyWith(
+            city: detailed.city,
+            state: detailed.state,
+            country: detailed.country,
+            formattedAddress: detailed.formattedAddress,
+          ),
+          isLoading: false,
+        );
+      } else {
+        state = state.copyWith(isLoading: false);
+      }
     } catch (e) {
       debugPrint('Location error: $e');
       state = LocationState(

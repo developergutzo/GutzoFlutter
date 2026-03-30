@@ -7,6 +7,7 @@ import 'package:shared_core/models/product.dart';
 import 'package:shared_core/theme/app_colors.dart';
 import 'package:shared_core/services/node_api_service.dart';
 import '../../widgets/cart_strip.dart';
+import '../../widgets/quantity_selector.dart';
 import 'widgets/product_details_sheet.dart';
 
 class VendorDetailScreen extends ConsumerStatefulWidget {
@@ -56,6 +57,15 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
       debugPrint('Stack trace: $stack');
       return widget.vendor.products ?? [];
     }
+  }
+
+  String _formatAddress(String address) {
+    if (address.trim().isEmpty) return "Coimbatore";
+    final parts = address.split(',').map((p) => p.trim()).toList();
+    if (parts.length >= 2) {
+      return parts[parts.length - 2];
+    }
+    return address;
   }
 
   @override
@@ -181,7 +191,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
                                             const Icon(Icons.star, color: Colors.white, size: 14),
                                             const SizedBox(width: 4),
                                             Text(
-                                              widget.vendor.rating.toString(),
+                                              widget.vendor.rating.toStringAsFixed(1),
                                               style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
                                             ),
                                           ],
@@ -191,7 +201,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
                                   ),
                                   const SizedBox(height: 12),
                                   Text(
-                                    (widget.vendor.deliveryTime.trim().isEmpty) ? "40-45 mins" : widget.vendor.deliveryTime,
+                                    widget.vendor.deliveryTime.trim().isNotEmpty ? widget.vendor.deliveryTime : "40-45 mins",
                                     style: const TextStyle(
                                       color: AppColors.textMain,
                                       fontWeight: FontWeight.w600,
@@ -205,7 +215,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
                                       const Icon(Icons.location_on_outlined, size: 16, color: AppColors.textDisabled),
                                       const SizedBox(width: 6),
                                       Text(
-                                        (widget.vendor.location.trim().isEmpty) ? "Coimbatore" : widget.vendor.location,
+                                        _formatAddress(widget.vendor.location),
                                         style: const TextStyle(
                                           color: AppColors.textDisabled,
                                           fontSize: 13,
@@ -431,27 +441,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
                 ),
                 Positioned(
                   bottom: -15,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      ProductDetailsSheet.show(context, product, widget.vendor);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: AppColors.brandGreen,
-                      elevation: 4,
-                      shadowColor: Colors.black.withOpacity(0.2),
-                      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
-                      minimumSize: const Size(100, 42),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        side: const BorderSide(color: AppColors.brandGreen, width: 1.2),
-                      ),
-                    ),
-                    child: Text(
-                      'ADD',
-                      style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 13, letterSpacing: 0.8),
-                    ),
-                  ),
+                  child: QuantitySelector(product: product, vendor: widget.vendor),
                 ),
               ],
             ),

@@ -97,6 +97,31 @@ class NodeApiService {
     return _request("/vendors/$vendorId/products");
   }
 
+  // --- Cart ---
+  Future<dynamic> getUserCart(String phone) async {
+    return _request("/cart", overridePhone: phone);
+  }
+
+  Future<dynamic> saveUserCart(String phone, List<Map<String, dynamic>> items) async {
+    return _request("/cart/sync", method: "POST", body: {"items": items}, overridePhone: phone);
+  }
+
+  Future<dynamic> clearUserCart(String phone) async {
+    return _request("/cart", method: "DELETE", overridePhone: phone);
+  }
+
+  Future<dynamic> addToCart(String phone, Map<String, dynamic> item) async {
+    return _request("/cart", method: "POST", body: item, overridePhone: phone);
+  }
+
+  Future<dynamic> updateCartItem(String phone, String id, Map<String, dynamic> data) async {
+    return _request("/cart/$id", method: "PUT", body: data, overridePhone: phone);
+  }
+
+  Future<dynamic> removeCartItem(String phone, String id) async {
+    return _request("/cart/$id", method: "DELETE", overridePhone: phone);
+  }
+
   // --- Orders & Tracking ---
   Future<dynamic> createOrder(Map<String, dynamic> orderData) async {
     return _request("/orders", method: "POST", body: orderData);

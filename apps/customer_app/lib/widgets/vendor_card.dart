@@ -85,7 +85,7 @@ class VendorCard extends StatelessWidget {
               const Icon(Icons.star, color: AppColors.brandGreen, size: 16),
               const SizedBox(width: 4),
               Text(
-                (rating == 0.0 ? 4.5 : rating).toString(),
+                (rating == 0.0 ? 4.5 : rating).toStringAsFixed(1),
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
@@ -137,7 +137,7 @@ class VendorCard extends StatelessWidget {
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
-                  (vendorModel?.location?.trim().isEmpty ?? true) ? "Coimbatore" : vendorModel!.location,
+                  _formatAddress(vendorModel?.location ?? ''),
                   style: const TextStyle(
                     color: AppColors.textDisabled,
                     fontSize: 13,
@@ -152,5 +152,14 @@ class VendorCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _formatAddress(String address) {
+    if (address.trim().isEmpty) return "Coimbatore";
+    final parts = address.split(',').map((p) => p.trim()).toList();
+    if (parts.length >= 2) {
+      return parts[parts.length - 2];
+    }
+    return address;
   }
 }

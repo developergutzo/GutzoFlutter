@@ -239,7 +239,7 @@ class _MarketplaceBody extends ConsumerWidget {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Text(
-                                        areaName == 'Detecting...' ? areaName : 'Home', // Mocking "Home" as per image
+                                        areaName,
                                         style: const TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w800,
