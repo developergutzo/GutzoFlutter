@@ -111,9 +111,6 @@ class CheckoutScreen extends ConsumerWidget {
               ),
             ),
             
-            // Donation Card
-            _buildDonationCard(ref, checkout),
-
             // Billing Card
             _buildSectionCard(
               child: _BillingSummary(
@@ -257,52 +254,6 @@ class CheckoutScreen extends ConsumerWidget {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildDonationCard(WidgetRef ref, CheckoutState state) {
-    return _buildSectionCard(
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Image.network(
-                'https://upload.wikimedia.org/wikipedia/commons/b/bd/Feeding_India_Logo.png',
-                height: 24,
-                errorBuilder: (_, __, ___) => const Icon(Icons.favorite, color: Colors.red, size: 24),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Feeding India Donation',
-                      style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w700),
-                    ),
-                    Text(
-                      'Working towards a hunger-free India',
-                      style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600]),
-                    ),
-                  ],
-                ),
-              ),
-              Checkbox(
-                value: state.isDonationChecked,
-                activeColor: AppColors.brandGreen,
-                onChanged: (_) => ref.read(checkoutProvider.notifier).toggleDonation(),
-              ),
-            ],
-          ),
-          if (state.isDonationChecked) ...[
-            const Divider(height: 24),
-            Text(
-              '₹${state.donationAmount.toStringAsFixed(0)} will be added to your bill',
-              style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.brandGreen),
-            ),
-          ],
-        ],
-      ),
     );
   }
 
