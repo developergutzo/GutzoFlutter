@@ -18,33 +18,19 @@ class CheckoutScreen extends ConsumerWidget {
     final cart = ref.watch(cartProvider);
     final checkout = ref.watch(checkoutProvider);
     
+    // Automatically pop screen if last item is deleted to match gutzo.in UX
+    ref.listen(cartProvider, (previous, next) {
+      if (next.items.isEmpty && (previous?.items.isNotEmpty ?? false)) {
+        if (context.mounted) {
+          Navigator.of(context).pop();
+        }
+      }
+    });
+
     if (cart.items.isEmpty) {
-      return Scaffold(
-        backgroundColor: Colors.white,
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.shopping_cart_outlined, size: 64, color: Colors.grey[300]),
-              const SizedBox(height: 16),
-              Text(
-                'Your cart is empty',
-                style: GoogleFonts.poppins(fontSize: 18, color: Colors.grey[600]),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.brandGreen,
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                child: const Text('Go Back', style: TextStyle(color: Colors.white)),
-              ),
-            ],
-          ),
-        ),
-      );
+      // Returning a clean background avoids the "empty cart" UI flicker 
+      // during the automatic navigation back process.
+      return const Scaffold(backgroundColor: Colors.white);
     }
 
     final vendor = cart.items.first.vendor;
