@@ -81,7 +81,7 @@ class _ProductDetailsSheetState extends ConsumerState<ProductDetailsSheet> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.circle, color: widget.product.isVeg ? Colors.green : Colors.red, size: 14),
+                          Icon(Icons.circle, color: widget.product.isVeg ? AppColors.brandGreen : Colors.red, size: 14),
                           const SizedBox(height: 4),
                           Text(
                             widget.product.name,

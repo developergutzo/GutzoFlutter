@@ -131,17 +131,24 @@ class VendorCard extends StatelessWidget {
           const SizedBox(height: 4),
           
           // Location
-          if (vendorModel?.location != null && vendorModel!.location.isNotEmpty)
-            Text(
-              vendorModel!.location,
-              style: const TextStyle(
-                color: AppColors.textDisabled,
-                fontSize: 13,
-                fontWeight: FontWeight.w400,
+          Row(
+            children: [
+              const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textDisabled),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  (vendorModel?.location?.trim().isEmpty ?? true) ? "Coimbatore" : vendorModel!.location,
+                  style: const TextStyle(
+                    color: AppColors.textDisabled,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+            ],
+          ),
         ],
       ),
     );

@@ -1,15 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_core/models/vendor.dart';
-import 'package:shared_core/models/product.dart';
+import 'package:shared_core/models/vendor.dart' as model;
+import 'package:shared_core/models/product.dart' as model;
 import 'package:shared_core/services/node_api_service.dart';
 
-final vendorProvider = NotifierProvider<VendorNotifier, AsyncValue<List<Vendor>>>(() {
+final vendorProvider = NotifierProvider<VendorNotifier, AsyncValue<List<model.Vendor>>>(() {
   return VendorNotifier();
 });
 
-class VendorNotifier extends Notifier<AsyncValue<List<Vendor>>> {
+class VendorNotifier extends Notifier<AsyncValue<List<model.Vendor>>> {
   @override
-  AsyncValue<List<Vendor>> build() {
+  AsyncValue<List<model.Vendor>> build() {
     // Initial fetch
     _fetchVendors();
     return const AsyncValue.loading();
@@ -30,7 +30,7 @@ class VendorNotifier extends Notifier<AsyncValue<List<Vendor>>> {
         vendorList = response['vendors'];
       }
 
-      final vendors = vendorList.map((json) => Vendor.fromJson(json)).where((v) => !(v.isBlacklisted ?? false)).toList();
+      final vendors = vendorList.map((json) => model.Vendor.fromJson(json)).where((v) => !(v.isBlacklisted ?? false)).toList();
       
       // Fetch products for each vendor and merge them
       final vendorsWithProducts = await Future.wait(
@@ -51,8 +51,8 @@ class VendorNotifier extends Notifier<AsyncValue<List<Vendor>>> {
               }
             }
 
-            final List<Product> products = productList
-                .map((json) => Product.fromJson(json as Map<String, dynamic>))
+            final List<model.Product> products = productList
+                .map((json) => model.Product.fromJson(json as Map<String, dynamic>))
                 .toList();
                 
             return vendor.copyWith(products: products);
@@ -71,7 +71,7 @@ class VendorNotifier extends Notifier<AsyncValue<List<Vendor>>> {
   Future<void> refresh() => _fetchVendors();
   
   // Filtering logic
-  List<Vendor> filterByCategory(List<Vendor> vendors, String category) {
+  List<model.Vendor> filterByCategory(List<model.Vendor> vendors, String category) {
     if (category.toLowerCase() == 'all') return vendors;
     return vendors.where((v) => v.cuisineType.toLowerCase() == category.toLowerCase()).toList();
   }

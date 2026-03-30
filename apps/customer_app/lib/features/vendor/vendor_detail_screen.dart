@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_core/models/vendor.dart';
 import 'package:shared_core/models/product.dart';
 import 'package:shared_core/theme/app_colors.dart';
@@ -101,83 +102,179 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
 
           return CustomScrollView(
             slivers: [
-              // Hero AppBar
+              // Clean Text Header
               SliverAppBar(
-                expandedHeight: 200,
+                backgroundColor: Colors.white,
+                elevation: 0,
                 pinned: true,
-                backgroundColor: AppColors.surface,
+                automaticallyImplyLeading: false,
                 leading: IconButton(
-                  icon: const Icon(Icons.chevron_left, color: Colors.white, size: 32),
+                  icon: const Icon(Icons.chevron_left, color: AppColors.textMain, size: 32),
                   onPressed: () => Navigator.pop(context),
                 ),
-                flexibleSpace: FlexibleSpaceBar(
-                  background: Stack(
-                    fit: StackFit.expand,
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.ios_share, color: AppColors.textMain, size: 24),
+                    onPressed: () {},
+                  ),
+                ],
+              ),
+
+              // Vendor Title & Info Card
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Image.network(
-                        widget.vendor.image.isNotEmpty ? widget.vendor.image : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c',
-                        fit: BoxFit.cover,
-                      ),
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
-                          ),
+                      Text(
+                        widget.vendor.name,
+                        style: GoogleFonts.poppins(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textMain,
+                          letterSpacing: -0.2,
                         ),
                       ),
-                      Positioned(
-                        bottom: 16,
-                        left: 16,
-                        right: 16,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              widget.vendor.name,
-                              style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                      const SizedBox(height: 16),
+                      
+                      // Floating Info Card
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.06),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              widget.vendor.cuisineType,
-                              style: const TextStyle(color: Colors.white70, fontSize: 14),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        "${widget.vendor.cuisineType} · Healthy",
+                                        style: GoogleFonts.poppins(
+                                          color: AppColors.brandGreen,
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: 12,
+                                          letterSpacing: 0.2,
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.brandGreen,
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            const Icon(Icons.star, color: Colors.white, size: 14),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              widget.vendor.rating.toString(),
+                                              style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    (widget.vendor.deliveryTime.trim().isEmpty) ? "40-45 mins" : widget.vendor.deliveryTime,
+                                    style: const TextStyle(
+                                      color: AppColors.textMain,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                      fontFamily: 'Poppins',
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.location_on_outlined, size: 16, color: AppColors.textDisabled),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        (widget.vendor.location.trim().isEmpty) ? "Coimbatore" : widget.vendor.location,
+                                        style: const TextStyle(
+                                          color: AppColors.textDisabled,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          fontFamily: 'Poppins',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            
+                            // Offer Strip
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFFFEFEB),
+                                borderRadius: BorderRadius.only(
+                                  bottomLeft: Radius.circular(20),
+                                  bottomRight: Radius.circular(20),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.moped_outlined, color: Color(0xFFE64A19), size: 18),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    "Placeholder for offer details.",
+                                    style: GoogleFonts.poppins(
+                                      color: const Color(0xFFE64A19),
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ),
-              
-              // Vendor Info Card
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      _infoChip(Icons.star, widget.vendor.rating.toString(), Colors.amber),
-                      const SizedBox(width: 12),
-                      _infoChip(Icons.timer_outlined, widget.vendor.deliveryTime, Colors.blue),
-                      const SizedBox(width: 12),
-                      _infoChip(Icons.location_on_outlined, '2.4 km', AppColors.brandGreen),
+                      const SizedBox(height: 32),
+                      Text(
+                        "Pick Your Food",
+                        style: GoogleFonts.poppins(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textMain,
+                          letterSpacing: -0.1,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
                     ],
                   ),
                 ),
               ),
 
-              // Sticky Categories
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: _CategoryHeaderDelegate(
-                  categories: categories,
-                  selectedCategory: _selectedCategory,
-                  onCategorySelected: (cat) {
-                    setState(() => _selectedCategory = cat);
-                  },
-                ),
-              ),
+              // Sticky Categories (Hidden to match reference design until further notice)
+              // SliverPersistentHeader(
+              //   pinned: true,
+              //   delegate: _CategoryHeaderDelegate(
+              //     categories: categories,
+              //     selectedCategory: _selectedCategory,
+              //     onCategorySelected: (cat) {
+              //       setState(() => _selectedCategory = cat);
+              //     },
+              //   ),
+              // ),
 
               // Product List
               snapshot.connectionState == ConnectionState.waiting
@@ -195,7 +292,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
                                 const SizedBox(height: 16),
                                 Text(
                                   'No products found in this category',
-                                  style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                                  style: GoogleFonts.poppins(color: Colors.grey[600], fontSize: 16),
                                 ),
                               ],
                             ),
@@ -218,111 +315,146 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
     );
   }
 
-  Widget _infoChip(IconData icon, String text, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 4),
-          Text(text, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
-        ],
-      ),
-    );
-  }
 
   Widget _productCard(Product product) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: AppColors.border, width: 0.5)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.circle, color: product.isVeg ? Colors.green : Colors.red, size: 12),
+                Icon(Icons.circle, color: product.isVeg ? AppColors.brandGreen : Colors.red, size: 12),
+                const SizedBox(height: 8),
+                _highlightedText(
+                  product.name, 
+                  widget.searchQuery, 
+                  GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textMain, letterSpacing: -0.1)
+                ),
                 const SizedBox(height: 4),
-                _highlightedText(product.name, widget.searchQuery, const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
+                // Price Row
+                Row(
+                  children: [
+                    Text(
+                      '₹${(product.price * 1.2).toStringAsFixed(0)}',
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: AppColors.textDisabled,
+                        decoration: TextDecoration.lineThrough,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '₹${product.price.toStringAsFixed(0)}',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textMain,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // Rating
+                if (product.rating != null)
+                  Row(
+                    children: [
+                      const Icon(Icons.star, color: AppColors.brandGreen, size: 14),
+                      const SizedBox(width: 4),
+                      Text(
+                        "${product.rating} (${product.ratingCount ?? 0})",
+                        style: GoogleFonts.poppins(
+                          color: AppColors.textMain,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                const SizedBox(height: 6),
                 _highlightedText(
                   product.description,
                   widget.searchQuery,
-                  const TextStyle(fontSize: 12, color: AppColors.textSub),
+                  GoogleFonts.poppins(fontSize: 12, color: AppColors.textSub, height: 1.4),
                   maxLines: 2,
                 ),
-                const SizedBox(height: 8),
-                Text('₹${product.price}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
               ],
             ),
           ),
           const SizedBox(width: 16),
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: product.displayImage.toLowerCase().endsWith('.svg')
-                    ? SvgPicture.network(
-                        product.displayImage,
-                        width: 100,
-                        height: 100,
-                        fit: BoxFit.cover,
-                        placeholderBuilder: (context) => Container(
-                          width: 100,
-                          height: 100,
-                          color: Colors.grey[200],
-                          child: const Center(
-                            child: SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brandGreen),
-                            ),
+          // Right Side: Image and Add Button
+          SizedBox(
+            width: 120,
+            child: Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.bottomCenter,
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: product.displayImage.toLowerCase().endsWith('.svg')
+                      ? SvgPicture.network(
+                          product.displayImage,
+                          width: 110,
+                          height: 110,
+                          fit: BoxFit.cover,
+                        )
+                      : Image.network(
+                          product.displayImage,
+                          width: 110,
+                          height: 110,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            width: 110,
+                            height: 110,
+                            color: const Color(0xFFF5F5F5),
+                            child: const Icon(Icons.restaurant, color: Colors.grey),
                           ),
                         ),
-                      )
-                    : Image.network(
-                        product.displayImage,
-                        width: 100,
-                        height: 100,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          width: 100,
-                          height: 100,
-                          color: Colors.grey[200],
-                          child: const Icon(Icons.restaurant, color: Colors.grey),
-                        ),
-                      ),
-              ),
-              Positioned(
-                bottom: -10,
-                left: 10,
-                right: 10,
-                child: ElevatedButton(
-                  onPressed: () {
-                    ProductDetailsSheet.show(context, product, widget.vendor);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: AppColors.brandGreen,
-                    elevation: 4,
-                    padding: EdgeInsets.zero,
-                    minimumSize: const Size(80, 32),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
-                  child: const Text('ADD', style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
-              ),
-            ],
+                Positioned(
+                  bottom: -15,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      ProductDetailsSheet.show(context, product, widget.vendor);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: AppColors.brandGreen,
+                      elevation: 4,
+                      shadowColor: Colors.black.withOpacity(0.2),
+                      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
+                      minimumSize: const Size(100, 42),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        side: const BorderSide(color: AppColors.brandGreen, width: 1.2),
+                      ),
+                    ),
+                    child: Text(
+                      'ADD',
+                      style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 13, letterSpacing: 0.8),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -378,7 +510,7 @@ class _CategoryHeaderDelegate extends SliverPersistentHeaderDelegate {
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
-      color: AppColors.surface,
+      color: Colors.white,
       height: 60,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
