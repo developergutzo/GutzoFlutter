@@ -227,14 +227,17 @@ class CartNotifier extends Notifier<CartState> {
     }
   }
 
-  void addItem(Product product, Vendor vendor, int quantity) {
+  void addItem(Product product, Vendor vendor, int quantity, {bool forceClear = false}) {
     // Cross-vendor check
     if (state.vendorId != null && state.vendorId != vendor.id && state.items.isNotEmpty) {
-      state = state.copyWith(
-        items: [CartItem(product: product, vendor: vendor, quantity: quantity)],
-        vendorId: vendor.id,
-      );
-      _saveCart();
+      if (forceClear) {
+        state = state.copyWith(
+          items: [CartItem(product: product, vendor: vendor, quantity: quantity)],
+          vendorId: vendor.id,
+        );
+        _saveCart();
+      }
+      // If not forceClear, we do nothing and let the UI handle the "Replace Cart" flow
       return;
     }
 
@@ -254,6 +257,8 @@ class CartNotifier extends Notifier<CartState> {
     }
     _saveCart();
   }
+
+  String? get activeVendorName => state.items.isNotEmpty ? state.items.first.vendor.name : null;
 
   void updateQuantity(String productId, int quantity) {
     if (quantity <= 0) {

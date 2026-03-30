@@ -5,6 +5,7 @@ import 'package:shared_core/models/product.dart';
 import 'package:shared_core/models/vendor.dart';
 import 'package:shared_core/services/cart_service.dart';
 import 'package:shared_core/theme/app_colors.dart';
+import 'replace_cart_dialog.dart';
 
 class QuantitySelector extends ConsumerWidget {
   final Product product;
@@ -31,19 +32,34 @@ class QuantitySelector extends ConsumerWidget {
         );
       },
       child: quantity == 0
-          ? _buildAddButton(ref)
+          ? _buildAddButton(context, ref, cart)
           : _buildSelector(ref, quantity),
     );
   }
 
-  Widget _buildAddButton(WidgetRef ref) {
+  Widget _buildAddButton(BuildContext context, WidgetRef ref, CartState cart) {
     return SizedBox(
       key: const ValueKey('add_button'),
       width: 100,
       height: 40,
       child: ElevatedButton(
         onPressed: () {
-          ref.read(cartProvider.notifier).addItem(product, vendor, 1);
+          // Check for cross-vendor conflict
+          if (cart.vendorId != null && cart.vendorId != vendor.id && cart.items.isNotEmpty) {
+            final activeVendorName = ref.read(cartProvider.notifier).activeVendorName ?? 'another kitchen';
+            showDialog(
+              context: context,
+              builder: (context) => ReplaceCartDialog(
+                oldVendorName: activeVendorName,
+                newVendorName: vendor.name,
+                onReplace: () {
+                  ref.read(cartProvider.notifier).addItem(product, vendor, 1, forceClear: true);
+                },
+              ),
+            );
+          } else {
+            ref.read(cartProvider.notifier).addItem(product, vendor, 1);
+          }
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.white,
