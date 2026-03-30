@@ -75,175 +75,178 @@ class _MarketplaceBody extends ConsumerWidget {
         SliverAppBar(
           floating: true,
           pinned: true,
-          toolbarHeight: 120,
+          toolbarHeight: 110,
           backgroundColor: AppColors.surface,
           elevation: 1,
           flexibleSpace: FlexibleSpaceBar(
-            background: Column(
-              children: [
-                const SizedBox(height: 12),
-                // Branding Row
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    children: [
-                      // Logo matching web design
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: AppColors.brandGreen,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Center(
-                              child: Text(
-                                'G',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          const Text(
-                            'GUTZO',
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.textMain,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Spacer(),
-                      // Search Button (Optimized Hit Target for 1-Tap responsiveness)
-                      GestureDetector(
-                        onTap: () => SearchSheet.show(context),
-                        behavior: HitTestBehavior.opaque,
-                        child: const SizedBox(
-                          width: 44,
-                          height: 44,
-                          child: Center(
-                            child: Icon(Icons.search, color: AppColors.textMain, size: 24),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      // Profile Button
-                      if (currentUser == null)
-                        GestureDetector(
-                          onTap: () => Navigator.push(
-                            context,
-                            CupertinoPageRoute(builder: (_) => const AuthScreen()),
-                          ).then((_) => ref.invalidate(currentUserProvider)),
-                          child: Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: AppColors.brandGreen.withValues(alpha: 0.1),
-                              shape: BoxShape.circle,
-                              border: Border.all(color: AppColors.brandGreen.withValues(alpha: 0.1)),
-                            ),
-                            child: const Center(
-                              child: Icon(Icons.person_outline, color: AppColors.brandGreen, size: 20),
-                            ),
-                          ),
-                        )
-                      else
-                        GestureDetector(
-                          onTap: () => Navigator.push(
-                            context,
-                            CupertinoPageRoute(builder: (_) => const ProfileScreen()),
-                          ),
-                          child: Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: AppColors.brandGreen.withValues(alpha: 0.1),
-                              shape: BoxShape.circle,
-                              border: Border.all(color: AppColors.brandGreen.withValues(alpha: 0.1)),
-                            ),
-                            child: Center(
-                              child: Text(
-                                currentUser.initials,
-                                style: const TextStyle(
-                                  color: AppColors.brandGreen,
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                
-                // Action Row: Location (Now single item row)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-                  child: InkWell(
-                    onTap: () => LocationSheet.show(context),
-                    borderRadius: BorderRadius.circular(8),
-                    child: Builder(
-                      builder: (context) {
-                        final locationState = ref.watch(locationProvider);
-                        final areaName = locationState.location?.areaName ?? 'Detecting...';
-                        final fullAddress = locationState.location?.formattedAddress ?? 'Searching for address...';
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+            background: SafeArea(
+              bottom: false,
+              child: Column(
+                children: [
+                  const SizedBox(height: 8),
+                  // Branding Row
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: Row(
+                      children: [
+                        // Logo matching web design
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Padding(
-                              padding: const EdgeInsets.only(top: 2),
-                              child: const Icon(Icons.location_on_outlined, color: AppColors.brandGreen, size: 24),
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: AppColors.brandGreen,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Center(
+                                child: Text(
+                                  'G',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        areaName,
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w800,
-                                          color: AppColors.textMain,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      const Icon(Icons.keyboard_arrow_down, size: 18, color: AppColors.textDisabled),
-                                    ],
-                                  ),
-                                  Text(
-                                    fullAddress,
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      color: AppColors.textDisabled,
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
+                            const SizedBox(width: 8),
+                            const Text(
+                              'GUTZO',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.textMain,
+                                letterSpacing: -0.5,
                               ),
                             ),
                           ],
-                        );
-                      },
+                        ),
+                        const Spacer(),
+                        // Search Button (Optimized Hit Target for 1-Tap responsiveness)
+                        GestureDetector(
+                          onTap: () => SearchSheet.show(context),
+                          behavior: HitTestBehavior.opaque,
+                          child: const SizedBox(
+                            width: 44,
+                            height: 44,
+                            child: Center(
+                              child: Icon(Icons.search, color: AppColors.textMain, size: 24),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        // Profile Button
+                        if (currentUser == null)
+                          GestureDetector(
+                            onTap: () => Navigator.push(
+                              context,
+                              CupertinoPageRoute(builder: (_) => const AuthScreen()),
+                            ).then((_) => ref.invalidate(currentUserProvider)),
+                            child: Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: AppColors.brandGreen.withValues(alpha: 0.1),
+                                shape: BoxShape.circle,
+                                border: Border.all(color: AppColors.brandGreen.withValues(alpha: 0.1)),
+                              ),
+                              child: const Center(
+                                child: Icon(Icons.person_outline, color: AppColors.brandGreen, size: 20),
+                              ),
+                            ),
+                          )
+                        else
+                          GestureDetector(
+                            onTap: () => Navigator.push(
+                              context,
+                              CupertinoPageRoute(builder: (_) => const ProfileScreen()),
+                            ),
+                            child: Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: AppColors.brandGreen.withValues(alpha: 0.1),
+                                shape: BoxShape.circle,
+                                border: Border.all(color: AppColors.brandGreen.withValues(alpha: 0.1)),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  currentUser.initials,
+                                  style: const TextStyle(
+                                    color: AppColors.brandGreen,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-                ),
-              ],
+                  
+                  // Action Row: Location (Now single item row)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                    child: InkWell(
+                      onTap: () => LocationSheet.show(context),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Builder(
+                        builder: (context) {
+                          final locationState = ref.watch(locationProvider);
+                          final areaName = locationState.location?.areaName ?? 'Detecting...';
+                          final fullAddress = locationState.location?.formattedAddress ?? 'Searching for address...';
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: const Icon(Icons.location_on_outlined, color: AppColors.brandGreen, size: 24),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          areaName,
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w800,
+                                            color: AppColors.textMain,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        const Icon(Icons.keyboard_arrow_down, size: 18, color: AppColors.textDisabled),
+                                      ],
+                                    ),
+                                    Text(
+                                      fullAddress,
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        color: AppColors.textDisabled,
+                                        fontWeight: FontWeight.w400,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
