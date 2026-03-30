@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_core/services/auth_service.dart';
@@ -27,7 +28,7 @@ class HomeFilterNotifier extends Notifier<String> {
   @override
   String build() => 'All';
 
-  void setFilter(String filter) {
+  void setFilter(String filter) { 
     state = filter;
   }
 }
