@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_core/services/cart_service.dart';
 import 'package:shared_core/theme/app_colors.dart';
 import '../features/checkout/checkout_screen.dart';
+import '../features/vendor/vendor_detail_screen.dart';
 
 class CartStrip extends ConsumerWidget {
   final bool isPremium;
@@ -66,8 +67,12 @@ class CartStrip extends ConsumerWidget {
                     ),
                     GestureDetector(
                       onTap: () {
-                        // Navigate to full menu can be tricky if we don't have the context or the screen isn't ready
-                        // For now, it stays on the same page or we could push the vendor screen
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => VendorDetailScreen(vendor: vendor),
+                          ),
+                        );
                       },
                       child: Text(
                         'View Full Menu',
