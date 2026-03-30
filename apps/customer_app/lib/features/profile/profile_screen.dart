@@ -1,7 +1,9 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_core/services/auth_service.dart';
 import 'package:shared_core/theme/app_colors.dart';
+import '../orders/orders_history_screen.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -32,6 +34,9 @@ class ProfileScreen extends ConsumerWidget {
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 32),
+            _profileItem(Icons.receipt_long_outlined, 'My Orders', () {
+              Navigator.push(context, CupertinoPageRoute(builder: (_) => const OrdersHistoryScreen()));
+            }),
             _profileItem(Icons.location_on_outlined, 'My Addresses', () {}),
             _profileItem(Icons.payment_outlined, 'Payment Methods', () {}),
             _profileItem(Icons.help_outline, 'Help & Support', () {}),

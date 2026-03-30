@@ -156,10 +156,12 @@ class _MarketplaceBody extends ConsumerWidget {
                           ),
                         )
                       else
-                        PopupMenuButton<String>(
-                          offset: const Offset(0, 45),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          icon: Container(
+                        GestureDetector(
+                          onTap: () => Navigator.push(
+                            context,
+                            CupertinoPageRoute(builder: (_) => const ProfileScreen()),
+                          ),
+                          child: Container(
                             width: 36,
                             height: 36,
                             decoration: BoxDecoration(
@@ -178,47 +180,6 @@ class _MarketplaceBody extends ConsumerWidget {
                               ),
                             ),
                           ),
-                          onSelected: (val) {
-                            if (val == 'logout') {
-                              ref.read(authServiceProvider).signOut();
-                            } else if (val == 'profile') {
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
-                            } else if (val == 'orders') {
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => const OrdersHistoryScreen()));
-                            }
-                          },
-                          itemBuilder: (context) => [
-                            PopupMenuItem(
-                              value: 'profile',
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.person_outline, size: 20, color: AppColors.textMain),
-                                  const SizedBox(width: 12),
-                                  const Text('My Profile'),
-                                ],
-                              ),
-                            ),
-                            PopupMenuItem(
-                              value: 'orders',
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.receipt_long_outlined, size: 20, color: AppColors.textMain),
-                                  const SizedBox(width: 12),
-                                  const Text('My Orders'),
-                                ],
-                              ),
-                            ),
-                            PopupMenuItem(
-                              value: 'logout',
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.logout, size: 20, color: AppColors.errorRed),
-                                  const SizedBox(width: 12),
-                                  const Text('Log Out', style: TextStyle(color: AppColors.errorRed)),
-                                ],
-                              ),
-                            ),
-                          ],
                         ),
                     ],
                   ),
