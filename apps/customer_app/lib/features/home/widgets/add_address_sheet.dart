@@ -84,6 +84,10 @@ class _AddAddressSheetState extends ConsumerState<AddAddressSheet> {
     _customLabelFocus.addListener(() => setState(() {}));
     _searchFocus.addListener(() => setState(() {}));
     _pincodeFocus.addListener(() => setState(() {}));
+    
+    // Add text change listeners for real-time button validation
+    _streetController.addListener(() => setState(() {}));
+    _pincodeController.addListener(() => setState(() {}));
     _customLabelController.addListener(() => setState(() {}));
 
     // Initial auto-fill
@@ -215,6 +219,27 @@ class _AddAddressSheetState extends ConsumerState<AddAddressSheet> {
       }
     }
     return null;
+  }
+
+  bool get _isFormValid {
+    final street = _streetController.text.trim();
+    final pincode = _pincodeController.text.trim();
+    final isOther = _selectedType == 'other';
+    final customLabel = _customLabelController.text.trim();
+
+    // Mandatory: Street/House No.
+    if (street.isEmpty) return false;
+    
+    // Mandatory: Valid 6-digit Pincode
+    if (pincode.length != 6 || !RegExp(r'^\d{6}$').hasMatch(pincode)) return false;
+    
+    // Mandatory: Custom label if 'Other' is selected
+    if (isOther && customLabel.isEmpty) return false;
+
+    // Check for any existing address conflicts
+    if (_getValidationError() != null) return false;
+
+    return true;
   }
 
   Future<void> _saveAddress() async {
@@ -810,7 +835,7 @@ class _AddAddressSheetState extends ConsumerState<AddAddressSheet> {
                             ),
                           ),
                         ElevatedButton(
-                          onPressed: _isSaving || addressesAsync.isLoading || _getValidationError() != null ? null : _saveAddress,
+                          onPressed: _isSaving || addressesAsync.isLoading || !_isFormValid ? null : _saveAddress,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.brandGreen,
                             disabledBackgroundColor: AppColors.brandGreen.withValues(alpha: 0.5),
