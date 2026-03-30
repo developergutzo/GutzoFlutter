@@ -29,4 +29,7 @@ class AppColors {
   // Shimmer Constants
   static const Color shimmerBase = Color(0xFFF3F4F6);
   static const Color shimmerHighlight = Color(0xFFFFFFFF);
+
+  // Health Filter Colors
+  static const Color brandBlue = Color(0xFF0052CC);
 }

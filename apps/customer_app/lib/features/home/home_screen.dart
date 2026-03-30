@@ -4,7 +4,6 @@ import 'package:shared_core/services/auth_service.dart';
 import 'package:shared_core/services/vendor_service.dart';
 import 'package:shared_core/services/location_service.dart';
 import 'package:shared_core/theme/app_colors.dart';
-import 'package:flutter/cupertino.dart';
 import '../auth/auth_screen.dart';
 import '../../widgets/vendor_card.dart';
 import '../../widgets/cart_strip.dart';
@@ -19,6 +18,19 @@ import '../profile/profile_screen.dart';
 import 'widgets/location_sheet.dart';
 import 'widgets/search_sheet.dart';
 import '../search/search_results_screen.dart';
+
+final homeFilterProvider = NotifierProvider<HomeFilterNotifier, String>(() {
+  return HomeFilterNotifier();
+});
+
+class HomeFilterNotifier extends Notifier<String> {
+  @override
+  String build() => 'All';
+
+  void setFilter(String filter) {
+    state = filter;
+  }
+}
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -361,108 +373,32 @@ class _MarketplaceBody extends ConsumerWidget {
           ),
         ),
 
-        // Categories (2-Row Horizontal Scroll)
-        categoriesAsync.when(
-          data: (categories) => SliverToBoxAdapter(
-            child: SizedBox(
-              height: 220, // Adjusted for 2 rows
-              child: GridView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: 1.25,
-                ),
-                itemCount: categories.length,
-                itemBuilder: (context, index) {
-                  final category = categories[index];
-                  return InkWell(
-                    onTap: () {
-                       Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => SearchResultsScreen(initialQuery: category.name),
-                        ),
-                      );
-                    },
-                    borderRadius: BorderRadius.circular(12),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          height: 70,
-                          width: 70,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.04),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              )
-                            ],
-                          ),
-                          child: ClipOval(
-                            child: category.imageUrl != null
-                                ? Image.network(
-                                    category.imageUrl!,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => const Icon(Icons.restaurant, color: AppColors.brandGreen),
-                                  )
-                                : const Icon(Icons.restaurant, color: AppColors.brandGreen),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          category.name,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textMain,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
+        // Categories (Single Row Horizontal Scroll)
+        SliverToBoxAdapter(
+          child: SizedBox(
+            height: 140,
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              children: [
+                _buildMoodItem(context, 'Bowls', 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'),
+                _buildMoodItem(context, 'Breakfast', 'https://images.unsplash.com/photo-1525351484163-7529414344d8'),
+                _buildMoodItem(context, 'Salads', 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd'),
+                _buildMoodItem(context, 'Soups', 'https://images.unsplash.com/photo-1547592166-23ac45744acd'),
+                _buildMoodItem(context, 'Wraps', 'https://images.unsplash.com/photo-1626700051175-6818013e184f'),
+                _buildMoodItem(context, 'Smoothies', 'https://images.unsplash.com/photo-1623065422902-30a2ad299bb4'),
+                _buildMoodItem(context, 'Juices', 'https://images.unsplash.com/photo-1613478223719-2ab802602423'),
+                _buildMoodItem(context, 'Mains', 'https://images.unsplash.com/photo-1546793665-c74683c3f38d'),
+                _buildMoodItem(context, 'Snacks', 'https://images.unsplash.com/photo-1599490659213-e2b9527bb087'),
+                _buildMoodItem(context, 'Desserts', 'https://images.unsplash.com/photo-1551024601-bec78aea704b'),
+              ],
             ),
           ),
-          loading: () => SliverToBoxAdapter(
-            child: SizedBox(
-              height: 220,
-              child: Shimmer.fromColors(
-                baseColor: AppColors.shimmerBase,
-                highlightColor: AppColors.shimmerHighlight,
-                child: GridView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  scrollDirection: Axis.horizontal,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    childAspectRatio: 1.25,
-                  ),
-                  itemCount: 8,
-                  itemBuilder: (context, index) => Column(
-                    children: [
-                      Container(height: 70, width: 70, decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle)),
-                      const SizedBox(height: 8),
-                      Container(height: 10, width: 45, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          error: (err, stack) => const SliverToBoxAdapter(child: SizedBox.shrink()),
         ),
+        
+        // Health Category Filters
+        const _FilterChipsRow(),
         
         // Kitchens Near You Header
         const SliverPadding(
@@ -481,25 +417,56 @@ class _MarketplaceBody extends ConsumerWidget {
         ),
         
         vendorsAsync.when(
-          data: (vendors) => SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final vendor = vendors[index];
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: VendorCard(
-                    imageUrl: vendor.image.isNotEmpty ? vendor.image : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c',
-                    title: vendor.name,
-                    cuisine: vendor.cuisineType,
-                    deliveryTime: vendor.deliveryTime,
-                    rating: vendor.rating,
-                    vendorModel: vendor,
+          data: (vendors) {
+            final selectedFilter = ref.watch(homeFilterProvider);
+            final filteredVendors = vendors.where((v) {
+              if (selectedFilter == 'All') return true;
+              return v.tags?.any((tag) => tag.toLowerCase().contains(selectedFilter.toLowerCase())) ?? false;
+            }).toList();
+
+            if (filteredVendors.isEmpty) {
+              return const SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(32.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.restaurant_menu_outlined, size: 48, color: Colors.grey),
+                        SizedBox(height: 16),
+                        Text(
+                          'No kitchens found for this category yet.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.grey, fontSize: 15),
+                        ),
+                      ],
+                    ),
                   ),
-                );
-              },
-              childCount: vendors.length,
-            ),
-          ),
+                ),
+              );
+            }
+
+            return SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final vendor = filteredVendors[index];
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: VendorCard(
+                      imageUrl: vendor.image.isNotEmpty ? vendor.image : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c',
+                      title: vendor.name,
+                      cuisine: vendor.cuisineType,
+                      deliveryTime: vendor.deliveryTime,
+                      rating: vendor.rating,
+                      vendorModel: vendor,
+                    ),
+                  );
+                },
+                childCount: filteredVendors.length,
+              ),
+            );
+          },
           loading: () => SliverList(
             delegate: SliverChildBuilderDelegate(
               (context, index) => Padding(
@@ -524,6 +491,139 @@ class _MarketplaceBody extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildMoodItem(BuildContext context, String label, String imageUrl) {
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SearchResultsScreen(initialQuery: label),
+          ),
+        );
+      },
+      child: Container(
+        width: 90,
+        margin: const EdgeInsets.only(right: 8),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              height: 75,
+              width: 75,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  )
+                ],
+              ),
+              child: ClipOval(
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) =>
+                      Icon(Icons.restaurant, color: AppColors.brandGreen, size: 30),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textMain,
+                letterSpacing: -0.2,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FilterChipsRow extends ConsumerWidget {
+  const _FilterChipsRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selectedFilter = ref.watch(homeFilterProvider);
+    final filters = [
+      'All',
+      'High Protein',
+      'Low Calorie',
+      'High Fibre',
+      'Gut Friendly',
+      'Detox',
+      'Post Workout'
+    ];
+
+    return SliverPadding(
+      padding: const EdgeInsets.only(top: 8, bottom: 4),
+      sliver: SliverToBoxAdapter(
+        child: SizedBox(
+          height: 50,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: filters.length,
+            itemBuilder: (context, index) {
+              final filter = filters[index];
+              final isSelected = selectedFilter == filter;
+
+              return Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: Center(
+                  child: InkWell(
+                    onTap: () => ref.read(homeFilterProvider.notifier).setFilter(filter),
+                    borderRadius: BorderRadius.circular(25),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: isSelected ? AppColors.brandGreen : Colors.white,
+                        borderRadius: BorderRadius.circular(25),
+                        border: Border.all(
+                          color: isSelected ? AppColors.brandGreen : Colors.grey.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
+                        boxShadow: isSelected
+                            ? [
+                                BoxShadow(
+                                  color: AppColors.brandGreen.withValues(alpha: 0.2),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                )
+                              ]
+                            : [],
+                      ),
+                      child: Text(
+                        filter,
+                        style: TextStyle(
+                          color: isSelected ? Colors.white : AppColors.textMain,
+                          fontSize: 14,
+                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
     );
   }
 }
