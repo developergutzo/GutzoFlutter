@@ -122,6 +122,22 @@ class NodeApiService {
     return _request("/users/addresses", overridePhone: phone);
   }
 
+  Future<dynamic> createAddress(String phone, Map<String, dynamic> addressData) async {
+    return _request("/users/addresses", method: "POST", body: addressData, overridePhone: phone);
+  }
+
+  Future<dynamic> updateAddress(String phone, String addressId, Map<String, dynamic> addressData) async {
+    return _request("/users/addresses/$addressId", method: "PUT", body: addressData, overridePhone: phone);
+  }
+
+  Future<dynamic> deleteAddress(String phone, String addressId) async {
+    return _request("/users/addresses/$addressId", method: "DELETE", overridePhone: phone);
+  }
+
+  Future<dynamic> setDefaultAddress(String phone, String addressId) async {
+    return _request("/users/addresses/$addressId/default", method: "PATCH", overridePhone: phone);
+  }
+
   // --- Cart ---
   Future<dynamic> getUserCart(String phone) async {
     return _request("/cart", overridePhone: phone);

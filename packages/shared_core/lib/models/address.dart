@@ -43,25 +43,25 @@ class UserAddress {
 
   factory UserAddress.fromJson(Map<String, dynamic> json) {
     return UserAddress(
-      id: json['id'] as String,
-      userId: json['user_id'] as String,
-      type: json['type'] as String,
+      id: (json['id'] ?? '') as String,
+      userId: (json['user_id'] ?? '') as String,
+      type: (json['type'] ?? 'other') as String,
       label: json['label'] as String?,
       customLabel: json['custom_label'] as String?,
-      street: json['street'] as String,
+      street: (json['street'] ?? '') as String,
       area: json['area'] as String?,
       landmark: json['landmark'] as String?,
-      fullAddress: json['full_address'] as String,
-      city: json['city'] as String,
-      state: json['state'] as String,
-      country: json['country'] as String,
+      fullAddress: (json['full_address'] ?? '') as String,
+      city: (json['city'] ?? '') as String,
+      state: (json['state'] ?? '') as String,
+      country: (json['country'] ?? '') as String,
       postalCode: json['postal_code'] as String?,
-      latitude: json['latitude'] as double?,
-      longitude: json['longitude'] as double?,
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
       deliveryInstructions: json['delivery_instructions'] as String?,
       isDefault: json['is_default'] as bool? ?? false,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : DateTime.now(),
+      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : DateTime.now(),
     );
   }
 

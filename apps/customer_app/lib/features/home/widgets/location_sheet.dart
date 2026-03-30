@@ -1,8 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_core/theme/app_colors.dart';
 import 'package:shared_core/services/location_service.dart';
+import 'package:shared_core/services/auth_service.dart' as auth;
+import 'package:shared_core/services/node_api_service.dart' as api;
+import 'package:shared_core/models/address.dart';
+import '../../../providers/address_provider.dart';
 import 'add_address_sheet.dart';
 
 class LocationSheet extends ConsumerStatefulWidget {
@@ -27,6 +32,7 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
   List<AutocompletePrediction> _predictions = [];
   bool _isSearching = false;
   Timer? _debounce;
+  String? _selectedAddressId;
 
   @override
   void initState() {
@@ -44,49 +50,281 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
 
   void _onSearchChanged(String query) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
-
     if (query.trim().isEmpty) {
-      setState(() {
-        _predictions = [];
-        _isSearching = false;
-      });
+      setState(() { _predictions = []; _isSearching = false; });
       return;
     }
-
-    setState(() {
-      _isSearching = true;
-    });
-
+    setState(() => _isSearching = true);
     _debounce = Timer(const Duration(milliseconds: 500), () async {
       final results = await LocationService.searchLocation(query);
-      if (mounted) {
-        setState(() {
-          _predictions = results;
-        });
-      }
+      if (mounted) setState(() => _predictions = results);
     });
+  }
+
+  void _selectAddress(UserAddress address) {
+    setState(() => _selectedAddressId = address.id);
+    if (address.latitude != null && address.longitude != null) {
+      ref.read(locationProvider.notifier).overrideLocation(
+        LocationData(
+          city: address.city,
+          state: address.state,
+          country: address.country,
+          formattedAddress: address.fullAddress,
+          latitude: address.latitude!,
+          longitude: address.longitude!,
+          timestamp: DateTime.now(),
+        ),
+      );
+    }
+    Navigator.of(context).pop();
+  }
+
+  IconData _iconForLabel(String? label) {
+    switch ((label ?? '').toLowerCase()) {
+      case 'home': return Icons.home_outlined;
+      case 'work': return Icons.work_outline;
+      default: return Icons.place_outlined;
+    }
+  }
+
+  void _showDeleteConfirmationDialog(BuildContext context, UserAddress address) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Delete Address?',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textMain,
+                    ),
+                  ),
+                  InkWell(
+                    onTap: () => Navigator.pop(ctx),
+                    child: const Icon(Icons.close, color: AppColors.textMain, size: 20),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Are you sure you want to delete this address?',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textSub,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      style: TextButton.styleFrom(
+                        backgroundColor: const Color(0xFFE8F6F1),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text(
+                        'No',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.brandGreen,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextButton(
+                      style: TextButton.styleFrom(
+                        backgroundColor: AppColors.brandGreen,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _deleteAddress(address);
+                      },
+                      child: Text(
+                        'Yes',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddressCard(UserAddress address) {
+    final isSelected = _selectedAddressId == address.id || address.isDefault;
+    final displayLabel = address.customLabel ?? address.label ?? 'Other';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isSelected ? AppColors.brandGreen : const Color(0xFFE8E8E8),
+          width: isSelected ? 1.5 : 1,
+        ),
+      ),
+      child: InkWell(
+        onTap: () => _selectAddress(address),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(_iconForLabel(address.label), color: AppColors.brandGreen, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(displayLabel,
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textMain)),
+                        const SizedBox(width: 8),
+                        if (isSelected)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: AppColors.brandGreen),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Text('Selected',
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.brandGreen)),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      address.fullAddress,
+                      style: const TextStyle(fontSize: 13, color: AppColors.textSub, height: 1.4),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert, color: AppColors.textSub, size: 20),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                color: Colors.white,
+                elevation: 4,
+                onSelected: (val) {
+                  if (val == 'edit') {
+                    // TODO: open edit address sheet
+                  } else if (val == 'delete') {
+                    _showDeleteConfirmationDialog(context, address);
+                  } else if (val == 'default') {
+                    ref.invalidate(savedAddressesProvider);
+                  }
+                },
+                itemBuilder: (ctx) => [
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: Row(children: [
+                      Icon(Icons.edit_outlined, size: 16, color: AppColors.textSub),
+                      SizedBox(width: 10),
+                      Text('Edit', style: TextStyle(fontSize: 14)),
+                    ]),
+                  ),
+                  if (!address.isDefault)
+                    const PopupMenuItem(
+                      value: 'default',
+                      child: Row(children: [
+                        Icon(Icons.star_outline, size: 16, color: AppColors.textSub),
+                        SizedBox(width: 10),
+                        Text('Set as Default', style: TextStyle(fontSize: 14)),
+                      ]),
+                    ),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(children: [
+                      Icon(Icons.delete_outline, size: 16, color: Colors.red),
+                      SizedBox(width: 10),
+                      Text('Delete', style: TextStyle(fontSize: 14, color: Colors.red)),
+                    ]),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _deleteAddress(UserAddress address) async {
+    final user = ref.read(auth.currentUserProvider);
+    if (user == null) return;
+
+    try {
+      await ref.read(api.nodeApiServiceProvider).deleteAddress(user.phone, address.id);
+      ref.invalidate(savedAddressesProvider);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete address: ${e.toString().replaceAll('Exception: ', '')}')),
+        );
+      }
+    }
+  }
+
+  Future<void> _setDefault(UserAddress address) async {
+    final user = ref.read(auth.currentUserProvider);
+    if (user == null) return;
+
+    try {
+      await ref.read(api.nodeApiServiceProvider).setDefaultAddress(user.phone, address.id);
+      ref.invalidate(savedAddressesProvider);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to set default address: ${e.toString().replaceAll('Exception: ', '')}')),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Current location state to display below the button.
     final locationState = ref.watch(locationProvider);
     final isDetecting = locationState.isLoading;
     final areaName = locationState.location?.areaName ?? 'Detecting...';
-    // Provide a state name if available, otherwise hide it.
     final stateName = locationState.location?.state ?? '';
-
-    // Adjusting for keyboard
     final paddingBottom = MediaQuery.of(context).viewInsets.bottom;
+    final addressesAsync = ref.watch(savedAddressesProvider);
 
     return Container(
       margin: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 40),
-      // Make it slightly shorter than full screen, like standard bottom sheets.
-      padding: EdgeInsets.only(
-        top: 24,
-        left: 20,
-        right: 20,
-      ),
+      padding: const EdgeInsets.only(top: 24, left: 20, right: 20),
       height: MediaQuery.of(context).size.height * 0.9,
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -95,18 +333,12 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Header Row
+          // Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Select Location',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textMain,
-                ),
-              ),
+              const Text('Select Location',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textMain)),
               IconButton(
                 onPressed: () => Navigator.of(context).pop(),
                 icon: const Icon(Icons.close, color: AppColors.textSub),
@@ -119,33 +351,19 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
           // Search Field
           AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            curve: Curves.easeInOut,
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: _searchFocus.hasFocus ? AppColors.brandGreen : AppColors.border,
-                width: _searchFocus.hasFocus ? 2.5 : 1.0,
+                width: 1.0,
               ),
-              boxShadow: _searchFocus.hasFocus
-                  ? [
-                      BoxShadow(
-                        color: AppColors.brandGreen.withValues(alpha: 0.25),
-                        blurRadius: 16,
-                        spreadRadius: 2,
-                        offset: const Offset(0, 4),
-                      )
-                    ]
-                  : [],
             ),
             child: TextField(
               controller: _searchController,
               focusNode: _searchFocus,
               onTap: () => setState(() {}),
-              onTapOutside: (_) {
-                _searchFocus.unfocus();
-                setState(() {});
-              },
+              onTapOutside: (_) { _searchFocus.unfocus(); setState(() {}); },
               onChanged: _onSearchChanged,
               decoration: const InputDecoration(
                 hintText: 'Search for area, street name...',
@@ -159,66 +377,44 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
 
           // Use Current Location
           InkWell(
             onTap: isDetecting
                 ? null
                 : () async {
-                    // Refresh location
                     await ref.read(locationProvider.notifier).refreshLocation();
                     if (context.mounted) Navigator.of(context).pop();
                   },
             borderRadius: BorderRadius.circular(12),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
                 border: Border.all(color: AppColors.border),
                 borderRadius: BorderRadius.circular(12),
-                color: Colors.white,
               ),
               child: Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppColors.brandGreen.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
-                    ),
+                        color: AppColors.brandGreen.withValues(alpha: 0.1), shape: BoxShape.circle),
                     child: isDetecting
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: AppColors.brandGreen,
-                            ),
-                          )
-                        : const Icon(Icons.my_location,
-                            color: AppColors.brandGreen, size: 20),
+                        ? const SizedBox(width: 20, height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brandGreen))
+                        : const Icon(Icons.my_location, color: AppColors.brandGreen, size: 20),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Use current location',
-                          style: TextStyle(
-                            color: AppColors.brandGreen,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
-                          ),
-                        ),
+                        const Text('Use current location',
+                            style: TextStyle(color: AppColors.brandGreen, fontWeight: FontWeight.w600, fontSize: 15)),
                         const SizedBox(height: 2),
-                        Text(
-                          stateName.isNotEmpty ? '$areaName, $stateName' : areaName,
-                          style: const TextStyle(
-                            color: AppColors.textSub,
-                            fontSize: 13,
-                          ),
-                        ),
+                        Text(stateName.isNotEmpty ? '$areaName, $stateName' : areaName,
+                            style: const TextStyle(color: AppColors.textSub, fontSize: 13)),
                       ],
                     ),
                   ),
@@ -227,142 +423,92 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
 
-          // Conditional Content Based on Search Status
           if (!_isSearching) ...[
-            // Add / Manage Addresses Button
             ElevatedButton.icon(
               onPressed: () {
                 final loc = locationState.location;
                 if (loc != null) {
-                  // Pop the current sheet first to avoid visual overlap
                   Navigator.pop(context);
-                  AddAddressSheet.show(
-                    context,
-                    lat: loc.latitude,
-                    lng: loc.longitude,
-                    address: loc.displayString,
-                  );
+                  AddAddressSheet.show(context, lat: loc.latitude, lng: loc.longitude, address: loc.displayString);
                 }
               },
               icon: const Icon(Icons.add, size: 20, color: Colors.white),
-              label: const Text(
-                'Add/Manage Addresses',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
-              ),
+              label: const Text('Add/Manage Addresses',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.brandGreen,
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 elevation: 0,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
-            // Saved Addresses Section
-            const Text(
-              'Saved Addresses',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textMain,
-              ),
-            ),
-            const SizedBox(height: 24),
-            
+            const Text('Saved Addresses',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textMain)),
+            const SizedBox(height: 12),
+
             Expanded(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.only(bottom: paddingBottom + 24),
-                child: const Center(
-                  child: Text(
-                    'No saved addresses found.',
-                    style: TextStyle(
-                      color: AppColors.textSub,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
+              child: addressesAsync.when(
+                loading: () => const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brandGreen)),
+                error: (_, __) => const Center(
+                    child: Text('Failed to load addresses',
+                        style: TextStyle(color: AppColors.textSub, fontSize: 14))),
+                data: (addresses) {
+                  if (addresses.isEmpty) {
+                    return const Center(
+                      child: Text('No saved addresses found.',
+                          style: TextStyle(color: AppColors.textSub, fontSize: 14)),
+                    );
+                  }
+                  return ListView.builder(
+                    padding: EdgeInsets.only(bottom: paddingBottom + 24),
+                    itemCount: addresses.length,
+                    itemBuilder: (ctx, i) => _buildAddressCard(addresses[i]),
+                  );
+                },
               ),
             ),
           ] else ...[
-            const Text(
-              'Search Results',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textSub,
-              ),
-            ),
+            const Text('Search Results',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textSub)),
             const SizedBox(height: 12),
             Expanded(
               child: _predictions.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: const [
-                          Icon(Icons.search_off,
-                              size: 40, color: AppColors.border),
-                          SizedBox(height: 12),
-                          Text(
-                            'No locations found for this query.',
-                            style: TextStyle(
-                                color: AppColors.textSub, fontSize: 14),
-                          ),
-                        ],
-                      ),
-                    )
+                  ? const Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(Icons.search_off, size: 40, color: AppColors.border),
+                      SizedBox(height: 12),
+                      Text('No locations found for this query.',
+                          style: TextStyle(color: AppColors.textSub, fontSize: 14)),
+                    ]))
                   : ListView.separated(
                       padding: EdgeInsets.only(bottom: paddingBottom + 24),
                       itemCount: _predictions.length + 1,
-                      separatorBuilder: (context, index) {
-                        if (index == _predictions.length - 1) {
-                          return const SizedBox.shrink();
-                        }
-                        return const Divider(color: AppColors.border, height: 1);
-                      },
-                      itemBuilder: (context, index) {
-                        if (index == _predictions.length) {
+                      separatorBuilder: (_, i) =>
+                          i == _predictions.length - 1 ? const SizedBox.shrink() : const Divider(color: AppColors.border, height: 1),
+                      itemBuilder: (_, i) {
+                        if (i == _predictions.length) {
                           return Padding(
                             padding: const EdgeInsets.only(top: 16, bottom: 8, right: 8),
                             child: Align(
                               alignment: Alignment.centerRight,
-                              child: Text(
-                                'powered by Google',
-                                style: TextStyle(
-                                  color: AppColors.textDisabled,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
+                              child: Text('powered by Google',
+                                  style: TextStyle(color: AppColors.textDisabled, fontSize: 12, fontWeight: FontWeight.w500)),
                             ),
                           );
                         }
-
-                        final prediction = _predictions[index];
+                        final p = _predictions[i];
                         return ListTile(
                           contentPadding: EdgeInsets.zero,
-                          leading: const Icon(Icons.location_on_outlined,
-                              color: AppColors.textSub),
-                          title: Text(
-                            prediction.mainText,
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textMain,
-                                fontSize: 14),
-                          ),
-                          subtitle: Text(
-                            prediction.secondaryText,
-                            style: const TextStyle(
-                                color: AppColors.textSub, fontSize: 13),
-                          ),
-                          onTap: () {
-                            // TODO: Implement coordinate fetching from placeId (Phase 3)
-                            // For now, just close the sheet
-                            Navigator.of(context).pop();
-                          },
+                          leading: const Icon(Icons.location_on_outlined, color: AppColors.textSub),
+                          title: Text(p.mainText,
+                              style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textMain, fontSize: 14)),
+                          subtitle: Text(p.secondaryText,
+                              style: const TextStyle(color: AppColors.textSub, fontSize: 13)),
+                          onTap: () => Navigator.of(context).pop(),
                         );
                       },
                     ),

@@ -6,6 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:shared_core/theme/app_colors.dart';
 import 'package:shared_core/services/location_service.dart';
+import 'package:shared_core/services/auth_service.dart';
+import 'package:shared_core/services/node_api_service.dart';
+import '../../../providers/address_provider.dart';
 
 class AddAddressSheet extends ConsumerStatefulWidget {
   final double initialLat;
@@ -47,12 +50,16 @@ class _AddAddressSheetState extends ConsumerState<AddAddressSheet> {
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _customLabelController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _pincodeController = TextEditingController();
 
   final FocusNode _streetFocus = FocusNode();
   final FocusNode _areaFocus = FocusNode();
   final FocusNode _phoneFocus = FocusNode();
   final FocusNode _customLabelFocus = FocusNode();
   final FocusNode _searchFocus = FocusNode();
+  final FocusNode _pincodeFocus = FocusNode();
+
+  bool _isSaving = false;
 
   String _selectedType = 'home';
   String _fullAddress = '';
@@ -75,6 +82,7 @@ class _AddAddressSheetState extends ConsumerState<AddAddressSheet> {
     _phoneFocus.addListener(() => setState(() {}));
     _customLabelFocus.addListener(() => setState(() {}));
     _searchFocus.addListener(() => setState(() {}));
+    _pincodeFocus.addListener(() => setState(() {}));
 
     // Initial auto-fill
     _reverseGeocode(_currentLat, _currentLng);
@@ -87,12 +95,14 @@ class _AddAddressSheetState extends ConsumerState<AddAddressSheet> {
     _phoneController.dispose();
     _customLabelController.dispose();
     _searchController.dispose();
+    _pincodeController.dispose();
 
     _streetFocus.dispose();
     _areaFocus.dispose();
     _phoneFocus.dispose();
     _customLabelFocus.dispose();
     _searchFocus.dispose();
+    _pincodeFocus.dispose();
 
     _debounce?.cancel();
     super.dispose();
@@ -132,6 +142,10 @@ class _AddAddressSheetState extends ConsumerState<AddAddressSheet> {
       setState(() {
         _fullAddress = detailed.formattedAddress;
         _populateAddressFields(detailed);
+        // Auto-fill pincode if available
+        if (detailed.postalCode != null && detailed.postalCode!.isNotEmpty) {
+          _pincodeController.text = detailed.postalCode!;
+        }
         _isGeocoding = false;
       });
     } else if (mounted) {
@@ -159,10 +173,85 @@ class _AddAddressSheetState extends ConsumerState<AddAddressSheet> {
         _currentLng = details.longitude;
         _fullAddress = details.formattedAddress;
         _populateAddressFields(details);
+        if (details.postalCode != null && details.postalCode!.isNotEmpty) {
+          _pincodeController.text = details.postalCode!;
+        }
         _predictions = [];
         _searchController.clear();
       });
       _mapController?.animateCamera(CameraUpdate.newLatLng(LatLng(_currentLat, _currentLng)));
+    }
+  }
+
+  Future<void> _saveAddress() async {
+    final street = _streetController.text.trim();
+    final area = _areaController.text.trim();
+    final pincode = _pincodeController.text.trim();
+
+    // Validation
+    if (street.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter the house/flat number')),
+      );
+      return;
+    }
+    if (pincode.isEmpty || pincode.length != 6 || !RegExp(r'^\d{6}$').hasMatch(pincode)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid 6-digit pincode')),
+      );
+      return;
+    }
+    if (_selectedType == 'other' && _customLabelController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a custom label')),
+      );
+      return;
+    }
+
+    final user = ref.read(currentUserProvider);
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You must be logged in to save an address')),
+      );
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    try {
+      final String label = _selectedType == 'home'
+          ? 'Home'
+          : _selectedType == 'work'
+              ? 'Work'
+              : 'Other';
+
+      final Map<String, dynamic> addressData = {
+        'label': label,
+        'street': street,
+        'area': area.isEmpty ? street : area,
+        'full_address': _fullAddress,
+        'zipcode': pincode,
+        'latitude': _currentLat,
+        'longitude': _currentLng,
+        'is_default': false,
+        if (_selectedType == 'other') 'custom_label': _customLabelController.text.trim(),
+      };
+
+      await ref.read(nodeApiServiceProvider).createAddress(user.phone, addressData);
+
+      if (mounted) {
+        // Refresh the saved addresses list in the location sheet
+        ref.invalidate(savedAddressesProvider);
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save address: ${e.toString().replaceAll('Exception: ', '')}')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
@@ -476,6 +565,15 @@ class _AddAddressSheetState extends ConsumerState<AddAddressSheet> {
                       ),
                       const SizedBox(height: 16),
                       _buildTextField(
+                        label: 'Pincode',
+                        hint: 'Enter 6-digit pincode',
+                        controller: _pincodeController,
+                        focusNode: _pincodeFocus,
+                        isRequired: true,
+                        type: TextInputType.number,
+                      ),
+                      const SizedBox(height: 16),
+                      _buildTextField(
                         label: 'Phone Number (Alternative Contact)',
                         hint: 'Enter phone number',
                         controller: _phoneController,
@@ -616,20 +714,23 @@ class _AddAddressSheetState extends ConsumerState<AddAddressSheet> {
                       border: Border(top: BorderSide(color: Colors.grey.shade100)),
                     ),
                     child: ElevatedButton(
-                      onPressed: () {
-                        // Logic to save address
-                        Navigator.pop(context);
-                      },
+                      onPressed: _isSaving ? null : _saveAddress,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.brandGreen,
+                        disabledBackgroundColor: AppColors.brandGreen.withValues(alpha: 0.5),
                         minimumSize: const Size(double.infinity, 50),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         elevation: 0,
                       ),
-                      child: const Text(
-                        'Save and Proceed',
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
+                      child: _isSaving
+                          ? const SizedBox(
+                              width: 22, height: 22,
+                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                            )
+                          : const Text(
+                              'Save and Proceed',
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
                     ),
                   ),
                 ),
