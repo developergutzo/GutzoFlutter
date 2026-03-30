@@ -68,6 +68,7 @@ class _AddAddressSheetState extends ConsumerState<AddAddressSheet> {
   bool _isGeocoding = false;
   List<AutocompletePrediction> _predictions = [];
   Timer? _debounce;
+  bool _initialTypeSet = false;
 
   @override
   void initState() {
@@ -83,6 +84,7 @@ class _AddAddressSheetState extends ConsumerState<AddAddressSheet> {
     _customLabelFocus.addListener(() => setState(() {}));
     _searchFocus.addListener(() => setState(() {}));
     _pincodeFocus.addListener(() => setState(() {}));
+    _customLabelController.addListener(() => setState(() {}));
 
     // Initial auto-fill
     _reverseGeocode(_currentLat, _currentLng);
@@ -103,6 +105,7 @@ class _AddAddressSheetState extends ConsumerState<AddAddressSheet> {
     _customLabelFocus.dispose();
     _searchFocus.dispose();
     _pincodeFocus.dispose();
+    _customLabelController.dispose();
 
     _debounce?.cancel();
     super.dispose();
@@ -183,10 +186,49 @@ class _AddAddressSheetState extends ConsumerState<AddAddressSheet> {
     }
   }
 
+  String? _getValidationError() {
+    final addressesAsync = ref.watch(savedAddressesProvider);
+    final addresses = addressesAsync.value ?? [];
+    
+    if (_selectedType == 'home') {
+      final exists = addresses.any((a) {
+        final label = (a.label ?? '').trim().toLowerCase();
+        final type = (a.type).trim().toLowerCase();
+        return label == 'home' || type == 'home';
+      });
+      if (exists) return 'A home address already exists.';
+    } else if (_selectedType == 'work') {
+      final exists = addresses.any((a) {
+        final label = (a.label ?? '').trim().toLowerCase();
+        final type = (a.type).trim().toLowerCase();
+        return label == 'work' || type == 'work';
+      });
+      if (exists) return 'A work address already exists.';
+    } else if (_selectedType == 'other') {
+      final customLabel = _customLabelController.text.trim().toLowerCase();
+      if (customLabel.isNotEmpty) {
+        final exists = addresses.any((a) {
+          final existingLabel = (a.customLabel ?? '').trim().toLowerCase();
+          return existingLabel == customLabel;
+        });
+        if (exists) return 'An address with this label already exists.';
+      }
+    }
+    return null;
+  }
+
   Future<void> _saveAddress() async {
     final street = _streetController.text.trim();
     final area = _areaController.text.trim();
     final pincode = _pincodeController.text.trim();
+
+    final validationError = _getValidationError();
+    if (validationError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(validationError)),
+      );
+      return;
+    }
 
     // Validation
     if (street.isEmpty) {
@@ -359,6 +401,41 @@ class _AddAddressSheetState extends ConsumerState<AddAddressSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final addressesAsync = ref.watch(savedAddressesProvider);
+    
+    // Safety check: ensure initial type is set correctly based on loaded data
+    if (!_initialTypeSet && addressesAsync.hasValue) {
+      final addresses = addressesAsync.value ?? [];
+      
+      final hasHome = addresses.any((a) {
+        final label = (a.label ?? '').trim().toLowerCase();
+        final type = (a.type).trim().toLowerCase();
+        return label == 'home' || type == 'home';
+      });
+      final hasWork = addresses.any((a) {
+        final label = (a.label ?? '').trim().toLowerCase();
+        final type = (a.type).trim().toLowerCase();
+        return label == 'work' || type == 'work';
+      });
+
+      // Update selection synchronously during this build frame
+      if (hasHome) {
+        if (!hasWork) {
+          _selectedType = 'work';
+        } else {
+          _selectedType = 'other';
+        }
+      } else {
+        _selectedType = 'home';
+      }
+      
+      // ONLY MARK AS SET if we actually found data or if it's truly empty and NOT loading
+      if (addresses.isNotEmpty || !addressesAsync.isLoading) {
+        _initialTypeSet = true;
+        debugPrint(' Gutzo Check: Locked initial type to $_selectedType');
+      }
+    }
+
     final keyboardPadding = MediaQuery.of(context).viewInsets.bottom;
     
     return Container(
@@ -584,7 +661,7 @@ class _AddAddressSheetState extends ConsumerState<AddAddressSheet> {
 
                       // Save As
                       const Text(
-                        'Save as',
+                        'Select Category',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -605,8 +682,8 @@ class _AddAddressSheetState extends ConsumerState<AddAddressSheet> {
 
                       if (_selectedType == 'other')
                         _buildTextField(
-                          label: 'Custom Label',
-                          hint: "Enter label (e.g. Mom's House)",
+                          label: 'Save as',
+                          hint: "e.g. Mom's House",
                           controller: _customLabelController,
                           focusNode: _customLabelFocus,
                           isRequired: true,
@@ -713,24 +790,45 @@ class _AddAddressSheetState extends ConsumerState<AddAddressSheet> {
                       color: Colors.white,
                       border: Border(top: BorderSide(color: Colors.grey.shade100)),
                     ),
-                    child: ElevatedButton(
-                      onPressed: _isSaving ? null : _saveAddress,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.brandGreen,
-                        disabledBackgroundColor: AppColors.brandGreen.withValues(alpha: 0.5),
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        elevation: 0,
-                      ),
-                      child: _isSaving
-                          ? const SizedBox(
-                              width: 22, height: 22,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                            )
-                          : const Text(
-                              'Save and Proceed',
-                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_getValidationError() != null)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.error_outline, color: Colors.red, size: 16),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    _getValidationError()!,
+                                    style: const TextStyle(color: Colors.red, fontSize: 13, fontWeight: FontWeight.w500),
+                                  ),
+                                ),
+                              ],
                             ),
+                          ),
+                        ElevatedButton(
+                          onPressed: _isSaving || addressesAsync.isLoading || _getValidationError() != null ? null : _saveAddress,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.brandGreen,
+                            disabledBackgroundColor: AppColors.brandGreen.withValues(alpha: 0.5),
+                            minimumSize: const Size(double.infinity, 50),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            elevation: 0,
+                          ),
+                          child: _isSaving
+                              ? const SizedBox(
+                                  width: 22, height: 22,
+                                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                )
+                              : const Text(
+                                  'Save and Proceed',
+                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                                ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
