@@ -9,6 +9,97 @@ import '../orders/orders_history_screen.dart';
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
+  void _showLogoutDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Log Out?',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textMain,
+                    ),
+                  ),
+                  InkWell(
+                    onTap: () => Navigator.pop(ctx),
+                    child: const Icon(Icons.close, color: AppColors.textMain, size: 20),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Are you sure you want to log out?',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textDisabled,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      style: TextButton.styleFrom(
+                        backgroundColor: const Color(0xFFE8F6F1),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text(
+                        'No',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.brandGreen,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextButton(
+                      style: TextButton.styleFrom(
+                        backgroundColor: AppColors.brandGreen,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        ref.read(authServiceProvider).signOut();
+                        Navigator.of(context).popUntil((route) => route.isFirst);
+                      },
+                      child: Text(
+                        'Yes',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
@@ -46,8 +137,7 @@ class ProfileScreen extends ConsumerWidget {
             offset: const Offset(0, 42),
             onSelected: (val) {
               if (val == 'logout') {
-                ref.read(authServiceProvider).signOut();
-                Navigator.of(context).popUntil((route) => route.isFirst);
+                _showLogoutDialog(context, ref);
               } else if (val == 'settings') {
                 Navigator.push(
                   context,
