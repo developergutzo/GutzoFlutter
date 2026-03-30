@@ -321,7 +321,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
           );
         },
       ),
-      bottomNavigationBar: const SafeArea(child: CartStrip()),
+      bottomNavigationBar: const SafeArea(child: CartStrip(isPremium: false)),
     );
   }
 
