@@ -93,8 +93,33 @@ class NodeApiService {
     return _request("/vendors");
   }
 
+  Future<dynamic> getVendor(String vendorId) async {
+    return _request("/vendors/$vendorId");
+  }
+
   Future<dynamic> getVendorProducts(String vendorId) async {
     return _request("/vendors/$vendorId/products");
+  }
+
+  Future<dynamic> getProductsByIds(List<String> productIds) async {
+    // Polyfill for batch fetching products
+    try {
+      final List<dynamic> products = [];
+      for (final id in productIds) {
+        try {
+          final res = await _request("/products/$id");
+          if (res != null) products.add(res["data"] ?? res);
+        } catch (_) {}
+      }
+      return {"success": true, "data": products};
+    } catch (e) {
+      return {"success": false, "data": []};
+    }
+  }
+
+  // --- Users & Addresses ---
+  Future<dynamic> getUserAddresses(String phone) async {
+    return _request("/users/addresses", overridePhone: phone);
   }
 
   // --- Cart ---
@@ -122,9 +147,17 @@ class NodeApiService {
     return _request("/cart/$id", method: "DELETE", overridePhone: phone);
   }
 
+  // --- Delivery & Serviceability ---
+  Future<dynamic> getDeliveryServiceability(Map<String, dynamic> pickup, Map<String, dynamic> drop) async {
+    return _request("/delivery/serviceability", method: "POST", body: {
+      "pickup_details": pickup,
+      "drop_details": drop,
+    });
+  }
+
   // --- Orders & Tracking ---
-  Future<dynamic> createOrder(Map<String, dynamic> orderData) async {
-    return _request("/orders", method: "POST", body: orderData);
+  Future<dynamic> createOrder({required Map<String, dynamic> orderData, String? overridePhone}) async {
+    return _request("/orders", method: "POST", body: orderData, overridePhone: overridePhone);
   }
 
   Future<dynamic> getOrderTracking(String orderId) async {
@@ -135,11 +168,11 @@ class NodeApiService {
     return _request("/orders?page=$page&limit=$limit");
   }
 
-  Future<dynamic> triggerMockPayment(String orderNumber) async {
+  Future<dynamic> triggerMockPayment(String orderNumber, {String? overridePhone}) async {
     return _request("/payments/mock-success", method: "POST", body: {
       "orderId": orderNumber,
       "mockShadowfax": true
-    });
+    }, overridePhone: overridePhone);
   }
 }
 

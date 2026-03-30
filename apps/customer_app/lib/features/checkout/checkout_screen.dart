@@ -1,243 +1,618 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_core/services/cart_service.dart';
-import 'package:shared_core/services/node_api_service.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_core/theme/app_colors.dart';
+import 'package:shared_core/models/vendor.dart';
+import 'package:shared_core/services/cart_service.dart';
+import 'package:shared_core/models/address.dart';
 import '../orders/order_tracking_screen.dart';
+import '../../widgets/quantity_selector.dart';
+import '../vendor/vendor_detail_screen.dart';
+import 'checkout_notifier.dart';
 
-class CheckoutScreen extends ConsumerStatefulWidget {
+class CheckoutScreen extends ConsumerWidget {
   const CheckoutScreen({super.key});
 
   @override
-  ConsumerState<CheckoutScreen> createState() => _CheckoutScreenState();
-}
-
-class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
-  final double _deliveryFee = 50.0;
-  final double _platformFee = 10.0;
-  final double _gstRate = 0.05; // 5%
-  bool _isLoading = false;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final cart = ref.watch(cartProvider);
-    final subtotal = cart.subtotal;
-    final gstItems = subtotal * _gstRate;
-    final total = subtotal + gstItems + _deliveryFee + _platformFee;
+    final checkout = ref.watch(checkoutProvider);
+    
+    if (cart.items.isEmpty) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.shopping_cart_outlined, size: 64, color: Colors.grey[300]),
+              const SizedBox(height: 16),
+              Text(
+                'Your cart is empty',
+                style: GoogleFonts.poppins(fontSize: 18, color: Colors.grey[600]),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.brandGreen,
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Go Back', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final vendor = cart.items.first.vendor;
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: const Text('Checkout', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: AppColors.surface,
-        foregroundColor: AppColors.textMain,
+        backgroundColor: Colors.white,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              vendor.name,
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Colors.black,
+              ),
+            ),
+            Row(
+              children: [
+                Text(
+                  checkout.eta ?? '38-43 mins',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
+                ),
+                Text(
+                  ' to ${checkout.selectedAddress?.city ?? 'Location'}',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: Colors.grey[400],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const Icon(Icons.keyboard_arrow_down, size: 14, color: Colors.grey),
+              ],
+            ),
+          ],
+        ),
       ),
-      body: cart.items.isEmpty
-          ? const Center(child: Text('Your cart is empty'))
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: 200),
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            
+            // Items Card
+            _buildSectionCard(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Delivery Address Card
-                  _sectionHeader('Delivery Address'),
-                  Card(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    child: const ListTile(
-                      leading: Icon(Icons.location_on, color: AppColors.brandGreen),
-                      title: Text('HOME', style: TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Text('Coimbatore, Tamil Nadu, 641001'),
-                      trailing: Text('Change', style: TextStyle(color: AppColors.brandGreen, fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Order Summary
-                  _sectionHeader('Order Summary'),
-                  Card(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          ...cart.items.map((item) => Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text('${item.product.name} × ${item.quantity}'),
-                                    Text('₹${item.totalPrice}'),
-                                  ],
-                                ),
-                              )),
-                          const Divider(),
-                          _priceRow('Subtotal', subtotal),
-                          _priceRow('GST (5%)', gstItems),
-                          _priceRow('Delivery Fee', _deliveryFee),
-                          _priceRow('Platform Fee', _platformFee),
-                          const Divider(),
-                          _priceRow('Total', total, isBold: true, color: AppColors.brandGreen),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Payment Method
-                  _sectionHeader('Payment Method'),
-                  Card(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    child: Column(
-                      children: [
-                        RadioListTile(
-                          value: 'upi',
-                          groupValue: 'upi',
-                          onChanged: (v) {},
-                          title: const Text('UPI (Google Pay, PhonePe)'),
-                          secondary: const Icon(Icons.account_balance_wallet_outlined),
-                          activeColor: AppColors.brandGreen,
-                        ),
-                        RadioListTile(
-                          value: 'card',
-                          groupValue: 'upi',
-                          onChanged: (v) {},
-                          title: const Text('Credit / Debit Card'),
-                          secondary: const Icon(Icons.credit_card),
-                          activeColor: AppColors.brandGreen,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 100), // Spacing for bottom button
+                  ...cart.items.map((item) => _buildCartItem(item)),
+                  const SizedBox(height: 16),
+                  _buildAddMoreButton(context, vendor),
+                  const SizedBox(height: 16),
+                  _buildActionButtons(context, ref, checkout),
                 ],
               ),
             ),
-      bottomSheet: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)],
-        ),
-        child: SafeArea(
-          child: ElevatedButton(
-            onPressed: _isLoading ? null : _handlePlaceOrder,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.brandGreen,
-              foregroundColor: Colors.white,
-              minimumSize: const Size(double.infinity, 54),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            
+            // Donation Card
+            _buildDonationCard(ref, checkout),
+
+            // Billing Card
+            _buildSectionCard(
+              child: _BillingSummary(
+                subtotal: cart.subtotal,
+                deliveryFee: checkout.useFreeFees ? 0 : checkout.deliveryFee,
+                platformFee: checkout.useFreeFees ? 0 : checkout.platformFee,
+                gst: checkout.gst,
+                donationAmount: checkout.isDonationChecked ? checkout.donationAmount : 0,
+              ),
             ),
-            child: _isLoading 
-              ? const CircularProgressIndicator(color: Colors.white)
-              : Text('Pay ₹$total', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          ),
+
+            // Policy Card
+            _buildCancellationPolicy(),
+            
+            // Dev Environment Settings
+            _buildDevSettings(context, ref, checkout),
+          ],
         ),
       ),
+      bottomSheet: _buildPayFooter(context, ref, cart, checkout),
     );
   }
 
-  Future<void> _handlePlaceOrder() async {
-    setState(() => _isLoading = true);
-    try {
-      final cart = ref.read(cartProvider);
-      final api = ref.read(nodeApiServiceProvider);
-
-      // 1. Create Order
-      final orderData = {
-        "vendor_id": cart.vendorId,
-        "items": cart.items.map((item) => {
-          "product_id": item.product.id,
-          "quantity": item.quantity,
-          "price": item.product.price,
-        }).toList(),
-        "delivery_address": {
-          "address": "Coimbatore, Tamil Nadu, 641001",
-          "tag": "HOME",
-          "lat": 11.0168,
-          "lng": 76.9558
-        },
-        "delivery_phone": "9944751745",
-        "payment_method": "upi",
-        "order_source": "app",
-        "mock_shadowfax": true
-      };
-
-      final orderResponse = await api.createOrder(orderData);
-      final orderNumber = orderResponse['data']['order_number'];
-      final orderId = orderResponse['data']['id'];
-
-      // 2. Trigger Mock Payment
-      await api.triggerMockPayment(orderNumber);
-
-      // 3. Clear Cart & Show Success
-      ref.read(cartProvider.notifier).clear();
-      if (mounted) {
-        _showSuccessDialog(orderId);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to place order: $e')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  Widget _sectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12, left: 4),
-      child: Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textSub)),
+  Widget _buildSectionCard({required Widget child}) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: child,
     );
   }
 
-  Widget _priceRow(String label, double value, {bool isBold = false, Color? color}) {
+  Widget _buildCartItem(CartItem item) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: TextStyle(fontSize: isBold ? 16 : 14, fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
-          Text('₹$value', style: TextStyle(fontSize: isBold ? 16 : 14, fontWeight: isBold ? FontWeight.bold : FontWeight.normal, color: color)),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.product.name,
+                  style: GoogleFonts.poppins(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  item.product.description ?? '',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: Colors.grey[500],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '₹${item.product.price}',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          QuantitySelector(product: item.product, vendor: item.vendor),
         ],
       ),
     );
   }
 
-  void _showSuccessDialog(String orderId) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
+  Widget _buildAddMoreButton(BuildContext context, Vendor vendor) {
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => VendorDetailScreen(vendor: vendor)),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey[200]!),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.check_circle, color: AppColors.brandGreen, size: 80),
-            const SizedBox(height: 16),
-            Text('Order Placed!', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Text('Your meal is being prepared.', textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSub)),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Close dialog
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => OrderTrackingScreen(orderId: orderId)),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.brandGreen,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            const Icon(Icons.add, size: 18, color: Colors.grey),
+            const SizedBox(width: 8),
+            Text(
+              'Add more items',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
               ),
-              child: const Text('Track Order'),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildActionButtons(BuildContext context, WidgetRef ref, CheckoutState state) {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildSmallActionButton(
+            icon: Icons.description_outlined,
+            label: state.orderNote.isEmpty ? 'Add a note' : 'Note: ${state.orderNote}',
+            onTap: () => _showNoteBottomSheet(context, ref, state.orderNote),
+            isActive: state.orderNote.isNotEmpty,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildSmallActionButton(
+            icon: Icons.flatware_outlined,
+            label: state.dontAddCutlery ? "Don't add cutlery" : "Don't add...",
+            onTap: () => ref.read(checkoutProvider.notifier).toggleCutlery(),
+            isActive: state.dontAddCutlery,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDonationCard(WidgetRef ref, CheckoutState state) {
+    return _buildSectionCard(
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Image.network(
+                'https://upload.wikimedia.org/wikipedia/commons/b/bd/Feeding_India_Logo.png',
+                height: 24,
+                errorBuilder: (_, __, ___) => const Icon(Icons.favorite, color: Colors.red, size: 24),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Feeding India Donation',
+                      style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w700),
+                    ),
+                    Text(
+                      'Working towards a hunger-free India',
+                      style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              ),
+              Checkbox(
+                value: state.isDonationChecked,
+                activeColor: AppColors.brandGreen,
+                onChanged: (_) => ref.read(checkoutProvider.notifier).toggleDonation(),
+              ),
+            ],
+          ),
+          if (state.isDonationChecked) ...[
+            const Divider(height: 24),
+            Text(
+              '₹${state.donationAmount.toStringAsFixed(0)} will be added to your bill',
+              style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.brandGreen),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSmallActionButton({
+    required IconData icon, 
+    required String label, 
+    required VoidCallback onTap,
+    bool isActive = false,
+  }) {
+    final color = isActive ? AppColors.brandGreen : Colors.grey[600];
+    final bgColor = isActive ? AppColors.brandGreen.withValues(alpha: 0.05) : Colors.transparent;
+    final borderColor = isActive ? AppColors.brandGreen : Colors.grey[200]!;
+
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: bgColor,
+          border: Border.all(color: borderColor),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                label,
+                style: GoogleFonts.poppins(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: isActive ? AppColors.brandGreen : Colors.grey[700],
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCancellationPolicy() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'CANCELLATION POLICY',
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: Colors.grey[500],
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Orders cannot be cancelled once placed. No refunds will be provided. Please review your order carefully before confirming.',
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              color: Colors.grey[500],
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDevSettings(BuildContext context, WidgetRef ref, CheckoutState state) {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Test Environment (Dev Only)',
+            style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold),
+          ),
+          DropdownButton<String>(
+            isExpanded: true,
+            value: state.devEnvironment,
+            items: const [
+              DropdownMenuItem(value: 'full_mock', child: Text('Full Mock')),
+              DropdownMenuItem(value: 'mock_pay_real_del', child: Text('Mock Pay, Real Delivery')),
+              DropdownMenuItem(value: 'production', child: Text('Production')),
+            ],
+            onChanged: (val) => ref.read(checkoutProvider.notifier).setDevEnvironment(val!),
+          ),
+          CheckboxListTile(
+            title: const Text('Free Delivery & Platform Fee', style: TextStyle(fontSize: 12)),
+            value: state.useFreeFees,
+            activeColor: AppColors.brandGreen,
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+            onChanged: (val) => ref.read(checkoutProvider.notifier).setUseFreeFees(val!),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPayFooter(BuildContext context, WidgetRef ref, CartState cart, CheckoutState checkout) {
+    final total = cart.subtotal + 
+                (checkout.useFreeFees ? 0 : checkout.deliveryFee) + 
+                (checkout.useFreeFees ? 0 : checkout.platformFee) + 
+                checkout.gst +
+                (checkout.isDonationChecked ? checkout.donationAmount : 0);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        boxShadow: [
+          BoxShadow(color: Colors.black12, blurRadius: 20, offset: Offset(0, -5)),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ElevatedButton(
+              onPressed: checkout.isProcessing ? null : () async {
+                final result = await ref.read(checkoutProvider.notifier).placeOrder();
+                if (result != null && result.length > 20) { // Assuming orderId is UUID
+                   // Track Order
+                   if (context.mounted) {
+                     Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(builder: (context) => OrderTrackingScreen(orderId: result)),
+                     );
+                   }
+                } else if (result != null) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result)));
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.brandGreen,
+                minimumSize: const Size(double.infinity, 56),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 0,
+              ),
+              child: checkout.isProcessing 
+                ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3))
+                : Text(
+                  'Pay ₹${total.toStringAsFixed(2)}',
+                  style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white),
+                ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '100% Secure Payments',
+              style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[400], fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showNoteBottomSheet(BuildContext context, WidgetRef ref, String initialNote) {
+    final controller = TextEditingController(text: initialNote);
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Add a note',
+              style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              maxLines: 3,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: 'Any special instructions...',
+                filled: true,
+                fillColor: Colors.grey[50],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () {
+                ref.read(checkoutProvider.notifier).setOrderNote(controller.text);
+                Navigator.pop(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.brandGreen,
+                minimumSize: const Size(double.infinity, 56),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              child: Text('Save Note', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BillingSummary extends StatefulWidget {
+  final double subtotal;
+  final double deliveryFee;
+  final double platformFee;
+  final double gst;
+  final double donationAmount;
+
+  const _BillingSummary({
+    required this.subtotal,
+    required this.deliveryFee,
+    required this.platformFee,
+    required this.gst,
+    required this.donationAmount,
+  });
+
+  @override
+  State<_BillingSummary> createState() => _BillingSummaryState();
+}
+
+class _BillingSummaryState extends State<_BillingSummary> {
+  bool _isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = widget.subtotal + widget.deliveryFee + widget.platformFee + widget.gst + widget.donationAmount;
+
+    return Column(
+      children: [
+        InkWell(
+          onTap: () => setState(() => _isExpanded = !_isExpanded),
+          child: Row(
+            children: [
+              Icon(Icons.description_outlined, size: 20, color: Colors.grey[700]),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Total Bill ₹${total.toStringAsFixed(2)}',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+              Icon(
+                _isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                color: Colors.grey,
+              ),
+            ],
+          ),
+        ),
+        if (_isExpanded) ...[
+          const SizedBox(height: 16),
+          const Divider(),
+          const SizedBox(height: 8),
+          _buildBillRow('Item Total', widget.subtotal),
+          _buildBillRow('Delivery Fee', widget.deliveryFee),
+          _buildBillRow('Platform Fee', widget.platformFee),
+          _buildBillRow('GST and Restaurant Charges', widget.gst),
+          if (widget.donationAmount > 0)
+            _buildBillRow('Feeding India Donation', widget.donationAmount),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildBillRow(String label, double value) {
+    final isFree = value == 0;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[600])),
+          Text(
+            isFree ? 'FREE' : '₹${value.toStringAsFixed(2)}', 
+            style: GoogleFonts.poppins(
+              fontSize: 13, 
+              color: isFree ? AppColors.brandGreen : Colors.black87, 
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }

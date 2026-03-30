@@ -20,11 +20,19 @@ class ReplaceCartDialog extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
       elevation: 0,
       backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24),
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(28),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.15),
+              blurRadius: 30,
+              offset: const Offset(0, 15),
+            ),
+          ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -54,20 +62,20 @@ class ReplaceCartDialog extends StatelessWidget {
             RichText(
               text: TextSpan(
                 style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  color: const Color(0xFF4A4A4A),
-                  height: 1.5,
+                  fontSize: 15,
+                  color: const Color(0xFF666666),
+                  height: 1.6,
                 ),
                 children: [
                   const TextSpan(text: 'Your cart contains items from '),
                   TextSpan(
                     text: oldVendorName,
-                    style: const TextStyle(fontWeight: FontWeight.w700),
+                    style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.black),
                   ),
                   const TextSpan(text: '. Clear cart to add from '),
                   TextSpan(
                     text: newVendorName,
-                    style: const TextStyle(fontWeight: FontWeight.w700),
+                    style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.black),
                   ),
                   const TextSpan(text: '?'),
                 ],
