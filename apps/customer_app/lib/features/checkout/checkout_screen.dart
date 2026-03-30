@@ -5,9 +5,11 @@ import 'package:shared_core/theme/app_colors.dart';
 import 'package:shared_core/models/vendor.dart';
 import 'package:shared_core/services/cart_service.dart';
 import 'package:shared_core/models/address.dart';
+import 'package:shared_core/services/auth_service.dart';
 import '../orders/order_tracking_screen.dart';
 import '../../widgets/quantity_selector.dart';
 import '../vendor/vendor_detail_screen.dart';
+import '../auth/auth_screen.dart';
 import 'checkout_notifier.dart';
 
 class CheckoutScreen extends ConsumerWidget {
@@ -352,6 +354,7 @@ class CheckoutScreen extends ConsumerWidget {
   }
 
   Widget _buildPayFooter(BuildContext context, WidgetRef ref, CartState cart, CheckoutState checkout) {
+    final user = ref.watch(currentUserProvider);
     final total = cart.subtotal + 
                 (checkout.useFreeFees ? 0 : checkout.deliveryFee) + 
                 (checkout.useFreeFees ? 0 : checkout.platformFee) + 
@@ -372,35 +375,54 @@ class CheckoutScreen extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ElevatedButton(
-              onPressed: checkout.isProcessing ? null : () async {
-                final result = await ref.read(checkoutProvider.notifier).placeOrder();
-                if (result != null && result.length > 20) { // Assuming orderId is UUID
-                   // Track Order
-                   if (context.mounted) {
-                     Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(builder: (context) => OrderTrackingScreen(orderId: result)),
-                     );
-                   }
-                } else if (result != null) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result)));
-                  }
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.brandGreen,
-                minimumSize: const Size(double.infinity, 56),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                elevation: 0,
-              ),
-              child: checkout.isProcessing 
-                ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3))
-                : Text(
-                  'Pay ₹${total.toStringAsFixed(2)}',
-                  style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white),
+            if (user == null)
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => const AuthScreen()),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.brandGreen,
+                  minimumSize: const Size(double.infinity, 56),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  elevation: 0,
                 ),
-            ),
+                child: Text(
+                  'Continue with WhatsApp number',
+                  style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white),
+                ),
+              )
+            else
+              ElevatedButton(
+                onPressed: checkout.isProcessing ? null : () async {
+                  final result = await ref.read(checkoutProvider.notifier).placeOrder();
+                  if (result != null && result.length > 20) { // Assuming orderId is UUID
+                     // Track Order
+                     if (context.mounted) {
+                       Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(builder: (context) => OrderTrackingScreen(orderId: result)),
+                       );
+                     }
+                  } else if (result != null) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result)));
+                    }
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.brandGreen,
+                  minimumSize: const Size(double.infinity, 56),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  elevation: 0,
+                ),
+                child: checkout.isProcessing 
+                  ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3))
+                  : Text(
+                    'Pay ₹${total.toStringAsFixed(2)}',
+                    style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white),
+                  ),
+              ),
             const SizedBox(height: 12),
             Text(
               '100% Secure Payments',
