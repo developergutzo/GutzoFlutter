@@ -430,7 +430,6 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
               onPressed: () {
                 final loc = locationState.location;
                 if (loc != null) {
-                  Navigator.pop(context);
                   AddAddressSheet.show(context, lat: loc.latitude, lng: loc.longitude, address: loc.displayString);
                 }
               },
