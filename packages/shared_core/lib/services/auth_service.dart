@@ -101,6 +101,25 @@ class AuthService {
     _ref.read(customAuthProvider.notifier).update(user);
   }
 
+  Future<void> updateProfile({required String name, required String email}) async {
+    final authData = _prefs.getString('gutzo_auth');
+    if (authData == null) return;
+    final Map<String, dynamic> parsed = jsonDecode(authData);
+    parsed['name'] = name;
+    parsed['email'] = email;
+    await _prefs.setString('gutzo_auth', jsonEncode(parsed));
+    final current = _ref.read(customAuthProvider);
+    if (current != null) {
+      _ref.read(customAuthProvider.notifier).update(model.User(
+        id: current.id,
+        phone: current.phone,
+        name: name,
+        email: email,
+        createdAt: current.createdAt,
+      ));
+    }
+  }
+
   Future<void> signOut() async {
     await _supabase.auth.signOut();
     await _prefs.remove('gutzo_auth');
