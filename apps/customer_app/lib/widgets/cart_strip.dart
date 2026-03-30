@@ -127,7 +127,7 @@ class CartStrip extends ConsumerWidget {
               const SizedBox(width: 8),
               // Close Button
               GestureDetector(
-                onTap: () => ref.read(cartProvider.notifier).clear(),
+                onTap: () => _showClearCartDialog(context, ref, vendor.name),
                 child: Container(
                   width: 28,
                   height: 28,
@@ -197,6 +197,96 @@ class CartStrip extends ConsumerWidget {
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showClearCartDialog(BuildContext context, WidgetRef ref, String vendorName) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Clear cart?',
+                    style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textMain,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: const Icon(Icons.close, size: 24, color: AppColors.textMain),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Are you sure you want to clear your cart from $vendorName?',
+                style: GoogleFonts.poppins(
+                  fontSize: 15,
+                  color: AppColors.textMain,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        backgroundColor: AppColors.brandGreen.withValues(alpha: 0.1),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: Text(
+                        'NO',
+                        style: GoogleFonts.poppins(
+                          color: AppColors.brandGreen,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        ref.read(cartProvider.notifier).clear();
+                        Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.brandGreen,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        'YES',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
+                      ),
                     ),
                   ),
                 ],
