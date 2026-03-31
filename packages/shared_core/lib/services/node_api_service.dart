@@ -20,6 +20,7 @@ class NodeApiService {
 
   Future<Map<String, String>> _getHeaders({String? overridePhone}) async {
     final session = _supabase.auth.currentSession;
+    final user = _supabase.auth.currentUser;
     final headers = {
       "Content-Type": "application/json",
     };
@@ -28,8 +29,9 @@ class NodeApiService {
       headers["Authorization"] = "Bearer ${session!.accessToken}";
     }
 
-    if (overridePhone != null) {
-      headers["x-user-phone"] = _formatPhone(overridePhone);
+    final phone = overridePhone ?? user?.phone;
+    if (phone != null && phone.isNotEmpty) {
+      headers["x-user-phone"] = _formatPhone(phone);
     }
 
     return headers;
@@ -208,8 +210,8 @@ class NodeApiService {
     return _request("/orders/$orderId/track");
   }
 
-  Future<dynamic> getUserOrders({int page = 1, int limit = 20}) async {
-    return _request("/orders?page=$page&limit=$limit");
+  Future<dynamic> getUserOrders({int page = 1, int limit = 20, String? overridePhone}) async {
+    return _request("/orders?page=$page&limit=$limit", overridePhone: overridePhone);
   }
 
   Future<dynamic> triggerMockPayment(String orderNumber, {String? overridePhone}) async {

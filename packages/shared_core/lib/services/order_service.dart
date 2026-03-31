@@ -4,9 +4,17 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/order.dart';
 import 'node_api_service.dart';
 
+import 'auth_service.dart';
+
 final ordersProvider = FutureProvider<List<Order>>((ref) async {
   final api = ref.read(nodeApiServiceProvider);
-  final response = await api.getUserOrders();
+  final user = ref.watch(currentUserProvider);
+  
+  if (user == null || user.phone.isEmpty) {
+    throw Exception("Authentication required. Provide x-user-phone header.");
+  }
+
+  final response = await api.getUserOrders(overridePhone: user.phone);
   
   List<dynamic> data = [];
   if (response is List) {
