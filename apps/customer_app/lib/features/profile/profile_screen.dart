@@ -378,8 +378,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 Navigator.push(context, CupertinoPageRoute(builder: (_) => const OrdersHistoryScreen()));
               }),
               _divider(),
-              _row(context, Icons.location_on_outlined, 'My Addresses', () {}),
-              _divider(),
               _row(context, Icons.help_outline, 'Help & Support', () {}),
               _divider(),
               _row(context, Icons.info_outline, 'About Gutzo', () {}),
