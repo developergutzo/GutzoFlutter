@@ -479,7 +479,9 @@ class _SettingsScreen extends ConsumerWidget {
                     Navigator.push(context, CupertinoPageRoute(builder: (_) => const _NotificationsScreen()));
                   }),
                   const Divider(height: 1, indent: 52, color: Color(0xFFF0F0F0)),
-                  _settingRow(Icons.lock_outline, 'Privacy', () {}),
+                  _settingRow(Icons.lock_outline, 'Privacy', () {
+                    Navigator.push(context, CupertinoPageRoute(builder: (_) => const _PrivacyScreen()));
+                  }),
                   const Divider(height: 1, indent: 52, color: Color(0xFFF0F0F0)),
                   InkWell(
                     borderRadius: BorderRadius.circular(16),
@@ -534,28 +536,90 @@ class _SettingsScreen extends ConsumerWidget {
   void _showDeleteDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Delete Account?',
-            style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 16)),
-        content: Text(
-          'This will permanently delete your account and all data. This action cannot be undone.',
-          style: GoogleFonts.poppins(fontSize: 13, color: AppColors.textDisabled),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Delete Account?',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textMain,
+                    ),
+                  ),
+                  InkWell(
+                    onTap: () => Navigator.pop(ctx),
+                    child: const Icon(Icons.close, color: AppColors.textMain, size: 20),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'This will permanently delete your account and all data. This action cannot be undone.',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textDisabled,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      style: TextButton.styleFrom(
+                        backgroundColor: const Color(0xFFF0F0F0),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text(
+                        'Cancel',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textMain,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextButton(
+                      style: TextButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        ref.read(authServiceProvider).signOut();
+                        Navigator.of(context).popUntil((route) => route.isFirst);
+                      },
+                      child: Text(
+                        'Delete',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text('Cancel', style: GoogleFonts.poppins(color: AppColors.textMain)),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              ref.read(authServiceProvider).signOut();
-              Navigator.of(context).popUntil((route) => route.isFirst);
-            },
-            child: Text('Delete', style: GoogleFonts.poppins(color: Colors.red, fontWeight: FontWeight.w600)),
-          ),
-        ],
       ),
     );
   }
@@ -984,4 +1048,78 @@ class _NotificationsScreen extends StatelessWidget {
     );
   }
 }
+
+class _PrivacyScreen extends StatelessWidget {
+  const _PrivacyScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        leading: GestureDetector(
+          onTap: () => Navigator.of(context).pop(),
+          child: const Icon(Icons.arrow_back, color: AppColors.textMain),
+        ),
+        title: Text(
+          'Privacy Policy',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 17, color: AppColors.textMain),
+        ),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Last Updated: March 2024',
+              style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSub, fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 24),
+            _privacySection('1. Introduction', 'We, Gutzo ("Gutzo," "we," "us," or "our") are committed to protecting our customers\' personal data. This privacy policy describes the types of personal data we collect on the platform (Gutzo website, mobile and other software applications, and individual establishments or partners) and processed in relation to the services offered by us.'),
+            _privacySection('2. Collection of Your Information', 'We collect your personal data when you use our Platform, services or otherwise interact with us. This includes:\n\n• Information You Provide: Name, email address, phone number, and location.\n• Automatic Collection: Device info, IP address, browser type, and system logs.\n• Cookies: To improve browsing activities and preferences.'),
+            _privacySection('3. Usage of Your Information', 'We use your personal data to:\n\n• Provide and improve our services.\n• Send order notifications and updates.\n• Personalize your experience.\n• Prevent fraud and ensure security.'),
+            _privacySection('4. Sharing of Your Information', 'We share info with our partners (kitchens/delivery) and service providers for operations. We only disclose information when required by law or for safety.'),
+            _privacySection('5. Security Precautions', 'We use industry-standard measures to protect your data. However, remember no internet transmission is 100% secure.'),
+            _privacySection('6. Data Deletion and Retention', '• Account Deletion: Accessible via profile settings. Affects all associated data.\n• Retention: Data is kept only as long as needed for legal or business purposes.'),
+            _privacySection('7. Your Rights', 'Access, rectify, or update your data directly through the Platform settings.'),
+            _privacySection('8. Consent', 'By using Gutzo, you consent to this policy and authorize us to contact you for core service updates via SMS, WhatsApp, or calls.'),
+            const SizedBox(height: 40),
+            Center(
+              child: Column(
+                children: [
+                  Text('Grievance Officer', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textMain)),
+                  const SizedBox(height: 4),
+                  Text('Mahelakshmi Sundaram', style: GoogleFonts.poppins(fontSize: 14, color: AppColors.textMain)),
+                  const SizedBox(height: 2),
+                  Text('Designation: Founder & Proprietor', style: GoogleFonts.poppins(fontSize: 13, color: AppColors.textSub)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 60),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _privacySection(String title, String content) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textMain)),
+          const SizedBox(height: 8),
+          Text(content, style: GoogleFonts.poppins(fontSize: 14, color: Color(0xFF4A4A4A), height: 1.6)),
+        ],
+      ),
+    );
+  }
+}
+
 
