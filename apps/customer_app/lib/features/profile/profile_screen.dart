@@ -1,13 +1,23 @@
+import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_core/services/auth_service.dart';
+import 'package:shared_core/services/node_api_service.dart';
 import 'package:shared_core/theme/app_colors.dart';
 import '../orders/orders_history_screen.dart';
 
-class ProfileScreen extends ConsumerWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  bool _isUploading = false;
 
   void _showLogoutDialog(BuildContext context, WidgetRef ref) {
     showDialog(
@@ -100,14 +110,115 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
+  Future<void> _pickAndUploadImage(ImageSource source) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: source, imageQuality: 70);
+    
+    if (pickedFile == null) return;
+
+    final user = ref.read(currentUserProvider);
+    if (user == null) return;
+
+    setState(() => _isUploading = true);
+
+    try {
+      final uploadUrl = await ref.read(nodeApiServiceProvider).uploadAvatar(pickedFile.path, user.phone);
+      if (uploadUrl != null) {
+        await ref.read(authServiceProvider).updateAvatar(uploadUrl);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+           SnackBar(content: Text('Failed to upload image: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUploading = false);
+      }
+    }
+  }
+
+  void _showImageSourceActionSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 4, bottom: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  'Profile Photo',
+                  style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textMain),
+                ),
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(color: const Color(0xFFF7F7F8), borderRadius: BorderRadius.circular(8)),
+                  child: const Icon(Icons.camera_alt_outlined, color: AppColors.textMain),
+                ),
+                title: Text('Take a photo', style: GoogleFonts.poppins(fontWeight: FontWeight.w500)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickAndUploadImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(color: const Color(0xFFF7F7F8), borderRadius: BorderRadius.circular(8)),
+                  child: const Icon(Icons.photo_library_outlined, color: AppColors.textMain),
+                ),
+                title: Text('Choose from gallery', style: GoogleFonts.poppins(fontWeight: FontWeight.w500)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickAndUploadImage(ImageSource.gallery);
+                },
+              ),
+              if (ref.read(currentUserProvider)?.avatarUrl != null)
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: const Color(0xFFFFF0F0), borderRadius: BorderRadius.circular(8)),
+                    child: const Icon(Icons.delete_outline, color: Colors.red),
+                  ),
+                  title: Text('Remove photo', style: GoogleFonts.poppins(fontWeight: FontWeight.w500, color: Colors.red)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    ref.read(authServiceProvider).updateAvatar('');
+                  },
+                ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
 
     final String initials = user?.initials ?? '?';
     final String displayName = (user != null && user.name.isNotEmpty) ? user.name : 'Guest User';
     final String displayPhone = user != null ? '+91 ${user.phone}' : '';
     final String displayEmail = (user != null && user.email.isNotEmpty) ? user.email : '';
+    final String? avatarUrl = user?.avatarUrl;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F8),
@@ -167,43 +278,71 @@ class ProfileScreen extends ConsumerWidget {
             const SizedBox(height: 32),
 
             // Avatar
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                Container(
-                  width: 84,
-                  height: 84,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.brandGreen.withValues(alpha: 0.1),
-                    border: Border.all(color: AppColors.brandGreen, width: 2),
+            GestureDetector(
+              onTap: _showImageSourceActionSheet,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    width: 84,
+                    height: 84,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.brandGreen.withValues(alpha: 0.1),
+                      border: Border.all(color: AppColors.brandGreen, width: 2),
+                      image: (avatarUrl != null && avatarUrl.isNotEmpty)
+                          ? DecorationImage(
+                              image: NetworkImage(avatarUrl),
+                              fit: BoxFit.cover,
+                            )
+                          : null,
+                    ),
+                    child: (avatarUrl == null || avatarUrl.isEmpty)
+                        ? Center(
+                            child: Text(
+                              initials,
+                              style: GoogleFonts.poppins(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.brandGreen,
+                              ),
+                            ),
+                          )
+                        : null,
                   ),
-                  child: Center(
-                    child: Text(
-                      initials,
-                      style: GoogleFonts.poppins(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.brandGreen,
+                  
+                  if (_isUploading)
+                     Container(
+                      width: 84,
+                      height: 84,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.black45,
+                      ),
+                      child: const Center(
+                        child: SizedBox(
+                          width: 24, height: 24,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+                        ),
                       ),
                     ),
-                  ),
-                ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    width: 24,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      color: AppColors.brandGreen,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
+
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: AppColors.brandGreen,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child: const Icon(Icons.edit, size: 12, color: Colors.white),
                     ),
-                    child: const Icon(Icons.edit, size: 12, color: Colors.white),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
 
             const SizedBox(height: 16),

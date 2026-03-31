@@ -36,6 +36,7 @@ class CustomAuthNotifier extends Notifier<model.User?> {
         phone: parsed['phone'] ?? '',
         name: parsed['name'] ?? '',
         email: parsed['email'] ?? '',
+        avatarUrl: parsed['avatar_url'],
         createdAt: DateTime.fromMillisecondsSinceEpoch(parsed['timestamp'] ?? 0),
       );
     } catch (e) {
@@ -63,6 +64,7 @@ final currentUserProvider = Provider<model.User?>((ref) {
     phone: user.phone ?? '',
     name: user.userMetadata?['name'] as String? ?? '',
     email: user.email ?? '',
+    avatarUrl: user.userMetadata?['avatar_url'] as String?,
     createdAt: DateTime.parse(user.createdAt),
   );
 });
@@ -115,6 +117,26 @@ class AuthService {
         phone: current.phone,
         name: name,
         email: email,
+        avatarUrl: current.avatarUrl,
+        createdAt: current.createdAt,
+      ));
+    }
+  }
+
+  Future<void> updateAvatar(String url) async {
+    final authData = _prefs.getString('gutzo_auth');
+    if (authData == null) return;
+    final Map<String, dynamic> parsed = jsonDecode(authData);
+    parsed['avatar_url'] = url;
+    await _prefs.setString('gutzo_auth', jsonEncode(parsed));
+    final current = _ref.read(customAuthProvider);
+    if (current != null) {
+      _ref.read(customAuthProvider.notifier).update(model.User(
+        id: current.id,
+        phone: current.phone,
+        name: current.name,
+        email: current.email,
+        avatarUrl: url,
         createdAt: current.createdAt,
       ));
     }

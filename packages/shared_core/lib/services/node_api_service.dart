@@ -80,6 +80,34 @@ class NodeApiService {
     return _request("/auth/status", overridePhone: phone);
   }
 
+  Future<String?> uploadAvatar(String filePath, String phone) async {
+    final url = Uri.parse("$baseUrl/upload/avatar-image");
+    final headers = await _getHeaders(overridePhone: phone);
+    
+    // Convert to multipart specific
+    headers.remove("Content-Type"); 
+
+    var request = http.MultipartRequest("POST", url);
+    request.headers.addAll({...headers}); // Convert FutureMap to Map or directly add all
+    
+    for (final entry in headers.entries) {
+        request.headers[entry.key] = entry.value;
+    }
+    
+    request.fields['phone'] = _formatPhone(phone);
+    request.files.add(await http.MultipartFile.fromPath('file', filePath));
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+    final responseData = jsonDecode(response.body);
+
+    if (response.statusCode >= 400) {
+      throw Exception(responseData["message"] ?? "Failed to upload avatar");
+    }
+
+    return responseData["data"]?["url"];
+  }
+
   // --- Marketplace ---
   Future<dynamic> getHomeBanners() async {
     return _request("/banners");
