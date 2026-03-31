@@ -475,7 +475,9 @@ class _SettingsScreen extends ConsumerWidget {
               ),
               child: Column(
                 children: [
-                  _settingRow(Icons.notifications_outlined, 'Notifications', () {}),
+                  _settingRow(Icons.notifications_outlined, 'Notifications', () {
+                    Navigator.push(context, CupertinoPageRoute(builder: (_) => const _NotificationsScreen()));
+                  }),
                   const Divider(height: 1, indent: 52, color: Color(0xFFF0F0F0)),
                   _settingRow(Icons.lock_outline, 'Privacy', () {}),
                   const Divider(height: 1, indent: 52, color: Color(0xFFF0F0F0)),
@@ -883,6 +885,101 @@ class _EditProfileScreenState extends ConsumerState<_EditProfileScreen> {
             ],
           ),
         ],
+      ],
+    );
+  }
+}
+
+class _NotificationsScreen extends StatelessWidget {
+  const _NotificationsScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF7F7F8),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFF7F7F8),
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        leading: GestureDetector(
+          onTap: () => Navigator.of(context).pop(),
+          child: const Icon(Icons.arrow_back, color: AppColors.textMain),
+        ),
+        title: Text(
+          'Notifications',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 17, color: AppColors.textMain),
+        ),
+        centerTitle: true,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
+                ],
+              ),
+              child: Row(
+                children: [
+                  const SizedBox(width: 4),
+                  const Icon(Icons.chat_bubble_outline, color: AppColors.textMain, size: 22),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('WhatsApp Updates', style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textMain)),
+                        const SizedBox(height: 2),
+                        Text('Required for critical order drops', style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSub)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  const CupertinoSwitch(value: true, onChanged: null, activeColor: AppColors.brandGreen),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.brandGreen.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.brandGreen.withValues(alpha: 0.2)),
+              ),
+              child: Column(
+                children: [
+                   const Icon(Icons.phonelink_ring_outlined, color: AppColors.textMain, size: 32),
+                   const SizedBox(height: 12),
+                   Text('Seamless Experience', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.brandGreen)),
+                   const SizedBox(height: 16),
+                   _featureRow(Icons.bolt, 'Live Order Tracking'),
+                   const SizedBox(height: 10),
+                   _featureRow(Icons.receipt_long_outlined, 'Instant Secure Invoices'),
+                   const SizedBox(height: 10),
+                   _featureRow(Icons.block, 'No Intrusive Push Alerts'),
+                ],
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _featureRow(IconData icon, String text) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(icon, size: 18, color: AppColors.textMain),
+        const SizedBox(width: 10),
+        Text(text, style: GoogleFonts.poppins(fontSize: 13, color: AppColors.textMain, fontWeight: FontWeight.w500)),
       ],
     );
   }
