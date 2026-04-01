@@ -10,9 +10,11 @@ import 'package:shared_core/services/location_service.dart';
 import 'package:shared_core/theme/app_colors.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'location_search_screen.dart';
+import 'add_address_detail_screen.dart';
 
 class LocationPickScreen extends ConsumerStatefulWidget {
-  const LocationPickScreen({super.key});
+  final bool isAddingAddress;
+  const LocationPickScreen({super.key, this.isAddingAddress = false});
 
   @override
   ConsumerState<LocationPickScreen> createState() => _LocationPickScreenState();
@@ -450,18 +452,30 @@ class _LocationPickScreenState extends ConsumerState<LocationPickScreen> {
                   const SizedBox(height: 24),
                   ElevatedButton(
                     onPressed: _isLoadingAddress || _currentAddress == null ? null : () {
-                      final newLoc = LocationData(
-                        city: _currentAddress!.city ?? '',
-                        state: _currentAddress!.state ?? '',
-                        country: _currentAddress!.country ?? '',
-                        formattedAddress: _currentAddress!.formattedAddress,
-                        latitude: _currentCenter!.latitude,
-                        longitude: _currentCenter!.longitude,
-                        timestamp: DateTime.now(),
-                      );
-                      ref.read(locationProvider.notifier).overrideLocation(newLoc);
-                      Navigator.of(context).pop();
-                      Navigator.of(context).pop();
+                      if (widget.isAddingAddress) {
+                        Navigator.push(
+                          context,
+                          CupertinoPageRoute(
+                            builder: (_) => AddAddressDetailScreen(
+                              position: _currentCenter!,
+                              address: _currentAddress!,
+                            ),
+                          ),
+                        );
+                      } else {
+                        final newLoc = LocationData(
+                          city: _currentAddress!.city ?? '',
+                          state: _currentAddress!.state ?? '',
+                          country: _currentAddress!.country ?? '',
+                          formattedAddress: _currentAddress!.formattedAddress,
+                          latitude: _currentCenter!.latitude,
+                          longitude: _currentCenter!.longitude,
+                          timestamp: DateTime.now(),
+                        );
+                        ref.read(locationProvider.notifier).overrideLocation(newLoc);
+                        Navigator.of(context).pop();
+                        Navigator.of(context).pop();
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.brandGreen,

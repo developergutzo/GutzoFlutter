@@ -442,10 +442,11 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
                 Expanded(
                   child: InkWell(
                     onTap: () {
-                      final loc = locationState.location;
-                      if (loc != null) {
-                        AddAddressSheet.show(context, lat: loc.latitude, lng: loc.longitude, address: loc.displayString);
-                      }
+                      Navigator.of(context).push(
+                        CupertinoPageRoute(
+                          builder: (_) => const LocationPickScreen(isAddingAddress: true),
+                        ),
+                      );
                     },
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
