@@ -10,6 +10,7 @@ import 'package:shared_core/services/node_api_service.dart' as api;
 import 'package:shared_core/models/address.dart';
 import '../../../providers/address_provider.dart';
 import 'add_address_sheet.dart';
+import 'location_pick_screen.dart';
 
 class LocationSheet extends ConsumerStatefulWidget {
   const LocationSheet({super.key});
@@ -388,12 +389,11 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
                 // Use Current Location
                 Expanded(
                   child: InkWell(
-                    onTap: isDetecting
-                        ? null
-                        : () async {
-                            await ref.read(locationProvider.notifier).refreshLocation();
-                            if (context.mounted) Navigator.of(context).pop();
-                          },
+                    onTap: () {
+                      Navigator.of(context).push(
+                        CupertinoPageRoute(builder: (_) => const LocationPickScreen()),
+                      );
+                    },
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
