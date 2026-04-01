@@ -11,6 +11,7 @@ class CheckoutState {
   final bool isCheckingServiceability;
   final double deliveryFee;
   final double platformFee;
+  final double packagingFee;
   final double gst;
   final String? eta;
   final bool isServiceable;
@@ -30,6 +31,7 @@ class CheckoutState {
     this.isCheckingServiceability = false,
     this.deliveryFee = 0,
     this.platformFee = 10,
+    this.packagingFee = 0,
     this.gst = 0,
     this.eta,
     this.isServiceable = true,
@@ -50,6 +52,7 @@ class CheckoutState {
     bool? isCheckingServiceability,
     double? deliveryFee,
     double? platformFee,
+    double? packagingFee,
     double? gst,
     String? eta,
     bool? isServiceable,
@@ -69,6 +72,7 @@ class CheckoutState {
       isCheckingServiceability: isCheckingServiceability ?? this.isCheckingServiceability,
       deliveryFee: deliveryFee ?? this.deliveryFee,
       platformFee: platformFee ?? this.platformFee,
+      packagingFee: packagingFee ?? this.packagingFee,
       gst: gst ?? this.gst,
       eta: eta ?? this.eta,
       isServiceable: isServiceable ?? this.isServiceable,
@@ -175,11 +179,18 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
     final itemTotal = cart.subtotal;
     final devFee = state.useFreeFees ? 0.0 : state.deliveryFee;
     final platFee = state.useFreeFees ? 0.0 : state.platformFee;
+    final packFee = state.packagingFee;
     
-    final itemGst = itemTotal * 0.05;
+    // Web/Backend Logic: 
+    // 5% GST on Items + Packaging
+    // 18% GST on Delivery + Platform
+    final itemGst = (itemTotal + packFee) * 0.05;
     final feeGst = (devFee + platFee) * 0.18;
     
-    state = state.copyWith(gst: itemGst + feeGst);
+    // Use 2 decimal precision to match web UI
+    final totalGst = double.parse((itemGst + feeGst).toStringAsFixed(2));
+    
+    state = state.copyWith(gst: totalGst);
   }
 
   void setDevEnvironment(String env) {

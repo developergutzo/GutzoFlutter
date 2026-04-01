@@ -103,8 +103,10 @@ class CheckoutScreen extends ConsumerWidget {
             _buildSectionCard(
               child: _BillingSummary(
                 subtotal: cart.subtotal,
+                originalSubtotal: cart.originalSubtotal,
                 deliveryFee: checkout.useFreeFees ? 0 : checkout.deliveryFee,
                 platformFee: checkout.useFreeFees ? 0 : checkout.platformFee,
+                packagingFee: checkout.packagingFee,
                 gst: checkout.gst,
                 donationAmount: checkout.isDonationChecked ? checkout.donationAmount : 0,
               ),
@@ -358,6 +360,7 @@ class CheckoutScreen extends ConsumerWidget {
     final total = cart.subtotal + 
                 (checkout.useFreeFees ? 0 : checkout.deliveryFee) + 
                 (checkout.useFreeFees ? 0 : checkout.platformFee) + 
+                checkout.packagingFee +
                 checkout.gst +
                 (checkout.isDonationChecked ? checkout.donationAmount : 0);
 
@@ -491,15 +494,19 @@ class CheckoutScreen extends ConsumerWidget {
 
 class _BillingSummary extends StatefulWidget {
   final double subtotal;
+  final double originalSubtotal;
   final double deliveryFee;
   final double platformFee;
+  final double packagingFee;
   final double gst;
   final double donationAmount;
 
   const _BillingSummary({
     required this.subtotal,
+    required this.originalSubtotal,
     required this.deliveryFee,
     required this.platformFee,
+    required this.packagingFee,
     required this.gst,
     required this.donationAmount,
   });
@@ -513,62 +520,151 @@ class _BillingSummaryState extends State<_BillingSummary> {
 
   @override
   Widget build(BuildContext context) {
-    final total = widget.subtotal + widget.deliveryFee + widget.platformFee + widget.gst + widget.donationAmount;
+    final savings = widget.originalSubtotal - widget.subtotal;
+    final total = widget.subtotal + 
+                  widget.deliveryFee + 
+                  widget.platformFee + 
+                  widget.packagingFee +
+                  widget.gst + 
+                  widget.donationAmount;
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         InkWell(
           onTap: () => setState(() => _isExpanded = !_isExpanded),
+          overlayColor: WidgetStateProperty.all(Colors.transparent),
           child: Row(
             children: [
-              Icon(Icons.description_outlined, size: 20, color: Colors.grey[700]),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.receipt_long_outlined, size: 20, color: Colors.grey[700]),
+              ),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  'Total Bill ₹${total.toStringAsFixed(2)}',
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'Total Bill',
+                          style: GoogleFonts.poppins(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        if (savings > 0)
+                          Text(
+                            '₹${(total + savings).toStringAsFixed(2)}',
+                            style: GoogleFonts.poppins(
+                              fontSize: 13,
+                              color: Colors.grey[400],
+                              decoration: TextDecoration.lineThrough,
+                            ),
+                          ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '₹${total.toStringAsFixed(2)}',
+                          style: GoogleFonts.poppins(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (savings > 0)
+                      Padding(
+                        padding: const EdgeInsets.top(2),
+                        child: Text(
+                          'You saved ₹${savings.toStringAsFixed(0)} on this order!',
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.brandGreen,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
               Icon(
                 _isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                color: Colors.grey,
+                color: Colors.grey[400],
+                size: 20,
               ),
             ],
           ),
         ),
         if (_isExpanded) ...[
           const SizedBox(height: 16),
-          const Divider(),
-          const SizedBox(height: 8),
           _buildBillRow('Item Total', widget.subtotal),
-          _buildBillRow('Delivery Fee', widget.deliveryFee),
+          if (savings > 0)
+            _buildBillRow('Gutzo Savings', -savings, isDiscount: true),
+          _buildBillRow('Delivery Partner Fee', widget.deliveryFee),
           _buildBillRow('Platform Fee', widget.platformFee),
-          _buildBillRow('GST and Restaurant Charges', widget.gst),
-          if (widget.donationAmount > 0)
+          if (widget.packagingFee > 0)
+            _buildBillRow('Packaging Fee', widget.packagingFee),
+          
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: Divider(height: 1, thickness: 1, color: Color(0xFFF1F3F4)),
+          ),
+          
+          _buildBillRow('Total Payable', total, isBold: true),
+          
+          Align(
+            alignment: Alignment.centerRight,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'Includes ₹${widget.gst.toStringAsFixed(2)} GST and Restaurant Charges',
+                style: GoogleFonts.poppins(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[400],
+                ),
+              ),
+            ),
+          ),
+
+          if (widget.donationAmount > 0) ...[
+            const SizedBox(height: 8),
             _buildBillRow('Feeding India Donation', widget.donationAmount),
+          ],
         ],
       ],
     );
   }
 
-  Widget _buildBillRow(String label, double value) {
-    final isFree = value == 0;
+  Widget _buildBillRow(String label, double value, {bool isDiscount = false, bool isBold = false}) {
+    final isFree = value == 0 && !isDiscount;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[600])),
           Text(
-            isFree ? 'FREE' : '₹${value.toStringAsFixed(2)}', 
+            label, 
             style: GoogleFonts.poppins(
               fontSize: 13, 
-              color: isFree ? AppColors.brandGreen : Colors.black87, 
-              fontWeight: FontWeight.w600,
+              color: isBold ? Colors.black : Colors.grey[600],
+              fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
+            )
+          ),
+          Text(
+            isFree ? 'FREE' : '${isDiscount ? '-' : ''}₹${value.abs().toStringAsFixed(2)}', 
+            style: GoogleFonts.poppins(
+              fontSize: 13, 
+              color: isDiscount || isFree ? AppColors.brandGreen : (isBold ? Colors.black : Colors.grey[800]), 
+              fontWeight: (isBold || isDiscount) ? FontWeight.w700 : FontWeight.w600,
             ),
           ),
         ],

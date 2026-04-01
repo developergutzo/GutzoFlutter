@@ -40,6 +40,7 @@ class CartState {
   CartState({this.items = const [], this.vendorId, this.isLoading = false});
 
   double get subtotal => items.fold(0, (sum, item) => sum + item.totalPrice);
+  double get originalSubtotal => items.fold(0, (sum, item) => sum + (item.product.originalPrice ?? item.product.price) * item.quantity);
   int get totalItems => items.fold(0, (sum, item) => sum + item.quantity);
 
   CartState copyWith({List<CartItem>? items, String? vendorId, bool? isLoading}) {

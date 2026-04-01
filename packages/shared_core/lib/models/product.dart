@@ -4,6 +4,7 @@ class Product {
   final String name;
   final String description;
   final double price;
+  final double? originalPrice;
   final String category;
   final String image;
   final String? imageUrl;
@@ -24,6 +25,7 @@ class Product {
     required this.name,
     required this.description,
     required this.price,
+    this.originalPrice,
     required this.category,
     required this.image,
     this.imageUrl,
@@ -46,6 +48,7 @@ class Product {
       name: json['name'] as String? ?? '',
       description: json['description'] as String? ?? '',
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      originalPrice: (json['original_price'] ?? json['originalPrice'] as num?)?.toDouble(),
       category: json['category'] as String? ?? '',
       image: json['image'] as String? ?? '',
       imageUrl: (json['imageUrl'] ?? json['image_url']) as String?,
@@ -73,6 +76,7 @@ class Product {
       'name': name,
       'description': description,
       'price': price,
+      'original_price': originalPrice,
       'category': category,
       'image': image,
       'image_url': imageUrl,
