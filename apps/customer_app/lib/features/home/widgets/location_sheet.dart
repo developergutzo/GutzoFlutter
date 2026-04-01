@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -14,11 +15,9 @@ class LocationSheet extends ConsumerStatefulWidget {
   const LocationSheet({super.key});
 
   static void show(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => const LocationSheet(),
+    Navigator.push(
+      context,
+      CupertinoPageRoute(builder: (_) => const LocationSheet()),
     );
   }
 
@@ -322,198 +321,253 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
     final paddingBottom = MediaQuery.of(context).viewInsets.bottom;
     final addressesAsync = ref.watch(savedAddressesProvider);
 
-    return Container(
-      margin: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 40),
-      padding: const EdgeInsets.only(top: 24, left: 20, right: 20),
-      height: MediaQuery.of(context).size.height * 0.9,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        leading: GestureDetector(
+          onTap: () => Navigator.of(context).pop(),
+          child: const Icon(Icons.arrow_back, color: AppColors.textMain),
+        ),
+        title: Text(
+          'Select Location',
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w700, 
+            fontSize: 18, 
+            color: AppColors.textMain,
+          ),
+        ),
+        centerTitle: true,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Select Location',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textMain)),
-              IconButton(
-                onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(Icons.close, color: AppColors.textSub),
-                splashRadius: 24,
+      body: Padding(
+        padding: const EdgeInsets.only(top: 8, left: 20, right: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: 16),
+
+            // Search Field
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _searchFocus.hasFocus ? AppColors.brandGreen : AppColors.border,
+                  width: 1.0,
+                ),
+              ),
+              child: TextField(
+                controller: _searchController,
+                focusNode: _searchFocus,
+                onTap: () => setState(() {}),
+                onTapOutside: (_) {
+                  _searchFocus.unfocus();
+                  setState(() {});
+                },
+                onChanged: _onSearchChanged,
+                decoration: const InputDecoration(
+                  hintText: 'Search for area, street name...',
+                  hintStyle: TextStyle(color: AppColors.textDisabled, fontSize: 15),
+                  prefixIcon: Icon(Icons.search, color: AppColors.brandGreen, size: 20),
+                  filled: false,
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Use Current Location
+            InkWell(
+              onTap: isDetecting
+                  ? null
+                  : () async {
+                      await ref.read(locationProvider.notifier).refreshLocation();
+                      if (context.mounted) Navigator.of(context).pop();
+                    },
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  border: Border.all(color: AppColors.border),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.brandGreen.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: isDetecting
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.brandGreen,
+                              ),
+                            )
+                          : const Icon(Icons.my_location, color: AppColors.brandGreen, size: 20),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Use current location',
+                            style: TextStyle(
+                              color: AppColors.brandGreen,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 15,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            stateName.isNotEmpty ? '$areaName, $stateName' : areaName,
+                            style: const TextStyle(color: AppColors.textSub, fontSize: 13),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right, color: AppColors.textDisabled),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            if (!_isSearching) ...[
+              ElevatedButton.icon(
+                onPressed: () {
+                  final loc = locationState.location;
+                  if (loc != null) {
+                    AddAddressSheet.show(context, lat: loc.latitude, lng: loc.longitude, address: loc.displayString);
+                  }
+                },
+                icon: const Icon(Icons.add, size: 20, color: Colors.white),
+                label: const Text(
+                  'Add/Manage Addresses',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.brandGreen,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              const Text(
+                'Saved Addresses',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textMain),
+              ),
+              const SizedBox(height: 12),
+
+              Expanded(
+                child: addressesAsync.when(
+                  loading: () => const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brandGreen),
+                  ),
+                  error: (_, __) => const Center(
+                    child: Text(
+                      'Failed to load addresses',
+                      style: TextStyle(color: AppColors.textSub, fontSize: 14),
+                    ),
+                  ),
+                  data: (addresses) {
+                    if (addresses.isEmpty) {
+                      return const Center(
+                        child: Text(
+                          'No saved addresses found.',
+                          style: TextStyle(color: AppColors.textSub, fontSize: 14),
+                        ),
+                      );
+                    }
+                    return ListView.builder(
+                      padding: EdgeInsets.only(bottom: paddingBottom + 24),
+                      itemCount: addresses.length,
+                      itemBuilder: (ctx, i) => _buildAddressCard(addresses[i]),
+                    );
+                  },
+                ),
+              ),
+            ] else ...[
+              const Text(
+                'Search Results',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textSub),
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: _predictions.isEmpty
+                    ? const Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.search_off, size: 40, color: AppColors.border),
+                            SizedBox(height: 12),
+                            Text(
+                              'No locations found for this query.',
+                              style: TextStyle(color: AppColors.textSub, fontSize: 14),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.separated(
+                        padding: EdgeInsets.only(bottom: paddingBottom + 24),
+                        itemCount: _predictions.length + 1,
+                        separatorBuilder: (_, i) => i == _predictions.length - 1
+                            ? const SizedBox.shrink()
+                            : const Divider(color: AppColors.border, height: 1),
+                        itemBuilder: (_, i) {
+                          if (i == _predictions.length) {
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 16, bottom: 8, right: 8),
+                              child: Align(
+                                alignment: Alignment.centerRight,
+                                child: Text(
+                                  'powered by Google',
+                                  style: TextStyle(
+                                    color: AppColors.textDisabled,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+                          final p = _predictions[i];
+                          return ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: const Icon(Icons.location_on_outlined, color: AppColors.textSub),
+                            title: Text(
+                              p.mainText,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textMain,
+                                fontSize: 14,
+                              ),
+                            ),
+                            subtitle: Text(
+                              p.secondaryText,
+                              style: const TextStyle(color: AppColors.textSub, fontSize: 13),
+                            ),
+                            onTap: () => Navigator.of(context).pop(),
+                          );
+                        },
+                      ),
               ),
             ],
-          ),
-          const SizedBox(height: 16),
-
-          // Search Field
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: _searchFocus.hasFocus ? AppColors.brandGreen : AppColors.border,
-                width: 1.0,
-              ),
-            ),
-            child: TextField(
-              controller: _searchController,
-              focusNode: _searchFocus,
-              onTap: () => setState(() {}),
-              onTapOutside: (_) { _searchFocus.unfocus(); setState(() {}); },
-              onChanged: _onSearchChanged,
-              decoration: const InputDecoration(
-                hintText: 'Search for area, street name...',
-                hintStyle: TextStyle(color: AppColors.textDisabled, fontSize: 15),
-                prefixIcon: Icon(Icons.search, color: AppColors.brandGreen, size: 20),
-                filled: false,
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Use Current Location
-          InkWell(
-            onTap: isDetecting
-                ? null
-                : () async {
-                    await ref.read(locationProvider.notifier).refreshLocation();
-                    if (context.mounted) Navigator.of(context).pop();
-                  },
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                border: Border.all(color: AppColors.border),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                        color: AppColors.brandGreen.withValues(alpha: 0.1), shape: BoxShape.circle),
-                    child: isDetecting
-                        ? const SizedBox(width: 20, height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brandGreen))
-                        : const Icon(Icons.my_location, color: AppColors.brandGreen, size: 20),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Use current location',
-                            style: TextStyle(color: AppColors.brandGreen, fontWeight: FontWeight.w600, fontSize: 15)),
-                        const SizedBox(height: 2),
-                        Text(stateName.isNotEmpty ? '$areaName, $stateName' : areaName,
-                            style: const TextStyle(color: AppColors.textSub, fontSize: 13)),
-                      ],
-                    ),
-                  ),
-                  const Icon(Icons.chevron_right, color: AppColors.textDisabled),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          if (!_isSearching) ...[
-            ElevatedButton.icon(
-              onPressed: () {
-                final loc = locationState.location;
-                if (loc != null) {
-                  AddAddressSheet.show(context, lat: loc.latitude, lng: loc.longitude, address: loc.displayString);
-                }
-              },
-              icon: const Icon(Icons.add, size: 20, color: Colors.white),
-              label: const Text('Add/Manage Addresses',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.brandGreen,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 0,
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            const Text('Saved Addresses',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textMain)),
-            const SizedBox(height: 12),
-
-            Expanded(
-              child: addressesAsync.when(
-                loading: () => const Center(
-                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brandGreen)),
-                error: (_, __) => const Center(
-                    child: Text('Failed to load addresses',
-                        style: TextStyle(color: AppColors.textSub, fontSize: 14))),
-                data: (addresses) {
-                  if (addresses.isEmpty) {
-                    return const Center(
-                      child: Text('No saved addresses found.',
-                          style: TextStyle(color: AppColors.textSub, fontSize: 14)),
-                    );
-                  }
-                  return ListView.builder(
-                    padding: EdgeInsets.only(bottom: paddingBottom + 24),
-                    itemCount: addresses.length,
-                    itemBuilder: (ctx, i) => _buildAddressCard(addresses[i]),
-                  );
-                },
-              ),
-            ),
-          ] else ...[
-            const Text('Search Results',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textSub)),
-            const SizedBox(height: 12),
-            Expanded(
-              child: _predictions.isEmpty
-                  ? const Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-                      Icon(Icons.search_off, size: 40, color: AppColors.border),
-                      SizedBox(height: 12),
-                      Text('No locations found for this query.',
-                          style: TextStyle(color: AppColors.textSub, fontSize: 14)),
-                    ]))
-                  : ListView.separated(
-                      padding: EdgeInsets.only(bottom: paddingBottom + 24),
-                      itemCount: _predictions.length + 1,
-                      separatorBuilder: (_, i) =>
-                          i == _predictions.length - 1 ? const SizedBox.shrink() : const Divider(color: AppColors.border, height: 1),
-                      itemBuilder: (_, i) {
-                        if (i == _predictions.length) {
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 16, bottom: 8, right: 8),
-                            child: Align(
-                              alignment: Alignment.centerRight,
-                              child: Text('powered by Google',
-                                  style: TextStyle(color: AppColors.textDisabled, fontSize: 12, fontWeight: FontWeight.w500)),
-                            ),
-                          );
-                        }
-                        final p = _predictions[i];
-                        return ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: const Icon(Icons.location_on_outlined, color: AppColors.textSub),
-                          title: Text(p.mainText,
-                              style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textMain, fontSize: 14)),
-                          subtitle: Text(p.secondaryText,
-                              style: const TextStyle(color: AppColors.textSub, fontSize: 13)),
-                          onTap: () => Navigator.of(context).pop(),
-                        );
-                      },
-                    ),
-            ),
           ],
-        ],
+        ),
       ),
     );
   }

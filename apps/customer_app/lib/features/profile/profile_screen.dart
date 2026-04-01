@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_core/services/auth_service.dart';
 import 'package:shared_core/services/node_api_service.dart';
 import 'package:shared_core/theme/app_colors.dart';
@@ -63,7 +64,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   Expanded(
                     child: TextButton(
                       style: TextButton.styleFrom(
-                        backgroundColor: const Color(0xFFE8F6F1),
+                        backgroundColor: const Color(0xFFF5F5F5),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
@@ -73,7 +74,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         style: GoogleFonts.poppins(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.brandGreen,
+                          color: AppColors.textSub,
                         ),
                       ),
                     ),
@@ -82,7 +83,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   Expanded(
                     child: TextButton(
                       style: TextButton.styleFrom(
-                        backgroundColor: AppColors.brandGreen,
+                        backgroundColor: AppColors.errorBg,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
@@ -96,7 +97,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         style: GoogleFonts.poppins(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                          color: AppColors.errorRed,
                         ),
                       ),
                     ),
@@ -378,9 +379,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 Navigator.push(context, CupertinoPageRoute(builder: (_) => const OrdersHistoryScreen()));
               }),
               _divider(),
-              _row(context, Icons.help_outline, 'Help & Support', () {}),
+              _row(context, Icons.help_outline, 'Help & Support', () {
+                Navigator.push(context, CupertinoPageRoute(builder: (_) => const _HelpSupportScreen()));
+              }),
               _divider(),
-              _row(context, Icons.info_outline, 'About Gutzo', () {}),
+              _row(context, Icons.info_outline, 'About Gutzo', () {
+                Navigator.push(context, CupertinoPageRoute(builder: (_) => const _AboutScreen()));
+              }),
             ]),
 
             const SizedBox(height: 40),
@@ -1116,6 +1121,287 @@ class _PrivacyScreen extends StatelessWidget {
           Text(title, style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textMain)),
           const SizedBox(height: 8),
           Text(content, style: GoogleFonts.poppins(fontSize: 14, color: Color(0xFF4A4A4A), height: 1.6)),
+        ],
+      ),
+    );
+  }
+}
+
+class _HelpSupportScreen extends StatelessWidget {
+  const _HelpSupportScreen();
+
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri launchUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber,
+    );
+    if (await canLaunchUrl(launchUri)) {
+      await launchUrl(launchUri);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF7F7F8),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFF7F7F8),
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        leading: GestureDetector(
+          onTap: () => Navigator.of(context).pop(),
+          child: const Icon(Icons.arrow_back, color: AppColors.textMain),
+        ),
+        title: Text(
+          'Help & Support',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 17, color: AppColors.textMain),
+        ),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "How can we help you today?",
+              style: GoogleFonts.poppins(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textMain,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "Our team is here to ensure you have the best experience with Gutzo.",
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: AppColors.textSub,
+              ),
+            ),
+            const SizedBox(height: 32),
+            
+            // Direct Contact Card
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.brandGreen.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.phone_in_talk_outlined,
+                      color: AppColors.brandGreen,
+                      size: 32,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    "Speak with us directly",
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textMain,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "Available for immediate assistance, feedback, and research inquiries.",
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: AppColors.textSub,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => _makePhoneCall('+918903589068'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.brandGreen,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.call, size: 20),
+                          const SizedBox(width: 12),
+                          Text(
+                            "+91 89035 89068",
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 32),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AboutScreen extends StatelessWidget {
+  const _AboutScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        leading: GestureDetector(
+          onTap: () => Navigator.of(context).pop(),
+          child: const Icon(Icons.arrow_back, color: AppColors.textMain),
+        ),
+        title: Text(
+          'About Gutzo',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 17, color: AppColors.textMain),
+        ),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Image.asset(
+              'assets/images/gutzo_premium_badge_illustration.png',
+              height: 100,
+              width: 100,
+            ),
+            const SizedBox(height: 24),
+            Text(
+              "Feels Lighter",
+              style: GoogleFonts.poppins(
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                color: AppColors.brandGreen,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              "Delicious eating made simple and local.",
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                color: AppColors.textMain,
+                height: 1.4,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 32),
+            _aboutSection(
+              "Who we are", 
+              "Gutzo was born because finding clean, honest food felt difficult every single day. We are a small team dedicated to making daily eating feel easy and natural, not stressful."
+            ),
+            _aboutSection(
+              "Our Solution", 
+              "We provide a simple platform for better food choices with trusted restaurants, clear information, and zero confusion. We believe good food should fit your daily life effortlessly."
+            ),
+            _aboutSection(
+              "Our Philosophy", 
+              "Local, honest, and made for people who want to take care of themselves. We are starting our journey in Coimbatore, growing one city at a time with a focus on quality and user trust."
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF7F7F8),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    "Get in touch",
+                    style: GoogleFonts.poppins(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textMain,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "manage.gutzo@gmail.com",
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: AppColors.brandGreen,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 48),
+            Text(
+              "Made with ❤️ for Coimbatore",
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                color: AppColors.textSub,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _aboutSection(String title, String content) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textMain,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            content,
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              color: AppColors.textSub,
+              height: 1.6,
+            ),
+          ),
         ],
       ),
     );
