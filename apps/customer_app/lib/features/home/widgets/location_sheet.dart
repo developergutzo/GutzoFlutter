@@ -382,90 +382,110 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
             ),
             const SizedBox(height: 16),
 
-            // Use Current Location
-            InkWell(
-              onTap: isDetecting
-                  ? null
-                  : () async {
-                      await ref.read(locationProvider.notifier).refreshLocation();
-                      if (context.mounted) Navigator.of(context).pop();
-                    },
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.border),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
+            // Horizontal Actions: Current Location & Add Address
+            Row(
+              children: [
+                // Use Current Location
+                Expanded(
+                  child: InkWell(
+                    onTap: isDetecting
+                        ? null
+                        : () async {
+                            await ref.read(locationProvider.notifier).refreshLocation();
+                            if (context.mounted) Navigator.of(context).pop();
+                          },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                       decoration: BoxDecoration(
-                        color: AppColors.brandGreen.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.border),
+                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.white,
                       ),
-                      child: isDetecting
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: AppColors.brandGreen,
-                              ),
-                            )
-                          : const Icon(Icons.my_location, color: AppColors.brandGreen, size: 20),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.brandGreen.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: isDetecting
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: AppColors.brandGreen,
+                                    ),
+                                  )
+                                : const Icon(Icons.my_location, color: AppColors.brandGreen, size: 18),
+                          ),
+                          const SizedBox(height: 8),
                           const Text(
-                            'Use current location',
+                            'Current Location',
                             style: TextStyle(
                               color: AppColors.brandGreen,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            stateName.isNotEmpty ? '$areaName, $stateName' : areaName,
-                            style: const TextStyle(color: AppColors.textSub, fontSize: 13),
+                            textAlign: TextAlign.center,
                           ),
                         ],
                       ),
                     ),
-                    const Icon(Icons.chevron_right, color: AppColors.textDisabled),
-                  ],
+                  ),
                 ),
-              ),
+                const SizedBox(width: 12),
+                // Add/Manage Addresses
+                Expanded(
+                  child: InkWell(
+                    onTap: () {
+                      final loc = locationState.location;
+                      if (loc != null) {
+                        AddAddressSheet.show(context, lat: loc.latitude, lng: loc.longitude, address: loc.displayString);
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: AppColors.border),
+                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.white,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.brandGreen.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.add_location_alt_outlined, color: AppColors.brandGreen, size: 18),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Add New Address',
+                            style: TextStyle(
+                              color: AppColors.brandGreen,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
 
             if (!_isSearching) ...[
-              ElevatedButton.icon(
-                onPressed: () {
-                  final loc = locationState.location;
-                  if (loc != null) {
-                    AddAddressSheet.show(context, lat: loc.latitude, lng: loc.longitude, address: loc.displayString);
-                  }
-                },
-                icon: const Icon(Icons.add, size: 20, color: Colors.white),
-                label: const Text(
-                  'Add/Manage Addresses',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.brandGreen,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
-                ),
-              ),
-              const SizedBox(height: 20),
-
               const Text(
                 'Saved Addresses',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textMain),
