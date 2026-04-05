@@ -34,7 +34,7 @@ router.get('/', asyncHandler(async (req, res) => {
 // ============================================
 router.get('/health-filters', asyncHandler(async (req, res) => {
   const { data: filters, error } = await supabaseAdmin
-    .from('health_filters')
+    .from('health_category_filters')
     .select('*')
     .eq('is_active', true)
     .order('sort_order', { ascending: true });
