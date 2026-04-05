@@ -1,0 +1,136 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Invoice #TEST-GST-001</title>
+    
+<style>
+    body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 20px; line-height: 1.4; color: #333; max-width: 800px; margin: 0 auto; }
+    .header { display: flex; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 20px; }
+    .logo { font-size: 24px; font-weight: bold; color: #1BA672; }
+    .meta { text-align: right; font-size: 14px; color: #666; }
+    h2 { margin: 0 0 10px 0; font-size: 18px; }
+    .section { margin-bottom: 30px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    th { text-align: left; padding: 10px; background: #f9f9f9; font-weight: 600; border-bottom: 1px solid #ddd; font-size: 12px; text-transform: uppercase; color: #555; }
+    td { padding: 10px; border-bottom: 1px solid #eee; font-size: 14px; }
+    .text-right { text-align: right; }
+    .total-row td { font-weight: bold; border-top: 2px solid #ddd; background: #fdfdfd; }
+    .footer { text-align: center; font-size: 12px; color: #999; margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px; }
+    .badge { padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
+    .badge-paid { background: #dcfce7; color: #15803d; }
+    .badge-pending { background: #fef9c3; color: #a16207; }
+    .small { font-size: 12px; color: #666; }
+</style>
+
+</head>
+<body>
+    <div class="header">
+        <div>
+            <div class="logo">GUTZO</div>
+            <div class="small">Tax Invoice</div>
+        </div>
+        <div class="meta">
+            <div><strong>Order #TEST-GST-001</strong></div>
+            <div>Date: 14 February 2026 at 5:17 pm</div>
+            <div style="margin-top:5px">
+                <span class="badge badge-paid">PAID</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div style="display:flex; gap: 40px;">
+            <div style="flex:1">
+                <div class="small" style="text-transform:uppercase; margin-bottom:5px; font-weight:bold;">Ordered From</div>
+                <h2>Test Vendor</h2>
+                <div class="small">123 Test St</div>
+                <div class="small">GSTIN: 29ABCDE1234F1Z5</div>
+            </div>
+            <div style="flex:1">
+                <div class="small" style="text-transform:uppercase; margin-bottom:5px; font-weight:bold;">Delivered To</div>
+                <div style="font-weight:600">Test User</div>
+                <div class="small">456 User Ln</div>
+                <div class="small">Phone: 9999999999</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>Order Summary</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th class="text-right" width="60">Qty</th>
+                    <th class="text-right" width="100">Price</th>
+                    <th class="text-right" width="100">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+            <tr>
+                <td>
+                    <div style="font-weight:500">TestItem</div>
+                    
+                </td>
+                <td class="text-right">1</td>
+                <td class="text-right">₹105.00</td>
+                <td class="text-right">₹105.00</td>
+            </tr>
+        
+            </tbody>
+        </table>
+    </div>
+
+    <div class="section">
+        <div style="display:flex; justify-content:flex-end">
+            <div style="width:300px">
+                <table style="margin:0">
+                    <tr>
+                        <td>Item Total</td>
+                        <td class="text-right">₹105.00</td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="color:#555">Restaurant GST (5%)</td>
+                        <td class="text-right" style="color:#555; font-size:12px;">(Inc. ₹5.00)</td>
+                    </tr>
+                    
+                    <tr><td colspan="2" style="border-bottom:1px dashed #ddd"></td></tr>
+
+                    <tr>
+                        <td>Delivery Partner Fee</td>
+                        <td class="text-right">₹50.00</td>
+                    </tr>
+                    <tr>
+                        <td>Platform Fee</td>
+                        <td class="text-right">₹10.00</td>
+                    </tr>
+                     <tr>
+                        <td style="color:#555">Taxes on Fees (18%)</td>
+                        <td class="text-right" style="color:#555; font-size:12px;">(Inc. ₹9.15)</td>
+                    </tr>
+                    
+                    
+
+                    <tr class="total-row">
+                        <td style="font-size:16px">Grand Total</td>
+                        <td class="text-right" style="font-size:16px">₹165.00</td>
+                    </tr>
+                    <tr>
+                         <td class="small">Payment Mode</td>
+                         <td class="text-right small">UPI</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Thank you for ordering from Gutzo!</p>
+        <p class="small" style="margin-top:5px">This is a computer generated invoice.</p>
+    </div>
+</body>
+</html>
+    

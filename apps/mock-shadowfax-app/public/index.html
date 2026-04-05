@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Mock Shadowfax - Delivery Partner Dashboard</title>
+        <link rel="stylesheet" href="style.css">
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+        <style>
+            .map-container { height: 400px; width: 100%; border-radius: 8px; margin-bottom: 1rem; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-content">
+                    <h1>🚚 Mock Shadowfax Dashboard</h1>
+                    <div class="header-stats">
+                        <div class="stat-card">
+                            <span class="stat-label">Total Orders</span>
+                            <span class="stat-value" id="totalOrders">0</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label">Active</span>
+                            <span class="stat-value" id="activeOrders">0</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label">Delivered</span>
+                            <span class="stat-value" id="deliveredOrders"
+                            >0</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="main-content">
+                <!-- Empty State -->
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-icon">📦</div>
+                    <h2>No Orders Yet</h2>
+                    <p>Orders created via the mock API will appear here</p>
+                    <div class="api-info">
+                        <code>POST http://localhost:3002/order/create/</code>
+                    </div>
+                </div>
+
+                <!-- Orders List -->
+                <div
+                    class="orders-container"
+                    id="ordersContainer"
+                    style="display: none"
+                >
+                    <div class="orders-grid" id="ordersGrid">
+                        <!-- Orders will be dynamically inserted here -->
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Order Detail Modal -->
+        <div class="modal" id="orderModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Order Details</h2>
+                    <button class="close-btn" onclick="closeModal()">×</button>
+                </div>
+                <div class="modal-body" id="modalBody">
+                    <!-- Order details will be inserted here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Location Modal -->
+        <div id="location-modal" class="modal" style="display: none;">
+            <div class="modal-content" style="max-width: 800px; width: 90%;">
+                <div class="modal-header">
+                    <h2>📍 Set Rider Location</h2>
+                    <span class="close-btn" onclick="closeLocationModal()">&times;</span>
+                </div>
+                <div id="simulation-map" class="map-container"></div>
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" onclick="closeLocationModal()">Cancel</button>
+                    <button class="btn btn-primary" onclick="confirmLocationUpdate()">Update Position</button>
+                </div>
+                <p style="margin-top: 10px; font-size: 0.8rem; color: #666;">Click anywhere on map to move the rider marker.</p>
+            </div>
+        </div>
+        
+        <script src="app.js"></script>
+    </body>
+</html>

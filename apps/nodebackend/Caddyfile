@@ -1,0 +1,24 @@
+{
+    local_certs
+}
+
+# Domain configuration
+# Using the IP found in your .env file: 192.168.1.36
+
+https://192-168-1-36.nip.io {
+
+    # 1. Supabase Service Proxy
+    @backend path /service/*
+    handle @backend {
+        uri strip_prefix /service
+        reverse_proxy 35.222.248.64:8000
+    }
+
+    # 2. Node.js Backend API Proxy
+    @node_api path /api/*
+    handle @node_api {
+        reverse_proxy localhost:5000
+    }
+
+
+}
