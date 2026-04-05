@@ -128,8 +128,12 @@ class NodeApiService {
     return _request("/mood-categories");
   }
 
-  Future<dynamic> getVendors() async {
-    return _request("/vendors");
+  Future<dynamic> getVendors({double? lat, double? lng}) async {
+    final queryParams = <String>[];
+    if (lat != null) queryParams.add('lat=$lat');
+    if (lng != null) queryParams.add('lng=$lng');
+    final query = queryParams.isNotEmpty ? '?${queryParams.join('&')}' : '';
+    return _request("/vendors$query");
   }
 
   Future<dynamic> getVendor(String vendorId) async {

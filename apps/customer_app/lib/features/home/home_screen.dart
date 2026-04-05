@@ -460,6 +460,7 @@ class _MarketplaceBody extends ConsumerWidget {
         vendorsAsync.when(
           data: (vendors) {
             final selectedFilter = ref.watch(homeFilterProvider);
+
             final filteredVendors = vendors.where((v) {
               if (selectedFilter == 'All') return true;
               return v.tags?.any((tag) => tag.toLowerCase().contains(selectedFilter.toLowerCase())) ?? false;

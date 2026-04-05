@@ -79,7 +79,7 @@ class VendorCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           
-          // Status Row (Rating • Serviceable)
+          // Status Row (Rating • DeliveryTime / Serviceability)
           Row(
             children: [
               const Icon(Icons.star, color: AppColors.brandGreen, size: 16),
@@ -99,18 +99,17 @@ class VendorCard extends StatelessWidget {
                 const Text(
                   'Not Serviceable',
                   style: TextStyle(
-                    color: AppColors.errorRed,
+                    color: Color(0xFFE74C3C),
                     fontSize: 14,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                   ),
                 )
               else
-                const Text(
-                  'Serviceable',
-                  style: TextStyle(
-                    color: AppColors.brandGreen,
+                Text(
+                  deliveryTime.isNotEmpty ? deliveryTime : '—',
+                  style: const TextStyle(
+                    color: AppColors.textMain,
                     fontSize: 14,
-                    fontWeight: FontWeight.w700,
                   ),
                 ),
             ],
