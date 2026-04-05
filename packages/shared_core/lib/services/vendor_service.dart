@@ -82,8 +82,10 @@ class VendorNotifier extends Notifier<AsyncValue<List<model.Vendor>>> {
               return vendor.copyWith(isServiceable: isServiceable);
             } catch (e) {
               debugPrint('Serviceability check failed for ${vendor.name}: $e');
-              // On error, hide the vendor (same policy as webapp comment)
-              return vendor.copyWith(isServiceable: false);
+              // On API error (network, missing coords, etc.) — return vendor as-is
+              // so it shows normally, matching the webapp behavior (webapp also skips the vendor on error,
+              // but we prefer to show rather than hide in mobile context)
+              return vendor;
             }
           }),
         );
