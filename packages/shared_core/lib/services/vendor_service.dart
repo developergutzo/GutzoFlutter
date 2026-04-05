@@ -4,6 +4,7 @@ import 'package:shared_core/models/vendor.dart' as model;
 import 'package:shared_core/models/product.dart' as model;
 import 'package:shared_core/services/node_api_service.dart';
 import 'package:shared_core/services/location_service.dart';
+import 'package:shared_core/services/distance_service.dart';
 
 final vendorProvider = NotifierProvider<VendorNotifier, AsyncValue<List<model.Vendor>>>(() {
   return VendorNotifier();
@@ -72,6 +73,7 @@ class VendorNotifier extends Notifier<AsyncValue<List<model.Vendor>>> {
               
               final data = res is Map ? (res['data'] ?? res) : null;
               bool isServiceable = true; // Default to true if missing (matching webapp fallback)
+              String dynamicDeliveryTime = vendor.deliveryTime;
 
               if (data != null && data is Map) {
                 if (data['is_serviceable'] != null) {
@@ -82,9 +84,40 @@ class VendorNotifier extends Notifier<AsyncValue<List<model.Vendor>>> {
                   final val = data['value']['is_serviceable'];
                   isServiceable = val is bool ? val : (val == 1 || val == '1' || val == 'true');
                 }
+
+                // 📍 Dynamic estimation calculation (mirroring webapp useVendors.ts)
+                if (isServiceable) {
+                  final pickupEtaStr = data['pickup_eta'] ?? (data['value'] != null ? data['value']['pickup_eta'] : null);
+                  debugPrint('VendorNotifier: ${vendor.name} - isServiceable: $isServiceable, pickupEta: $pickupEtaStr');
+                  
+                  if (pickupEtaStr != null) {
+                    final travelTimeStr = await DistanceService.getTravelTime(
+                      originLat: vendor.latitude!,
+                      originLng: vendor.longitude!,
+                      destLat: lat,
+                      destLng: lng,
+                    );
+                    debugPrint('VendorNotifier: ${vendor.name} - travelTime: $travelTimeStr');
+
+                    if (travelTimeStr != null) {
+                      final pickupMins = DistanceService.parseDurationToMinutes(pickupEtaStr.toString());
+                      final travelMins = DistanceService.parseDurationToMinutes(travelTimeStr);
+                      debugPrint('VendorNotifier: ${vendor.name} - Calculating: $pickupMins + $travelMins');
+                      
+                      if (pickupMins > 0 && travelMins > 0) {
+                        final total = pickupMins + travelMins;
+                        dynamicDeliveryTime = '$total-${total + 5} mins';
+                        debugPrint('VendorNotifier: ${vendor.name} - Result: $dynamicDeliveryTime');
+                      }
+                    }
+                  }
+                }
               }
 
-              return vendor.copyWith(isServiceable: isServiceable);
+              return vendor.copyWith(
+                isServiceable: isServiceable,
+                deliveryTime: dynamicDeliveryTime,
+              );
             } catch (e) {
               debugPrint('Serviceability check failed for ${vendor.name}: $e');
               // On API error (network, missing coords, etc.) — return vendor as-is
