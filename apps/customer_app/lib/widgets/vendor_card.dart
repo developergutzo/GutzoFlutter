@@ -42,28 +42,35 @@ class VendorCard extends StatelessWidget {
         }
       },
       borderRadius: BorderRadius.circular(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Image with Badge
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Image.network(
-                  imageUrl.isNotEmpty ? imageUrl : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c',
-                  height: 190,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    height: 190,
-                    color: AppColors.shimmerBase,
-                    child: const Icon(Icons.image_not_supported_outlined, color: AppColors.textDisabled),
+      child: Opacity(
+        opacity: vendorModel?.isServiceable == false ? 0.5 : 1.0,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image with Badge
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: ColorFiltered(
+                    colorFilter: vendorModel?.isServiceable == false 
+                      ? const ColorFilter.mode(Colors.grey, BlendMode.saturation)
+                      : const ColorFilter.mode(Colors.transparent, BlendMode.multiply),
+                    child: Image.network(
+                      imageUrl.isNotEmpty ? imageUrl : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c',
+                      height: 190,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        height: 190,
+                        color: AppColors.shimmerBase,
+                        child: const Icon(Icons.image_not_supported_outlined, color: AppColors.textDisabled),
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
           const SizedBox(height: 12),
           // Title Row
           Text(
@@ -148,7 +155,8 @@ class VendorCard extends StatelessWidget {
               ),
             ],
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
