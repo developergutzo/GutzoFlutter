@@ -7,16 +7,19 @@ import 'package:shared_core/services/location_service.dart';
 import 'package:shared_core/services/auth_service.dart';
 import 'package:shared_core/services/node_api_service.dart';
 import 'package:shared_core/theme/app_colors.dart';
+import 'package:shared_core/models/address.dart';
 import '../../../providers/address_provider.dart';
 
 class AddAddressDetailScreen extends ConsumerStatefulWidget {
   final LatLng position;
   final DetailedAddress address;
+  final UserAddress? existingAddress;
 
   const AddAddressDetailScreen({
     super.key,
     required this.position,
     required this.address,
+    this.existingAddress,
   });
 
   @override
@@ -44,39 +47,50 @@ class _AddAddressDetailScreenState extends ConsumerState<AddAddressDetailScreen>
   @override
   void initState() {
     super.initState();
-    // Pre-fill from geocoding
-    // Pre-fill from geocoding with enhanced components
-    final house = widget.address.houseNumber ?? widget.address.streetNumber ?? '';
-    final flat = widget.address.flatNumber ?? '';
-    final building = widget.address.buildingName ?? '';
-    final block = widget.address.block ?? '';
-    final area = widget.address.area ?? '';
-    final route = widget.address.route ?? '';
     
-    // Combine House/Flat/Block/Building for the specific premise field
-    List<String> houseParts = [];
-    if (house.isNotEmpty) houseParts.add(house);
-    if (flat.isNotEmpty) houseParts.add(flat);
-    if (block.isNotEmpty) houseParts.add(block);
-    if (building.isNotEmpty) houseParts.add(building);
-    
-    if (houseParts.isNotEmpty) {
-      _houseController.text = houseParts.join(', ');
+    if (widget.existingAddress != null) {
+      final addr = widget.existingAddress!;
+      _houseController.text = addr.street;
+      _areaController.text = addr.area ?? '';
+      _pincodeController.text = addr.postalCode ?? '';
+      _phoneController.text = addr.alternativePhone ?? '';
+      _customLabelController.text = addr.customLabel ?? '';
+      _selectedCategory = addr.type;
+      _initialTypeSet = true;
     } else {
-      // Fallback: auto populate with the most specific available address part
-      final splitAddr = widget.address.formattedAddress.split(',');
-      if (splitAddr.isNotEmpty && splitAddr[0].trim().isNotEmpty) {
-        _houseController.text = splitAddr[0].trim();
+      // Pre-fill from geocoding with enhanced components
+      final house = widget.address.houseNumber ?? widget.address.streetNumber ?? '';
+      final flat = widget.address.flatNumber ?? '';
+      final building = widget.address.buildingName ?? '';
+      final block = widget.address.block ?? '';
+      final area = widget.address.area ?? '';
+      final route = widget.address.route ?? '';
+      
+      // Combine House/Flat/Block/Building for the specific premise field
+      List<String> houseParts = [];
+      if (house.isNotEmpty) houseParts.add(house);
+      if (flat.isNotEmpty) houseParts.add(flat);
+      if (block.isNotEmpty) houseParts.add(block);
+      if (building.isNotEmpty) houseParts.add(building);
+      
+      if (houseParts.isNotEmpty) {
+        _houseController.text = houseParts.join(', ');
+      } else {
+        // Fallback: auto populate with the most specific available address part
+        final splitAddr = widget.address.formattedAddress.split(',');
+        if (splitAddr.isNotEmpty && splitAddr[0].trim().isNotEmpty) {
+          _houseController.text = splitAddr[0].trim();
+        }
       }
+      
+      // Combine Road/Area
+      List<String> areaParts = [];
+      if (route.isNotEmpty) areaParts.add(route);
+      if (area.isNotEmpty && !route.contains(area)) areaParts.add(area);
+      
+      _areaController.text = areaParts.join(', ');
+      _pincodeController.text = widget.address.postalCode ?? '';
     }
-    
-    // Combine Road/Area
-    List<String> areaParts = [];
-    if (route.isNotEmpty) areaParts.add(route);
-    if (area.isNotEmpty && !route.contains(area)) areaParts.add(area);
-    
-    _areaController.text = areaParts.join(', ');
-    _pincodeController.text = widget.address.postalCode ?? '';
     
     // Listeners for UI updates (glow effects & real-time validation)
     _houseFocus.addListener(() => setState(() {}));
@@ -125,7 +139,7 @@ class _AddAddressDetailScreenState extends ConsumerState<AddAddressDetailScreen>
         'label': label,
         'street': _houseController.text.trim(),
         'area': _areaController.text.trim().isEmpty ? _houseController.text.trim() : _areaController.text.trim(),
-        'full_address': widget.address.formattedAddress,
+        'full_address': widget.existingAddress != null ? widget.existingAddress!.fullAddress : widget.address.formattedAddress,
         'zipcode': _pincodeController.text.trim(),
         'latitude': widget.position.latitude,
         'longitude': widget.position.longitude,
@@ -134,7 +148,11 @@ class _AddAddressDetailScreenState extends ConsumerState<AddAddressDetailScreen>
         if (_phoneController.text.isNotEmpty) 'alternative_phone': _phoneController.text.trim(),
       };
 
-      await ref.read(nodeApiServiceProvider).createAddress(user.phone, addressData);
+      if (widget.existingAddress != null) {
+        await ref.read(nodeApiServiceProvider).updateAddress(user.phone, widget.existingAddress!.id, addressData);
+      } else {
+        await ref.read(nodeApiServiceProvider).createAddress(user.phone, addressData);
+      }
       
       if (mounted) {
         ref.invalidate(savedAddressesProvider);

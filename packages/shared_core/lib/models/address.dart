@@ -12,6 +12,7 @@ class UserAddress {
   final String state;
   final String country;
   final String? postalCode;
+  final String? alternativePhone;
   final double? latitude;
   final double? longitude;
   final String? deliveryInstructions;
@@ -33,6 +34,7 @@ class UserAddress {
     required this.state,
     required this.country,
     this.postalCode,
+    this.alternativePhone,
     this.latitude,
     this.longitude,
     this.deliveryInstructions,
@@ -55,7 +57,8 @@ class UserAddress {
       city: (json['city'] ?? '') as String,
       state: (json['state'] ?? '') as String,
       country: (json['country'] ?? '') as String,
-      postalCode: json['postal_code'] as String?,
+      postalCode: json['zipcode'] as String? ?? json['postal_code'] as String?,
+      alternativePhone: json['alternative_phone'] as String?,
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
       deliveryInstructions: json['delivery_instructions'] as String?,
@@ -80,6 +83,7 @@ class UserAddress {
       'state': state,
       'country': country,
       'postal_code': postalCode,
+      'alternative_phone': alternativePhone,
       'latitude': latitude,
       'longitude': longitude,
       'delivery_instructions': deliveryInstructions,

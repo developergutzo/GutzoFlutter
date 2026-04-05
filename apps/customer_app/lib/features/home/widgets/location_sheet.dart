@@ -10,6 +10,8 @@ import 'package:shared_core/services/node_api_service.dart' as api;
 import 'package:shared_core/models/address.dart';
 import '../../../providers/address_provider.dart';
 import 'location_pick_screen.dart';
+import 'add_address_detail_screen.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class LocationSheet extends ConsumerStatefulWidget {
   const LocationSheet({super.key});
@@ -271,7 +273,20 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
                 elevation: 4,
                 onSelected: (val) {
                   if (val == 'edit') {
-                    // TODO: open edit address sheet
+                    Navigator.push(
+                      context,
+                      CupertinoPageRoute(
+                        builder: (_) => AddAddressDetailScreen(
+                          position: LatLng(address.latitude ?? 0.0, address.longitude ?? 0.0),
+                          address: DetailedAddress(
+                            formattedAddress: address.fullAddress,
+                            latitude: address.latitude ?? 0.0,
+                            longitude: address.longitude ?? 0.0,
+                          ),
+                          existingAddress: address,
+                        ),
+                      ),
+                    );
                   } else if (val == 'delete') {
                     _showDeleteConfirmationDialog(context, address);
                   } else if (val == 'default') {
