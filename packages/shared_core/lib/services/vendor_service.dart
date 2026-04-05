@@ -12,13 +12,16 @@ final vendorProvider = NotifierProvider<VendorNotifier, AsyncValue<List<model.Ve
 class VendorNotifier extends Notifier<AsyncValue<List<model.Vendor>>> {
   @override
   AsyncValue<List<model.Vendor>> build() {
-    // 📍 Re-fetch vendors whenever the location changes
-    final location = ref.watch(locationProvider).location;
-    _fetchVendors(location?.latitude, location?.longitude);
+    // 📍 Re-fetch vendors whenever the location or address changes
+    final locationState = ref.watch(locationProvider);
+    final location = locationState.location;
+    final address = location?.displayString;
+    
+    _fetchVendors(location?.latitude, location?.longitude, address);
     return const AsyncValue.loading();
   }
 
-  Future<void> _fetchVendors(double? lat, double? lng) async {
+  Future<void> _fetchVendors(double? lat, double? lng, String? address) async {
     state = const AsyncValue.loading();
     try {
       final apiService = ref.read(nodeApiServiceProvider);
@@ -52,39 +55,40 @@ class VendorNotifier extends Notifier<AsyncValue<List<model.Vendor>>> {
             }
             try {
               final pickup = {
-                'address': vendor.location,
+                'address': vendor.location.isNotEmpty ? vendor.location : vendor.name,
                 'latitude': vendor.latitude,
                 'longitude': vendor.longitude,
               };
               final drop = {
-                'address': '',
+                'address': address ?? '', // 📍 Use real address if available
                 'latitude': lat,
                 'longitude': lng,
               };
 
               final res = await apiService.getDeliveryServiceability(pickup, drop);
 
-              // Mirror webapp logic: check is_serviceable explicitly or fallback to value.is_serviceable
+              // 📍 Mirror webapp logic exactly:
+              // const isServiceable = res.data && (res.data.is_serviceable !== undefined ? res.data.is_serviceable : (res.data.value?.is_serviceable ?? true));
+              
               final data = res is Map ? (res['data'] ?? res) : null;
-              final bool isServiceable;
-              if (data != null) {
+              bool isServiceable = true; // Default to true if missing (matching webapp fallback)
+
+              if (data != null && data is Map) {
                 if (data['is_serviceable'] != null) {
-                  isServiceable = data['is_serviceable'] as bool;
-                } else if (data['value'] != null && data['value']['is_serviceable'] != null) {
-                  isServiceable = data['value']['is_serviceable'] as bool;
-                } else {
-                  isServiceable = true; // fallback: assume serviceable
+                  // Handle both bool and int (0/1) types
+                  final val = data['is_serviceable'];
+                  isServiceable = val is bool ? val : (val == 1 || val == '1' || val == 'true');
+                } else if (data['value'] != null && data['value'] is Map && data['value']['is_serviceable'] != null) {
+                  final val = data['value']['is_serviceable'];
+                  isServiceable = val is bool ? val : (val == 1 || val == '1' || val == 'true');
                 }
-              } else {
-                isServiceable = true;
               }
 
               return vendor.copyWith(isServiceable: isServiceable);
             } catch (e) {
               debugPrint('Serviceability check failed for ${vendor.name}: $e');
               // On API error (network, missing coords, etc.) — return vendor as-is
-              // so it shows normally, matching the webapp behavior (webapp also skips the vendor on error,
-              // but we prefer to show rather than hide in mobile context)
+              // so it shows normally, matching the webapp behavior
               return vendor;
             }
           }),
@@ -129,8 +133,10 @@ class VendorNotifier extends Notifier<AsyncValue<List<model.Vendor>>> {
   }
 
   Future<void> refresh() {
-    final location = ref.read(locationProvider).location;
-    return _fetchVendors(location?.latitude, location?.longitude);
+    final locationState = ref.read(locationProvider);
+    final location = locationState.location;
+    final address = location?.displayString;
+    return _fetchVendors(location?.latitude, location?.longitude, address);
   }
   
   // Filtering logic
