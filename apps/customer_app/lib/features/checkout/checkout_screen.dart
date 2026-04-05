@@ -509,7 +509,9 @@ class CheckoutScreen extends ConsumerWidget {
           ],
         ),
       ),
-    );
+    ),
+  ],
+);
   }
 
   void _showNoteBottomSheet(BuildContext context, WidgetRef ref, String initialNote) {
@@ -657,7 +659,7 @@ class _BillingSummaryState extends State<_BillingSummary> {
                     ),
                     if (savings > 0)
                       Padding(
-                        padding: const EdgeInsets.top(2),
+                        padding: const EdgeInsets.only(top: 2),
                         child: Text(
                           'You saved ₹${savings.toStringAsFixed(0)} on this order!',
                           style: GoogleFonts.poppins(

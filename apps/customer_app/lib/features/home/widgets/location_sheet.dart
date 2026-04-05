@@ -9,7 +9,6 @@ import 'package:shared_core/services/auth_service.dart' as auth;
 import 'package:shared_core/services/node_api_service.dart' as api;
 import 'package:shared_core/models/address.dart';
 import '../../../providers/address_provider.dart';
-import 'add_address_sheet.dart';
 import 'location_pick_screen.dart';
 
 class LocationSheet extends ConsumerStatefulWidget {
