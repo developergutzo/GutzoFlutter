@@ -339,7 +339,7 @@ class LocationService {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       debugPrint('Location services are disabled');
-      throw Exception('Location services are disabled');
+      throw Exception('LOCATION_SERVICES_DISABLED');
     }
 
     debugPrint('Checking location permissions...');
@@ -374,23 +374,31 @@ class LocationService {
     debugPrint('Calling reverseGeocode...');
     return reverseGeocode(position.latitude, position.longitude);
   }
+
+  /// Open device location settings
+  static Future<void> openLocationSettings() async {
+    await Geolocator.openLocationSettings();
+  }
 }
 
 /// Riverpod provider for location state
 class LocationNotifier extends Notifier<LocationState> {
   @override
   LocationState build() {
-    // Schedule fetch after build completes to avoid "uninitialized provider" error
-    Future.microtask(() => _loadLocation());
-    return const LocationState();
+    // We no longer trigger GPS automatically on build.
+    // The LocationSyncNotifier in the app handles triggering GPS if needed.
+    return const LocationState(isLoading: true); 
   }
 
   Future<void> _loadLocation() async {
+    // Already has location (from database or manual set)
+    if (state.location != null) return;
+    
     state = state.copyWith(isLoading: true, error: null);
 
     try {
+      // Get fresh GPS position and basic geocoding in one call
       final locationData = await LocationService.getCurrentLocation();
-      state = state.copyWith(location: locationData);
 
       // Attempt to get a more detailed address via Google Maps
       final detailed = await LocationService.reverseGeocodeDetailed(
@@ -399,24 +407,43 @@ class LocationNotifier extends Notifier<LocationState> {
       );
 
       if (detailed != null) {
+        final finalLocation = locationData.copyWith(
+          city: detailed.city,
+          state: detailed.state,
+          country: detailed.country,
+          formattedAddress: detailed.formattedAddress,
+        );
+        
+        // Atomic update to prevent "jumping"
         state = LocationState(
-          location: locationData.copyWith(
-            city: detailed.city,
-            state: detailed.state,
-            country: detailed.country,
-            formattedAddress: detailed.formattedAddress,
-          ),
+          location: finalLocation,
           isLoading: false,
         );
       } else {
-        state = state.copyWith(isLoading: false);
+        state = LocationState(
+          location: locationData,
+          isLoading: false,
+        );
       }
     } catch (e) {
-      debugPrint('Location error: $e');
-      state = LocationState(
-        isLoading: false,
-        error: e.toString(),
-      );
+      final errorMessage = e.toString();
+      if (errorMessage.contains('LOCATION_SERVICES_DISABLED')) {
+        state = LocationState(
+          isLoading: false,
+          error: 'LOCATION_OFF',
+        );
+      } else if (errorMessage.contains('permission denied')) {
+        state = LocationState(
+          isLoading: false,
+          error: 'PERMISSION_DENIED',
+        );
+      } else {
+        debugPrint('Location error: $e');
+        state = LocationState(
+          isLoading: false,
+          error: e.toString(),
+        );
+      }
     }
   }
 

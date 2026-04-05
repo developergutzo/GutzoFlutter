@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_core/models/address.dart';
 import 'package:shared_core/services/auth_service.dart';
@@ -10,7 +11,7 @@ class SavedAddressesNotifier extends AsyncNotifier<List<UserAddress>> {
   }
 
   Future<List<UserAddress>> _fetch() async {
-    final user = ref.read(currentUserProvider);
+    final user = ref.watch(currentUserProvider);
     if (user == null) return [];
 
     try {

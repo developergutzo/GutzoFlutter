@@ -20,6 +20,7 @@ import '../profile/profile_screen.dart';
 import 'widgets/location_sheet.dart';
 import 'widgets/search_sheet.dart';
 import '../search/search_results_screen.dart';
+import '../../providers/location_sync_provider.dart';
 
 final homeFilterProvider = NotifierProvider<HomeFilterNotifier, String>(() {
   return HomeFilterNotifier();
@@ -65,6 +66,9 @@ class _MarketplaceBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // 📍 Sync location from database if logged in
+    ref.watch(locationSyncProvider);
+
     final currentUser = ref.watch(currentUserProvider);
     final vendorsAsync = ref.watch(vendorProvider);
     final bannersAsync = ref.watch(bannersProvider);
@@ -190,63 +194,95 @@ class _MarketplaceBody extends ConsumerWidget {
                   ),
                   
                   // Action Row: Location (Now single item row)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                    child: InkWell(
-                      onTap: () => LocationSheet.show(context),
-                      borderRadius: BorderRadius.circular(8),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                       child: Builder(
                         builder: (context) {
                           final locationState = ref.watch(locationProvider);
-                          final areaName = locationState.location?.areaName ?? 'Detecting...';
-                          final fullAddress = locationState.location?.formattedAddress ?? 'Searching for address...';
-                          return Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.only(top: 2),
-                                child: const Icon(Icons.location_on_outlined, color: AppColors.brandGreen, size: 24),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          areaName,
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w800,
-                                            color: AppColors.textMain,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        const Icon(Icons.keyboard_arrow_down, size: 18, color: AppColors.textDisabled),
-                                      ],
-                                    ),
-                                    Text(
-                                      fullAddress,
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        color: AppColors.textDisabled,
-                                        fontWeight: FontWeight.w400,
+                          final bool isLocationOff = locationState.error == 'LOCATION_OFF';
+                          
+                          final areaName = isLocationOff ? 'Location Off' : (locationState.location?.areaName ?? 'Detecting...');
+                          final fullAddress = isLocationOff ? 'Tap to turn on' : (locationState.location?.formattedAddress ?? 'Searching for address...');
+
+                          return InkWell(
+                            onTap: () {
+                              if (isLocationOff) {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: const Text('Turn on Location'),
+                                    content: const Text('Please enable location services to find nearby stores and delicious food.'),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: const Text('Cancel'),
                                       ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                          LocationService.openLocationSettings();
+                                        },
+                                        child: const Text('Open Settings', style: TextStyle(color: AppColors.brandGreen, fontWeight: FontWeight.bold)),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              } else {
+                                LocationSheet.show(context);
+                              }
+                            },
+                            borderRadius: BorderRadius.circular(8),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 2),
+                                  child: Icon(
+                                    isLocationOff ? Icons.location_off_outlined : Icons.location_on_outlined, 
+                                    color: isLocationOff ? AppColors.errorRed : AppColors.brandGreen, 
+                                    size: 24
+                                  ),
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            areaName,
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w800,
+                                              color: isLocationOff ? AppColors.errorRed : AppColors.textMain,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          const Icon(Icons.keyboard_arrow_down, size: 18, color: AppColors.textDisabled),
+                                        ],
+                                      ),
+                                      Text(
+                                        fullAddress,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          color: AppColors.textDisabled,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           );
                         },
                       ),
                     ),
-                  ),
                 ],
               ),
             ),
