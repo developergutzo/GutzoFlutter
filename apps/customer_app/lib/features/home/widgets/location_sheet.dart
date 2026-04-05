@@ -31,6 +31,7 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
   List<AutocompletePrediction> _predictions = [];
   bool _isSearching = false;
   Timer? _debounce;
+  bool _isFetchingDetails = false;
   String? _selectedAddressId;
 
   @override
@@ -58,6 +59,37 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
       final results = await LocationService.searchLocation(query);
       if (mounted) setState(() => _predictions = results);
     });
+  }
+
+  Future<void> _onPredictionSelected(AutocompletePrediction p) async {
+    setState(() => _isFetchingDetails = true);
+    try {
+      final details = await LocationService.fetchPlaceDetails(p.placeId);
+      if (details != null && mounted) {
+        final newLoc = LocationData(
+          city: details.city ?? '',
+          state: details.state ?? '',
+          country: details.country ?? '',
+          formattedAddress: details.formattedAddress,
+          latitude: details.latitude,
+          longitude: details.longitude,
+          timestamp: DateTime.now(),
+          tag: p.mainText,
+        );
+        ref.read(locationProvider.notifier).overrideLocation(newLoc);
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to load location details.')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isFetchingDetails = false);
+      }
+    }
   }
 
   void _selectAddress(UserAddress address) {
@@ -528,63 +560,76 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
               ),
               const SizedBox(height: 12),
               Expanded(
-                child: _predictions.isEmpty
-                    ? const Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.search_off, size: 40, color: AppColors.border),
-                            SizedBox(height: 12),
-                            Text(
-                              'No locations found for this query.',
-                              style: TextStyle(color: AppColors.textSub, fontSize: 14),
+                child: Stack(
+                  children: [
+                    _predictions.isEmpty
+                        ? const Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.search_off, size: 40, color: AppColors.border),
+                                SizedBox(height: 12),
+                                Text(
+                                  'No locations found for this query.',
+                                  style: TextStyle(color: AppColors.textSub, fontSize: 14),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      )
-                    : ListView.separated(
-                        padding: EdgeInsets.only(bottom: paddingBottom + 24),
-                        itemCount: _predictions.length + 1,
-                        separatorBuilder: (_, i) => i == _predictions.length - 1
-                            ? const SizedBox.shrink()
-                            : const Divider(color: AppColors.border, height: 1),
-                        itemBuilder: (_, i) {
-                          if (i == _predictions.length) {
-                            return Padding(
-                              padding: const EdgeInsets.only(top: 16, bottom: 8, right: 8),
-                              child: Align(
-                                alignment: Alignment.centerRight,
-                                child: Text(
-                                  'powered by Google',
-                                  style: TextStyle(
-                                    color: AppColors.textDisabled,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
+                          )
+                        : ListView.separated(
+                            padding: EdgeInsets.only(bottom: paddingBottom + 24),
+                            itemCount: _predictions.length + 1,
+                            separatorBuilder: (_, i) => i == _predictions.length - 1
+                                ? const SizedBox.shrink()
+                                : const Divider(color: AppColors.border, height: 1),
+                            itemBuilder: (_, i) {
+                              if (i == _predictions.length) {
+                                return const Padding(
+                                  padding: EdgeInsets.only(top: 16, bottom: 8, right: 8),
+                                  child: Align(
+                                    alignment: Alignment.centerRight,
+                                    child: Text(
+                                      'powered by Google',
+                                      style: TextStyle(
+                                        color: AppColors.textDisabled,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }
+                              final p = _predictions[i];
+                              return ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                leading: const Icon(Icons.location_on_outlined, color: AppColors.textSub),
+                                title: Text(
+                                  p.mainText,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textMain,
+                                    fontSize: 14,
                                   ),
                                 ),
-                              ),
-                            );
-                          }
-                          final p = _predictions[i];
-                          return ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            leading: const Icon(Icons.location_on_outlined, color: AppColors.textSub),
-                            title: Text(
-                              p.mainText,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textMain,
-                                fontSize: 14,
-                              ),
-                            ),
-                            subtitle: Text(
-                              p.secondaryText,
-                              style: const TextStyle(color: AppColors.textSub, fontSize: 13),
-                            ),
-                            onTap: () => Navigator.of(context).pop(),
-                          );
-                        },
+                                subtitle: Text(
+                                  p.secondaryText,
+                                  style: const TextStyle(color: AppColors.textSub, fontSize: 13),
+                                ),
+                                onTap: _isFetchingDetails ? null : () => _onPredictionSelected(p),
+                              );
+                            },
+                          ),
+                    if (_isFetchingDetails)
+                      Positioned.fill(
+                        child: Container(
+                          color: Colors.white.withOpacity(0.6),
+                          child: const Center(
+                            child: CircularProgressIndicator(color: AppColors.brandGreen),
+                          ),
+                        ),
                       ),
+                  ],
+                ),
               ),
             ],
           ],
