@@ -15,6 +15,11 @@ class LocationData {
   final double longitude;
   final DateTime timestamp;
 
+  final String? houseNumber;
+  final String? flatNumber;
+  final String? buildingName;
+  final String? block;
+
   LocationData({
     required this.city,
     required this.state,
@@ -23,6 +28,10 @@ class LocationData {
     required this.latitude,
     required this.longitude,
     required this.timestamp,
+    this.houseNumber,
+    this.flatNumber,
+    this.buildingName,
+    this.block,
   });
 
   String get displayString {
@@ -53,7 +62,10 @@ class LocationData {
     String? formattedAddress,
     double? latitude,
     double? longitude,
-    DateTime? timestamp,
+    String? houseNumber,
+    String? flatNumber,
+    String? buildingName,
+    String? block,
   }) {
     return LocationData(
       city: city ?? this.city,
@@ -63,6 +75,10 @@ class LocationData {
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       timestamp: timestamp ?? this.timestamp,
+      houseNumber: houseNumber ?? this.houseNumber,
+      flatNumber: flatNumber ?? this.flatNumber,
+      buildingName: buildingName ?? this.buildingName,
+      block: block ?? this.block,
     );
   }
 }
@@ -133,6 +149,11 @@ class DetailedAddress {
   final double latitude;
   final double longitude;
 
+  final String? houseNumber;
+  final String? flatNumber;
+  final String? buildingName;
+  final String? block;
+
   DetailedAddress({
     required this.formattedAddress,
     this.streetNumber,
@@ -144,6 +165,10 @@ class DetailedAddress {
     this.state,
     this.country,
     this.postalCode,
+    this.houseNumber,
+    this.flatNumber,
+    this.buildingName,
+    this.block,
     required this.latitude,
     required this.longitude,
   });
@@ -161,12 +186,28 @@ class DetailedAddress {
     String? state;
     String? country;
     String? postalCode;
+    String? houseNumber;
+    String? flatNumber;
+    String? buildingName;
+    String? block;
 
     for (var component in components) {
       final types = component['types'] as List;
       final name = component['long_name'] as String;
 
-      if (types.contains('street_number')) streetNumber = name;
+      if (types.contains('street_number')) {
+        streetNumber = name;
+        houseNumber = name;
+      }
+      if (types.contains('subpremise')) {
+        flatNumber = name;
+      }
+      if (types.contains('premise')) {
+        buildingName = name;
+      }
+      if (types.contains('sublocality_level_2')) {
+        block = name;
+      }
       if (types.contains('route')) route = name;
       if (types.contains('sublocality_level_1') || types.contains('sublocality')) {
         sublocality = name;
@@ -206,6 +247,10 @@ class DetailedAddress {
       state: state,
       country: country,
       postalCode: postalCode,
+      houseNumber: houseNumber,
+      flatNumber: flatNumber,
+      buildingName: buildingName,
+      block: block,
       latitude: geometry['lat'] as double,
       longitude: geometry['lng'] as double,
     );
@@ -449,6 +494,10 @@ class LocationNotifier extends Notifier<LocationState> {
           state: detailed.state,
           country: detailed.country,
           formattedAddress: detailed.formattedAddress,
+          houseNumber: detailed.houseNumber,
+          flatNumber: detailed.flatNumber,
+          buildingName: detailed.buildingName,
+          block: detailed.block,
         );
         
         // Atomic update to prevent "jumping"

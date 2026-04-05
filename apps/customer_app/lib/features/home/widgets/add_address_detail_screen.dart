@@ -45,8 +45,37 @@ class _AddAddressDetailScreenState extends ConsumerState<AddAddressDetailScreen>
   void initState() {
     super.initState();
     // Pre-fill from geocoding
-    _houseController.text = widget.address.streetNumber ?? '';
-    _areaController.text = widget.address.area ?? '';
+    // Pre-fill from geocoding with enhanced components
+    final house = widget.address.houseNumber ?? widget.address.streetNumber ?? '';
+    final flat = widget.address.flatNumber ?? '';
+    final building = widget.address.buildingName ?? '';
+    final block = widget.address.block ?? '';
+    final area = widget.address.area ?? '';
+    final route = widget.address.route ?? '';
+    
+    // Combine House/Flat/Block/Building for the specific premise field
+    List<String> houseParts = [];
+    if (house.isNotEmpty) houseParts.add(house);
+    if (flat.isNotEmpty) houseParts.add(flat);
+    if (block.isNotEmpty) houseParts.add(block);
+    if (building.isNotEmpty) houseParts.add(building);
+    
+    if (houseParts.isNotEmpty) {
+      _houseController.text = houseParts.join(', ');
+    } else {
+      // Fallback: auto populate with the most specific available address part
+      final splitAddr = widget.address.formattedAddress.split(',');
+      if (splitAddr.isNotEmpty && splitAddr[0].trim().isNotEmpty) {
+        _houseController.text = splitAddr[0].trim();
+      }
+    }
+    
+    // Combine Road/Area
+    List<String> areaParts = [];
+    if (route.isNotEmpty) areaParts.add(route);
+    if (area.isNotEmpty && !route.contains(area)) areaParts.add(area);
+    
+    _areaController.text = areaParts.join(', ');
     _pincodeController.text = widget.address.postalCode ?? '';
     
     // Listeners for UI updates (glow effects & real-time validation)
