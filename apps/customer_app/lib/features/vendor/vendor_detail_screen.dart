@@ -201,9 +201,11 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
                                   ),
                                   const SizedBox(height: 12),
                                   Text(
-                                    widget.vendor.deliveryTime.trim().isNotEmpty ? widget.vendor.deliveryTime : "40-45 mins",
-                                    style: const TextStyle(
-                                      color: AppColors.textMain,
+                                    widget.vendor.isServiceable == false 
+                                      ? "Not Serviceable" 
+                                      : (widget.vendor.deliveryTime.trim().isNotEmpty ? widget.vendor.deliveryTime : "40-45 mins"),
+                                    style: TextStyle(
+                                      color: widget.vendor.isServiceable == false ? const Color(0xFFE74C3C) : AppColors.textMain,
                                       fontWeight: FontWeight.w600,
                                       fontSize: 14,
                                       fontFamily: 'Poppins',
