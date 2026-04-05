@@ -18,6 +18,7 @@ import 'widgets/location_sheet.dart';
 import 'widgets/search_sheet.dart';
 import '../search/search_results_screen.dart';
 import '../../providers/location_sync_provider.dart';
+import '../../providers/health_filters_provider.dart';
 
 final homeFilterProvider = NotifierProvider<HomeFilterNotifier, String>(() {
   return HomeFilterNotifier();
@@ -603,22 +604,18 @@ class _FilterChipsRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedFilter = ref.watch(homeFilterProvider);
-    final filters = [
-      'All',
-      'High Protein',
-      'Low Calorie',
-      'High Fibre',
-      'Gut Friendly',
-      'Detox',
-      'Post Workout'
-    ];
+    final filtersAsync = ref.watch(healthFiltersProvider);
 
-    return SliverPadding(
-      padding: const EdgeInsets.only(top: 8, bottom: 4),
-      sliver: SliverToBoxAdapter(
-        child: SizedBox(
-          height: 50,
-          child: ListView.builder(
+    return filtersAsync.when(
+      data: (healthFilters) {
+        final filters = ['All', ...healthFilters.map((e) => e.name)];
+
+        return SliverPadding(
+          padding: const EdgeInsets.only(top: 8, bottom: 4),
+          sliver: SliverToBoxAdapter(
+            child: SizedBox(
+              height: 50,
+              child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             itemCount: filters.length,
@@ -668,6 +665,38 @@ class _FilterChipsRow extends ConsumerWidget {
           ),
         ),
       ),
+    );
+      },
+      loading: () => SliverPadding(
+        padding: const EdgeInsets.only(top: 8, bottom: 4),
+        sliver: SliverToBoxAdapter(
+          child: SizedBox(
+            height: 50,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: 5,
+              itemBuilder: (context, index) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Shimmer.fromColors(
+                    baseColor: AppColors.shimmerBase,
+                    highlightColor: AppColors.shimmerHighlight,
+                    child: Container(
+                      width: 100,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+      error: (err, stack) => const SliverToBoxAdapter(child: SizedBox.shrink()),
     );
   }
 }

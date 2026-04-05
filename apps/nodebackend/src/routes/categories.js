@@ -29,6 +29,22 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // ============================================
+// GET HEALTH FILTERS
+// GET /api/categories/health-filters
+// ============================================
+router.get('/health-filters', asyncHandler(async (req, res) => {
+  const { data: filters, error } = await supabaseAdmin
+    .from('health_filters')
+    .select('*')
+    .eq('is_active', true)
+    .order('sort_order', { ascending: true });
+
+  if (error) throw new ApiError(500, 'Failed to fetch health filters');
+
+  successResponse(res, filters);
+}));
+
+// ============================================
 // GET CATEGORY BY ID
 // GET /api/categories/:id
 // ============================================
