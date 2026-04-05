@@ -72,6 +72,7 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
           latitude: address.latitude!,
           longitude: address.longitude!,
           timestamp: DateTime.now(),
+          tag: address.customLabel ?? address.label ?? 'Other',
         ),
       );
     }

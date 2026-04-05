@@ -222,7 +222,7 @@ class _MarketplaceBody extends ConsumerWidget {
                           final locationState = ref.watch(locationProvider);
                           final bool isLocationOff = locationState.error == 'LOCATION_OFF';
                           
-                          final areaName = isLocationOff ? 'Location Off' : (locationState.location?.areaName ?? 'Detecting...');
+                          final areaName = isLocationOff ? 'Location Off' : (locationState.location?.tag ?? locationState.location?.areaName ?? 'Detecting...');
                           final fullAddress = isLocationOff ? 'Tap to turn on' : (locationState.location?.formattedAddress ?? 'Searching for address...');
 
                           return InkWell(

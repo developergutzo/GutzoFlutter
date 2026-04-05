@@ -19,6 +19,7 @@ class LocationData {
   final String? flatNumber;
   final String? buildingName;
   final String? block;
+  final String? tag;
 
   LocationData({
     required this.city,
@@ -32,6 +33,7 @@ class LocationData {
     this.flatNumber,
     this.buildingName,
     this.block,
+    this.tag,
   });
 
   String get displayString {
@@ -66,6 +68,7 @@ class LocationData {
     String? flatNumber,
     String? buildingName,
     String? block,
+    String? tag,
   }) {
     return LocationData(
       city: city ?? this.city,
@@ -79,6 +82,7 @@ class LocationData {
       flatNumber: flatNumber ?? this.flatNumber,
       buildingName: buildingName ?? this.buildingName,
       block: block ?? this.block,
+      tag: tag ?? this.tag,
     );
   }
 }

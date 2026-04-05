@@ -68,6 +68,7 @@ export const schemas = {
     latitude: Joi.number().min(-90).max(90),
     longitude: Joi.number().min(-180).max(180),
     delivery_notes: Joi.string().max(500).allow(''),
+    alternative_phone: Joi.string().max(20).allow(''),
     is_default: Joi.boolean().default(false)
   }),
 

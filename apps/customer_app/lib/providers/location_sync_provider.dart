@@ -34,6 +34,7 @@ class LocationSyncNotifier extends Notifier<void> {
           latitude: defaultAddress.latitude ?? 0.0,
           longitude: defaultAddress.longitude ?? 0.0,
           timestamp: DateTime.now(),
+          tag: defaultAddress.customLabel ?? defaultAddress.label ?? 'Other',
         );
 
         // Update the global location provider atomically
