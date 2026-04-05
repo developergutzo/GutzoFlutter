@@ -319,36 +319,80 @@ class CheckoutScreen extends ConsumerWidget {
 
   Widget _buildDevSettings(BuildContext context, WidgetRef ref, CheckoutState state) {
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.grey[50], // Very subtle background
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey[200]!),
       ),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Test Environment (Dev Only)',
-            style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold),
+            'Test Environment (Dev Only)'.toUpperCase(),
+            style: GoogleFonts.poppins(
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              color: Colors.grey[600],
+              letterSpacing: 1.2,
+            ),
           ),
-          DropdownButton<String>(
-            isExpanded: true,
-            value: state.devEnvironment,
-            items: const [
-              DropdownMenuItem(value: 'full_mock', child: Text('Full Mock')),
-              DropdownMenuItem(value: 'mock_pay_real_del', child: Text('Mock Pay, Real Delivery')),
-              DropdownMenuItem(value: 'production', child: Text('Production')),
-            ],
-            onChanged: (val) => ref.read(checkoutProvider.notifier).setDevEnvironment(val!),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey[200]!),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: state.devEnvironment,
+                isExpanded: true,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'full_mock', child: Text('Full Mock (Mock Pay, Mock Del)')),
+                  DropdownMenuItem(value: 'real_pay_mock_del', child: Text('Real Payment, Mock Delivery')),
+                  DropdownMenuItem(value: 'mock_pay_real_del', child: Text('Mock Payment, Real Delivery')),
+                  DropdownMenuItem(value: 'production', child: Text('Full Production (Real Pay/Del)')),
+                ],
+                onChanged: (val) => ref.read(checkoutProvider.notifier).setDevEnvironment(val!),
+              ),
+            ),
           ),
-          CheckboxListTile(
-            title: const Text('Free Delivery & Platform Fee', style: TextStyle(fontSize: 12)),
-            value: state.useFreeFees,
-            activeColor: AppColors.brandGreen,
-            contentPadding: EdgeInsets.zero,
-            dense: true,
-            onChanged: (val) => ref.read(checkoutProvider.notifier).setUseFreeFees(val!),
+          const SizedBox(height: 16),
+          InkWell(
+            onTap: () => ref.read(checkoutProvider.notifier).setUseFreeFees(!state.useFreeFees),
+            child: Row(
+              children: [
+                SizedBox(
+                  height: 24,
+                  width: 24,
+                  child: Checkbox(
+                    value: state.useFreeFees,
+                    activeColor: AppColors.brandGreen,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                    onChanged: (val) => ref.read(checkoutProvider.notifier).setUseFreeFees(val!),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Free Delivery & Platform Fee',
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -364,15 +408,40 @@ class CheckoutScreen extends ConsumerWidget {
                 checkout.gst +
                 (checkout.isDonationChecked ? checkout.donationAmount : 0);
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        boxShadow: [
-          BoxShadow(color: Colors.black12, blurRadius: 20, offset: Offset(0, -5)),
-        ],
-      ),
+    final savings = cart.originalSubtotal - cart.subtotal;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (savings > 0)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+            decoration: const BoxDecoration(
+              color: Color(0xFFE8F6F1),
+              border: Border(bottom: BorderSide(color: Color(0xFFCDEBDD))),
+            ),
+            child: Text(
+              '🎉 ₹${savings.toStringAsFixed(0)} savings applied! Complete order to keep this discount.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.brandGreen,
+              ),
+            ),
+          ),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(
+              top: savings > 0 ? Radius.zero : const Radius.circular(24),
+            ),
+            boxShadow: const [
+              BoxShadow(color: Colors.black12, blurRadius: 20, offset: Offset(0, -5)),
+            ],
+          ),
       child: SafeArea(
         top: false,
         child: Column(
@@ -400,7 +469,8 @@ class CheckoutScreen extends ConsumerWidget {
               ElevatedButton(
                 onPressed: checkout.isProcessing ? null : () async {
                   final result = await ref.read(checkoutProvider.notifier).placeOrder();
-                  if (result != null && result.length > 20) { // Assuming orderId is UUID
+                  // Check if result is a valid UUID (usually 36 chars) or at least not an error message
+                  if (result != null && result.length > 30 && !result.contains(' ')) { 
                      // Track Order
                      if (context.mounted) {
                        Navigator.of(context).pushReplacement(
@@ -409,7 +479,12 @@ class CheckoutScreen extends ConsumerWidget {
                      }
                   } else if (result != null) {
                     if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result)));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(result),
+                          backgroundColor: Colors.redAccent,
+                        ),
+                      );
                     }
                   }
                 },

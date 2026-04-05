@@ -214,10 +214,10 @@ class NodeApiService {
     return _request("/orders?page=$page&limit=$limit", overridePhone: overridePhone);
   }
 
-  Future<dynamic> triggerMockPayment(String orderNumber, {String? overridePhone}) async {
+  Future<dynamic> triggerMockPayment(String orderNumber, {bool mockShadowfax = true, String? overridePhone}) async {
     return _request("/payments/mock-success", method: "POST", body: {
       "orderId": orderNumber,
-      "mockShadowfax": true
+      "mockShadowfax": mockShadowfax
     }, overridePhone: overridePhone);
   }
 }

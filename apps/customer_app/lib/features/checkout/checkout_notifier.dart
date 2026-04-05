@@ -223,6 +223,29 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
       return "Missing required information";
     }
 
+    // Map devEnvironment to internal flags exactly like webapp CheckoutPage.tsx
+    bool useMockPayment = false;
+    bool useMockShadowfax = false;
+    
+    switch (currentState.devEnvironment) {
+      case 'full_mock':
+        useMockPayment = true;
+        useMockShadowfax = true;
+        break;
+      case 'real_pay_mock_del':
+        useMockPayment = false;
+        useMockShadowfax = true;
+        break;
+      case 'mock_pay_real_del':
+        useMockPayment = true;
+        useMockShadowfax = false;
+        break;
+      case 'production':
+        useMockPayment = false;
+        useMockShadowfax = false;
+        break;
+    }
+
     state = state.copyWith(isProcessing: true);
     try {
       final orderData = {
@@ -234,8 +257,11 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
         "delivery_address": currentState.selectedAddress!.toJson(),
         "delivery_phone": user.phone,
         "payment_method": "wallet",
-        "special_instructions": currentState.orderNote.isEmpty ? null : currentState.orderNote,
-        "cutlery_instruction": currentState.dontAddCutlery ? "Dont add cutlery" : null,
+        "special_instructions": [
+          if (currentState.orderNote.isNotEmpty) currentState.orderNote,
+          if (useMockShadowfax) "[MOCK_SFX]"
+        ].join(' ').trim(),
+        "mock_shadowfax": useMockShadowfax,
         "delivery_fee": currentState.useFreeFees ? 0 : currentState.deliveryFee,
         "platform_fee": currentState.useFreeFees ? 0 : currentState.platformFee,
         "taxes": currentState.gst.toStringAsFixed(2),
@@ -245,11 +271,16 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
 
       final res = await _api.createOrder(orderData: orderData, overridePhone: user.phone);
       if (res['success'] == true) {
-        final orderNumber = res['data']['order_number'];
-        final orderId = res['data']['id'];
+        final orderObj = res['data']['order'];
+        final orderNumber = orderObj['order_number'];
+        final orderId = orderObj['id'];
 
-        if (currentState.devEnvironment == 'full_mock' || currentState.devEnvironment == 'mock_pay_real_del') {
-          await _api.triggerMockPayment(orderNumber, overridePhone: user.phone);
+        if (useMockPayment) {
+          await _api.triggerMockPayment(
+            orderNumber, 
+            mockShadowfax: useMockShadowfax,
+            overridePhone: user.phone
+          );
         }
         
         ref.read(cartProvider.notifier).clear();
