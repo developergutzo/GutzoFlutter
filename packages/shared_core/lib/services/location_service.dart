@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
+import 'package:location/location.dart' as loc;
 
 /// Location data matching the web app's LocationData interface
 class LocationData {
@@ -375,8 +376,31 @@ class LocationService {
     return reverseGeocode(position.latitude, position.longitude);
   }
 
-  /// Open device location settings
+  /// Open device location settings or request service on Android
   static Future<void> openLocationSettings() async {
+    debugPrint('LocationService: openLocationSettings called');
+    try {
+      // Try to trigger the native Android "Turn on Location" dialog first
+      final location = loc.Location();
+      debugPrint('LocationService: checking serviceEnabled...');
+      bool serviceEnabled = await location.serviceEnabled();
+      debugPrint('LocationService: serviceEnabled = $serviceEnabled');
+      
+      if (!serviceEnabled) {
+        debugPrint('LocationService: requesting native service prompt...');
+        serviceEnabled = await location.requestService();
+        debugPrint('LocationService: native service request result = $serviceEnabled');
+        if (serviceEnabled) {
+          debugPrint('LocationService: user enabled service natively!');
+          return;
+        }
+      }
+    } catch (e) {
+      debugPrint('LocationService ERROR: Native prompt failed: $e');
+    }
+    
+    // Fallback to settings page if native prompt fails or user says NO
+    debugPrint('LocationService: falling back to system settings page');
     await Geolocator.openLocationSettings();
   }
 }
@@ -385,14 +409,27 @@ class LocationService {
 class LocationNotifier extends Notifier<LocationState> {
   @override
   LocationState build() {
-    // We no longer trigger GPS automatically on build.
-    // The LocationSyncNotifier in the app handles triggering GPS if needed.
+    // Listen for GPS being toggled ON/OFF
+    final subscription = Geolocator.getServiceStatusStream().listen((status) {
+      if (status == ServiceStatus.enabled) {
+        debugPrint('LocationNotifier: GPS enabled, re-triggering loadLocation...');
+        refreshLocation(); // Use refresh to ignore cache
+      } else {
+        debugPrint('LocationNotifier: GPS disabled, updating state...');
+        state = state.copyWith(error: 'LOCATION_OFF');
+      }
+    });
+
+    ref.onDispose(() {
+      subscription.cancel();
+    });
+
     return const LocationState(isLoading: true); 
   }
 
-  Future<void> _loadLocation() async {
-    // Already has location (from database or manual set)
-    if (state.location != null) return;
+  Future<void> loadLocation({bool force = false}) async {
+    // Already has location (from database or manual set) and not forcing refresh
+    if (state.location != null && !force) return;
     
     state = state.copyWith(isLoading: true, error: null);
 
@@ -449,7 +486,7 @@ class LocationNotifier extends Notifier<LocationState> {
 
   /// Refresh location (clears cache, gets fresh GPS position)
   Future<void> refreshLocation() async {
-    await _loadLocation();
+    await loadLocation(force: true);
   }
 
   /// Override location manually (e.g. from saved address)

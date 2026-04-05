@@ -8,14 +8,11 @@ import 'package:shared_core/theme/app_colors.dart';
 import '../auth/auth_screen.dart';
 import '../../widgets/vendor_card.dart';
 import '../../widgets/cart_strip.dart';
-import 'package:shared_core/services/cart_service.dart';
 import 'package:shared_core/services/category_service.dart';
 import 'package:shared_core/services/mood_category_service.dart';
 import 'package:shared_core/services/banner_service.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shimmer/shimmer.dart';
 
-import '../orders/orders_history_screen.dart';
 import '../profile/profile_screen.dart';
 import 'widgets/location_sheet.dart';
 import 'widgets/search_sheet.dart';
@@ -25,6 +22,20 @@ import '../../providers/location_sync_provider.dart';
 final homeFilterProvider = NotifierProvider<HomeFilterNotifier, String>(() {
   return HomeFilterNotifier();
 });
+
+// Track if we've already auto-prompted for location in this session
+final locationAutoPromptProvider = NotifierProvider<AutoPromptNotifier, bool>(() {
+  return AutoPromptNotifier();
+});
+
+class AutoPromptNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+  
+  void setPrompted() {
+    state = true;
+  }
+}
 
 class HomeFilterNotifier extends Notifier<String> {
   @override
@@ -72,8 +83,18 @@ class _MarketplaceBody extends ConsumerWidget {
     final currentUser = ref.watch(currentUserProvider);
     final vendorsAsync = ref.watch(vendorProvider);
     final bannersAsync = ref.watch(bannersProvider);
-    final categoriesAsync = ref.watch(categoriesProvider);
     final moodCategoriesAsync = ref.watch(moodCategoriesProvider);
+
+    // 📍 Auto-listen for LOCATION_OFF and prompt turn on
+    ref.listen(locationProvider, (previous, next) async {
+      if (next.error == 'LOCATION_OFF' && !ref.read(locationAutoPromptProvider)) {
+        ref.read(locationAutoPromptProvider.notifier).setPrompted();
+        // Trigger native "Turn on Location" system dialog
+        await LocationService.openLocationSettings();
+        // Manually trigger a refresh after the dialog closes to ensure immediate feedback
+        ref.read(locationProvider.notifier).refreshLocation();
+      }
+    });
 
     return CustomScrollView(
       slivers: [
@@ -205,28 +226,11 @@ class _MarketplaceBody extends ConsumerWidget {
                           final fullAddress = isLocationOff ? 'Tap to turn on' : (locationState.location?.formattedAddress ?? 'Searching for address...');
 
                           return InkWell(
-                            onTap: () {
+                            onTap: () async {
                               if (isLocationOff) {
-                                showDialog(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: const Text('Turn on Location'),
-                                    content: const Text('Please enable location services to find nearby stores and delicious food.'),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(context),
-                                        child: const Text('Cancel'),
-                                      ),
-                                      TextButton(
-                                        onPressed: () {
-                                          Navigator.pop(context);
-                                          LocationService.openLocationSettings();
-                                        },
-                                        child: const Text('Open Settings', style: TextStyle(color: AppColors.brandGreen, fontWeight: FontWeight.bold)),
-                                      ),
-                                    ],
-                                  ),
-                                );
+                                await LocationService.openLocationSettings();
+                                // Trigger a refresh after the prompt
+                                ref.read(locationProvider.notifier).refreshLocation();
                               } else {
                                 LocationSheet.show(context);
                               }
