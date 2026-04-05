@@ -10,6 +10,7 @@ import '../../widgets/vendor_card.dart';
 import '../../widgets/cart_strip.dart';
 import 'package:shared_core/services/cart_service.dart';
 import 'package:shared_core/services/category_service.dart';
+import 'package:shared_core/services/mood_category_service.dart';
 import 'package:shared_core/services/banner_service.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shimmer/shimmer.dart';
@@ -68,6 +69,7 @@ class _MarketplaceBody extends ConsumerWidget {
     final vendorsAsync = ref.watch(vendorProvider);
     final bannersAsync = ref.watch(bannersProvider);
     final categoriesAsync = ref.watch(categoriesProvider);
+    final moodCategoriesAsync = ref.watch(moodCategoriesProvider);
 
     return CustomScrollView(
       slivers: [
@@ -338,28 +340,61 @@ class _MarketplaceBody extends ConsumerWidget {
           ),
         ),
 
-        // Categories (Single Row Horizontal Scroll)
-        SliverToBoxAdapter(
-          child: SizedBox(
-            height: 140,
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              children: [
-                _buildMoodItem(context, 'Bowls', 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'),
-                _buildMoodItem(context, 'Breakfast', 'https://images.unsplash.com/photo-1525351484163-7529414344d8'),
-                _buildMoodItem(context, 'Salads', 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd'),
-                _buildMoodItem(context, 'Soups', 'https://images.unsplash.com/photo-1547592166-23ac45744acd'),
-                _buildMoodItem(context, 'Wraps', 'https://images.unsplash.com/photo-1626700051175-6818013e184f'),
-                _buildMoodItem(context, 'Smoothies', 'https://images.unsplash.com/photo-1623065422902-30a2ad299bb4'),
-                _buildMoodItem(context, 'Juices', 'https://images.unsplash.com/photo-1613478223719-2ab802602423'),
-                _buildMoodItem(context, 'Mains', 'https://images.unsplash.com/photo-1546793665-c74683c3f38d'),
-                _buildMoodItem(context, 'Snacks', 'https://images.unsplash.com/photo-1599490659213-e2b9527bb087'),
-                _buildMoodItem(context, 'Desserts', 'https://images.unsplash.com/photo-1551024601-bec78aea704b'),
-              ],
+        // Categories (Dynamic Row Horizontal Scroll)
+        moodCategoriesAsync.when(
+          data: (moodCategories) => SliverToBoxAdapter(
+            child: SizedBox(
+              height: 140,
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                itemCount: moodCategories.length,
+                itemBuilder: (context, index) {
+                  return _buildMoodItem(context, moodCategories[index]);
+                },
+              ),
             ),
           ),
+          loading: () => SliverToBoxAdapter(
+            child: SizedBox(
+              height: 140,
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                scrollDirection: Axis.horizontal,
+                itemCount: 5,
+                itemBuilder: (context, index) => Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Shimmer.fromColors(
+                    baseColor: AppColors.shimmerBase,
+                    highlightColor: AppColors.shimmerHighlight,
+                    child: Column(
+                      children: [
+                        Container(
+                          height: 75,
+                          width: 75,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Container(
+                          height: 12,
+                          width: 60,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          error: (err, stack) => const SliverToBoxAdapter(child: SizedBox.shrink()),
         ),
         
         // Health Category Filters
@@ -459,7 +494,11 @@ class _MarketplaceBody extends ConsumerWidget {
     );
   }
 
-  Widget _buildMoodItem(BuildContext context, String label, String imageUrl) {
+  Widget _buildMoodItem(BuildContext context, dynamic mood) {
+    // Handle both model and legacy strings if needed, but here we expect MoodCategory or similar
+    final String label = mood.name;
+    final String imageUrl = mood.imageUrl;
+    
     return InkWell(
       onTap: () {
         Navigator.push(
@@ -494,7 +533,7 @@ class _MarketplaceBody extends ConsumerWidget {
                   imageUrl,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) =>
-                      Icon(Icons.restaurant, color: AppColors.brandGreen, size: 30),
+                      const Icon(Icons.restaurant, color: AppColors.brandGreen, size: 30),
                 ),
               ),
             ),

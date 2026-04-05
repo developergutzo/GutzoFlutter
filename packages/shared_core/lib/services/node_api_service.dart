@@ -119,6 +119,10 @@ class NodeApiService {
     return _request("/categories");
   }
 
+  Future<dynamic> getMoodCategories() async {
+    return _request("/mood-categories");
+  }
+
   Future<dynamic> getVendors() async {
     return _request("/vendors");
   }
