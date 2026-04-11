@@ -79,7 +79,7 @@ class CheckoutScreen extends ConsumerWidget {
                 ),
               ),
               Text(
-                ' to ${checkout.selectedAddress?.city ?? location.location?.city ?? 'Location'}',
+                ' to ${(_getCityName(checkout, location))}',
                 style: GoogleFonts.poppins(
                   fontSize: 12,
                   color: Colors.grey[400],
@@ -92,6 +92,34 @@ class CheckoutScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  String _getCityName(CheckoutState checkout, LocationState location) {
+    // 1. Prioritize tags for saved addresses (Home, Work, Custom)
+    final addr = checkout.selectedAddress;
+    if (addr != null) {
+      final tag = addr.customLabel ?? addr.label;
+      if (tag != null && tag.isNotEmpty) return tag;
+      
+      // Capitalize the type (home -> Home)
+      if (addr.type.isNotEmpty) {
+        return addr.type[0].toUpperCase() + addr.type.substring(1).toLowerCase();
+      }
+    }
+    
+    // 2. Fallback to descriptive device location
+    final loc = location.location;
+    if (loc != null) {
+      if (loc.city.isNotEmpty && loc.state.isNotEmpty) {
+        return '${loc.city}, ${loc.state}';
+      }
+      if (loc.city.isNotEmpty) return loc.city;
+      if (loc.formattedAddress != null && loc.formattedAddress!.isNotEmpty) {
+        return loc.formattedAddress!.split(',').first;
+      }
+    }
+    
+    return 'Location';
   }
 
   PreferredSizeWidget _buildWebAppBar(BuildContext context, Vendor vendor, CheckoutState checkout, LocationState location) {
@@ -119,7 +147,7 @@ class CheckoutScreen extends ConsumerWidget {
                   ),
                 ),
                 Text(
-                  '${checkout.eta ?? 'Pending...'} • to ${checkout.selectedAddress?.city ?? location.location?.city ?? 'Location'}',
+                  '${checkout.eta ?? 'Pending...'} • to ${_getCityName(checkout, location)}',
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     color: Colors.grey[600],
