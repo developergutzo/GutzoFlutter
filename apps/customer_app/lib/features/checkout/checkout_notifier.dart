@@ -5,6 +5,7 @@ import 'package:shared_core/services/node_api_service.dart';
 import 'package:shared_core/services/auth_service.dart';
 import 'package:shared_core/services/location_service.dart';
 import 'package:flutter/foundation.dart';
+import 'package:customer_app/services/paytm_service.dart';
 
 class CheckoutState {
   final bool isCheckingServiceability;
@@ -323,6 +324,28 @@ class CheckoutNotifier extends AutoDisposeNotifier<CheckoutState> {
             mockShadowfax: useMockShadowfax,
             overridePhone: user.phone
           );
+        } else {
+          // 🚀 REAL PAYTM FLOW
+          try {
+            final paytmService = ref.read(paytmServiceProvider);
+            final totalAmount = (orderObj['total_amount'] as num).toDouble();
+            
+            final paytmResult = await paytmService.startPayment(
+              orderId: orderId, // We use the ID to let backend fetch the correct order
+              amount: totalAmount,
+              isStaging: currentState.devEnvironment != 'production', // Use staging if not explicitly production
+              overridePhone: user.phone,
+            );
+
+            // The SDK result status check
+            if (paytmResult['STATUS'] != 'TXN_SUCCESS') {
+              state = state.copyWith(isProcessing: false);
+              return "Payment failed: ${paytmResult['RESPMSG'] ?? 'Unknown error'}";
+            }
+          } catch (e) {
+            state = state.copyWith(isProcessing: false);
+            return "Payment Error: $e";
+          }
         }
         
         ref.read(cartProvider.notifier).clear();

@@ -260,6 +260,19 @@ class NodeApiService {
     }, overridePhone: overridePhone);
   }
 
+  Future<dynamic> initiatePaytmTransaction({
+    required String orderId,
+    required double amount,
+    String channel = 'WAP',
+    String? overridePhone,
+  }) async {
+    return _request("/payments/initiate", method: "POST", body: {
+      "order_id": orderId,
+      "amount": amount,
+      "channel": channel,
+    }, overridePhone: overridePhone);
+  }
+
   // --- Partner/Vendor Methods ---
   Future<Map<String, dynamic>> checkVendorStatus(String phone) async {
     return _request("/vendor-auth/check-status", method: "POST", body: {"phone": phone});

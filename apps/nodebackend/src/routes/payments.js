@@ -98,7 +98,7 @@ router.post('/verify-checksum', asyncHandler(async (req, res) => {
 
 // INITIATE PAYTM TRANSACTION (For web form-based flow)
 router.post('/initiate', authenticate, asyncHandler(async (req, res) => {
-  const { order_id, amount } = req.body;
+  const { order_id, amount, channel } = req.body;
 
   if (!order_id || !amount) {
     throw new ApiError(400, 'Order ID and amount are required');
@@ -129,7 +129,7 @@ router.post('/initiate', authenticate, asyncHandler(async (req, res) => {
     },
     callbackUrl: PAYTM_CALLBACK_URL,
     industryType: 'Retail',
-    channelId: 'WEB',
+    channelId: channel || 'WEB',
     websiteName: PAYTM_WEBSITE_NAME,
   };
 
