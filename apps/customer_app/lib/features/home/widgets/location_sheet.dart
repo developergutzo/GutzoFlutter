@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:shared_core/theme/app_colors.dart';
 import 'package:shared_core/services/location_service.dart';
 import 'package:shared_core/services/auth_service.dart' as auth;
@@ -451,268 +452,198 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
             const SizedBox(height: 16),
-
-            // Search Field
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: _searchFocus.hasFocus ? AppColors.brandGreen : AppColors.border,
-                  width: 1.0,
-                ),
-              ),
-              child: TextField(
-                controller: _searchController,
-                focusNode: _searchFocus,
-                onTap: () => setState(() {}),
-                onTapOutside: (_) {
-                  _searchFocus.unfocus();
-                  setState(() {});
-                },
-                onChanged: _onSearchChanged,
-                decoration: const InputDecoration(
-                  hintText: 'Search for area, street name...',
-                  hintStyle: TextStyle(color: AppColors.textDisabled, fontSize: 15),
-                  prefixIcon: Icon(Icons.search, color: AppColors.brandGreen, size: 20),
-                  filled: false,
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                ),
-              ),
-            ),
+            _buildSearchField(),
             const SizedBox(height: 16),
-
-            // Horizontal Actions: Current Location & Add Address
+            
+            // Quick Actions: Current Location & Add Address
             Row(
               children: [
-                // Use Current Location
-                Expanded(
-                  child: InkWell(
-                    onTap: () {
-                      if (widget.isEmbedded && widget.onOpenMap != null) {
-                        widget.onOpenMap!();
-                      } else {
-                        Navigator.of(context).push(
-                          CupertinoPageRoute(builder: (_) => const LocationPickScreen()),
-                        );
-                      }
-                    },
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: AppColors.border),
-                        borderRadius: BorderRadius.circular(12),
-                        color: Colors.white,
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: AppColors.brandGreen.withValues(alpha: 0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: isDetecting
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: AppColors.brandGreen,
-                                    ),
-                                  )
-                                : const Icon(Icons.my_location, color: AppColors.brandGreen, size: 18),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Current Location',
-                            style: TextStyle(
-                              color: AppColors.brandGreen,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+                Expanded(child: _buildActionButton(
+                  icon: Icons.my_location,
+                  label: 'Current Location',
+                  isLoading: isDetecting,
+                  onTap: () => ref.read(locationProvider.notifier).refreshLocation(),
+                )),
                 const SizedBox(width: 12),
-                // Add/Manage Addresses
-                Expanded(
-                  child: InkWell(
-                    onTap: () {
-                      if (widget.isEmbedded && widget.onAddNew != null) {
-                        widget.onAddNew!();
-                      } else {
-                        Navigator.of(context).push(
-                          CupertinoPageRoute(
-                            builder: (_) => const LocationPickScreen(isAddingAddress: true),
-                          ),
-                        );
-                      }
-                    },
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: AppColors.border),
-                        borderRadius: BorderRadius.circular(12),
-                        color: Colors.white,
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: AppColors.brandGreen.withValues(alpha: 0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(Icons.add_location_alt_outlined, color: AppColors.brandGreen, size: 18),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Add New Address',
-                            style: TextStyle(
-                              color: AppColors.brandGreen,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
+                Expanded(child: _buildActionButton(
+                  icon: Icons.add_location_alt_outlined,
+                  label: 'Add Address',
+                  onTap: () => Navigator.of(context).push(
+                    CupertinoPageRoute(builder: (_) => const LocationPickScreen(isAddingAddress: true)),
                   ),
-                ),
+                )),
               ],
             ),
+            
             const SizedBox(height: 24),
 
             if (!_isSearching) ...[
-              const Text(
-                'Saved Addresses',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textMain),
+              Text(
+                'SAVED ADDRESSES',
+                style: GoogleFonts.poppins(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.grey[500],
+                  letterSpacing: 1.2,
+                ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
 
               Expanded(
                 child: addressesAsync.when(
-                  loading: () => const Center(
-                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brandGreen),
-                  ),
-                  error: (_, __) => const Center(
-                    child: Text(
-                      'Failed to load addresses',
-                      style: TextStyle(color: AppColors.textSub, fontSize: 14),
-                    ),
-                  ),
                   data: (addresses) {
-                    if (addresses.isEmpty) {
-                      return const Center(
-                        child: Text(
-                          'No saved addresses found.',
-                          style: TextStyle(color: AppColors.textSub, fontSize: 14),
-                        ),
-                      );
-                    }
+                    if (addresses.isEmpty) return _buildEmptyState();
                     return ListView.builder(
-                      padding: EdgeInsets.only(bottom: paddingBottom + 24),
+                      padding: const EdgeInsets.only(bottom: 24),
                       itemCount: addresses.length,
-                      itemBuilder: (ctx, i) => _buildAddressCard(addresses[i]),
+                      itemBuilder: (context, index) => _buildAddressCard(addresses[index]),
                     );
                   },
+                  loading: () => _buildShimmerList(),
+                  error: (err, stack) => Center(child: Text('Error loading addresses')),
                 ),
               ),
             ] else ...[
-              const Text(
-                'Search Results',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textSub),
-              ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: Stack(
-                  children: [
-                    _predictions.isEmpty
-                        ? const Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.search_off, size: 40, color: AppColors.border),
-                                SizedBox(height: 12),
-                                Text(
-                                  'No locations found for this query.',
-                                  style: TextStyle(color: AppColors.textSub, fontSize: 14),
-                                ),
-                              ],
-                            ),
-                          )
-                        : ListView.separated(
-                            padding: EdgeInsets.only(bottom: paddingBottom + 24),
-                            itemCount: _predictions.length + 1,
-                            separatorBuilder: (_, i) => i == _predictions.length - 1
-                                ? const SizedBox.shrink()
-                                : const Divider(color: AppColors.border, height: 1),
-                            itemBuilder: (_, i) {
-                              if (i == _predictions.length) {
-                                return const Padding(
-                                  padding: EdgeInsets.only(top: 16, bottom: 8, right: 8),
-                                  child: Align(
-                                    alignment: Alignment.centerRight,
-                                    child: Text(
-                                      'powered by Google',
-                                      style: TextStyle(
-                                        color: AppColors.textDisabled,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }
-                              final p = _predictions[i];
-                              return ListTile(
-                                contentPadding: EdgeInsets.zero,
-                                leading: const Icon(Icons.location_on_outlined, color: AppColors.textSub),
-                                title: Text(
-                                  p.mainText,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.textMain,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                subtitle: Text(
-                                  p.secondaryText,
-                                  style: const TextStyle(color: AppColors.textSub, fontSize: 13),
-                                ),
-                                onTap: _isFetchingDetails ? null : () => _onPredictionSelected(p),
-                              );
-                            },
-                          ),
-                    if (_isFetchingDetails)
-                      Positioned.fill(
-                        child: Container(
-                          color: Colors.white.withOpacity(0.6),
-                          child: const Center(
-                            child: CircularProgressIndicator(color: AppColors.brandGreen),
-                          ),
-                        ),
-                      ),
-                  ],
+               Text(
+                'SEARCH RESULTS',
+                style: GoogleFonts.poppins(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.grey[500],
+                  letterSpacing: 1.2,
                 ),
               ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: _isFetchingDetails 
+                  ? _buildShimmerList()
+                  : ListView.builder(
+                      itemCount: _predictions.length,
+                      itemBuilder: (ctx, i) {
+                        final p = _predictions[i];
+                        return ListTile(
+                          leading: const Icon(Icons.location_on_outlined, color: AppColors.brandGreen, size: 22),
+                          title: Text(p.mainText, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600)),
+                          subtitle: Text(p.secondaryText, style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[500])),
+                          onTap: () => _onPredictionSelected(p),
+                        );
+                      },
+                    ),
+              ),
             ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchField() {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F7F9),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: _searchFocus.hasFocus ? AppColors.brandGreen : Colors.transparent,
+          width: 1.5,
+        ),
+      ),
+      child: TextField(
+        controller: _searchController,
+        focusNode: _searchFocus,
+        onChanged: _onSearchChanged,
+        decoration: InputDecoration(
+          hintText: 'Search for area, street...',
+          hintStyle: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[500]),
+          prefixIcon: const Icon(Icons.search, color: AppColors.brandGreen, size: 22),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon, 
+    required String label, 
+    required VoidCallback onTap,
+    bool isLoading = false,
+  }) {
+    return InkWell(
+      onTap: isLoading ? null : onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE8E8E8)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.brandGreen.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: isLoading 
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brandGreen))
+                : Icon(icon, color: AppColors.brandGreen, size: 20),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              label,
+              style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.brandGreen),
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
-      );
+      ),
+    );
+  }
+
+  Widget _buildShimmerList() {
+    return ListView.builder(
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: 6,
+      itemBuilder: (context, index) => _buildShimmerCard(),
+    );
+  }
+
+  Widget _buildShimmerCard() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[200]!,
+      highlightColor: Colors.grey[100]!,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        height: 80,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+     return Center(
+       child: Column(
+         mainAxisAlignment: MainAxisAlignment.center,
+         children: [
+           Icon(Icons.location_off_outlined, size: 70, color: Colors.grey[200]),
+           const SizedBox(height: 20),
+           Text(
+             'No Addresses Found',
+             style: GoogleFonts.poppins(fontSize: 16, color: Colors.grey[600], fontWeight: FontWeight.w600),
+           ),
+           const SizedBox(height: 8),
+           Text(
+             'Add a new coordinate to see it here',
+             style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[400]),
+           ),
+         ],
+       ),
+     );
   }
 }

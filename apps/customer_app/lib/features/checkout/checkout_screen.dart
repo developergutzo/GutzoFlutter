@@ -16,6 +16,7 @@ import 'package:shared_core/widgets/max_width_container.dart';
 import 'package:shared_core/services/location_service.dart';
 import '../home/widgets/location_sheet.dart';
 import '../../providers/location_sync_provider.dart';
+import 'package:shimmer/shimmer.dart';
 
 class CheckoutScreen extends ConsumerWidget {
   const CheckoutScreen({super.key});
@@ -420,13 +421,17 @@ class CheckoutScreen extends ConsumerWidget {
         child: checkout.isProcessing 
           ? const CircularProgressIndicator(color: Colors.white)
           : checkout.isCheckingServiceability
-            ? Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
-                  const SizedBox(width: 10),
-                  Text('Calculating Total...', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
-                ],
+            ? Shimmer.fromColors(
+                baseColor: Colors.white.withValues(alpha: 0.8),
+                highlightColor: Colors.white,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
+                    const SizedBox(width: 10),
+                    Text('Calculating Total...', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
+                  ],
+                ),
               )
             : Text(
               user == null 
@@ -1148,12 +1153,16 @@ class _BillingSummaryState extends State<_BillingSummary> {
               fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
             ),
           ),
-          Text(
-            'Calculating...',
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey[400],
+          Shimmer.fromColors(
+            baseColor: Colors.grey[200]!,
+            highlightColor: Colors.grey[100]!,
+            child: Container(
+              height: 14,
+              width: 80,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(4),
+              ),
             ),
           ),
         ],
