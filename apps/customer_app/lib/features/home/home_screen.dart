@@ -327,10 +327,19 @@ class _MarketplaceBody extends ConsumerWidget {
   }
 
   Widget _buildMobileBase(BuildContext context, WidgetRef ref, AsyncValue bannersAsync, AsyncValue moodCategoriesAsync, AsyncValue vendorsAsync, dynamic currentUser) {
-    return CustomScrollView(
-      physics: kIsWeb ? const ClampingScrollPhysics() : const BouncingScrollPhysics(),
-      slivers: [
-        _buildMobileHeader(context, ref, currentUser),
+    return RefreshIndicator(
+      onRefresh: () async {
+        // Invalidate vendors to trigger a fresh Shadowfax check
+        ref.invalidate(vendorProvider);
+        // Wait for the new fetch to complete
+        await ref.read(vendorProvider.notifier).refresh();
+      },
+      color: AppColors.brandGreen,
+      backgroundColor: Colors.white,
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(), // Ensure we can always pull to refresh
+        slivers: [
+          _buildMobileHeader(context, ref, currentUser),
         _buildBannersSection(bannersAsync),
         _buildMoodHeader(),
         _buildMoodCategories(moodCategoriesAsync),
@@ -339,8 +348,9 @@ class _MarketplaceBody extends ConsumerWidget {
         _buildVendorsList(vendorsAsync, ref),
         const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
       ],
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildWebBase(BuildContext context, WidgetRef ref, AsyncValue bannersAsync, AsyncValue moodCategoriesAsync, AsyncValue vendorsAsync, dynamic currentUser) {
     return SingleChildScrollView(

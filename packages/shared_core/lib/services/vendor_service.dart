@@ -11,6 +11,8 @@ final vendorProvider = NotifierProvider<VendorNotifier, AsyncValue<List<model.Ve
 });
 
 class VendorNotifier extends Notifier<AsyncValue<List<model.Vendor>>> {
+  int _generation = 0;
+
   @override
   AsyncValue<List<model.Vendor>> build() {
     // 📍 Re-fetch vendors whenever the location or address changes
@@ -18,17 +20,27 @@ class VendorNotifier extends Notifier<AsyncValue<List<model.Vendor>>> {
     final location = locationState.location;
     final address = location?.displayString;
     
-    _fetchVendors(location?.latitude, location?.longitude, address);
+    // Increment generation to ignore stale async results from previous builds
+    final currentGen = ++_generation;
+    
+    // Clear state or set to loading immediately
+    Future.microtask(() => _fetchVendors(location?.latitude, location?.longitude, address, currentGen));
+    
     return const AsyncValue.loading();
   }
 
-  Future<void> _fetchVendors(double? lat, double? lng, String? address) async {
-    state = const AsyncValue.loading();
+  Future<void> _fetchVendors(double? lat, double? lng, String? address, int gen) async {
     try {
       final apiService = ref.read(nodeApiServiceProvider);
-      // Fetch all vendors (no lat/lng filtering at backend — check per vendor client-side like webapp)
+      // Fetch all vendors
       final response = await apiService.getVendors();
       
+      // Check if this generation is still valid
+      if (gen != _generation) {
+        debugPrint('📍 VendorNotifier: Ignoring stale fetch (gen $gen, current $_generation)');
+        return;
+      }
+
       List<dynamic> vendorList = [];
       if (response is List) {
         vendorList = response;
@@ -46,13 +58,12 @@ class VendorNotifier extends Notifier<AsyncValue<List<model.Vendor>>> {
 
       List<model.Vendor> validVendors = vendors;
 
-      // 📍 Per-vendor serviceability check (mirroring webapp useVendors.ts)
+      // 📍 Per-vendor serviceability check
       if (lat != null && lng != null) {
         final checkedVendors = await Future.wait(
           vendors.map((vendor) async {
-            // Skip vendors without coordinates (same as webapp)
             if (vendor.latitude == null || vendor.longitude == null) {
-              return vendor; // no serviceability info, show as-is
+              return vendor;
             }
             try {
               final pickup = {
@@ -61,23 +72,19 @@ class VendorNotifier extends Notifier<AsyncValue<List<model.Vendor>>> {
                 'longitude': vendor.longitude,
               };
               final drop = {
-                'address': address ?? '', // 📍 Use real address if available
+                'address': address ?? '',
                 'latitude': lat,
                 'longitude': lng,
               };
 
               final res = await apiService.getDeliveryServiceability(pickup, drop);
-
-              // 📍 Mirror webapp logic exactly:
-              // const isServiceable = res.data && (res.data.is_serviceable !== undefined ? res.data.is_serviceable : (res.data.value?.is_serviceable ?? true));
               
               final data = res is Map ? (res['data'] ?? res) : null;
-              bool isServiceable = true; // Default to true if missing (matching webapp fallback)
+              bool isServiceable = true; 
               String dynamicDeliveryTime = vendor.deliveryTime;
 
               if (data != null && data is Map) {
                 if (data['is_serviceable'] != null) {
-                  // Handle both bool and int (0/1) types
                   final val = data['is_serviceable'];
                   isServiceable = val is bool ? val : (val == 1 || val == '1' || val == 'true');
                 } else if (data['value'] != null && data['value'] is Map && data['value']['is_serviceable'] != null) {
@@ -85,11 +92,8 @@ class VendorNotifier extends Notifier<AsyncValue<List<model.Vendor>>> {
                   isServiceable = val is bool ? val : (val == 1 || val == '1' || val == 'true');
                 }
 
-                // 📍 Dynamic estimation calculation (mirroring webapp useVendors.ts)
                 if (isServiceable) {
                   final pickupEtaStr = data['pickup_eta'] ?? (data['value'] != null ? data['value']['pickup_eta'] : null);
-                  debugPrint('VendorNotifier: ${vendor.name} - isServiceable: $isServiceable, pickupEta: $pickupEtaStr');
-                  
                   if (pickupEtaStr != null) {
                     final travelTimeStr = await DistanceService.getTravelTime(
                       originLat: vendor.latitude!,
@@ -97,17 +101,13 @@ class VendorNotifier extends Notifier<AsyncValue<List<model.Vendor>>> {
                       destLat: lat,
                       destLng: lng,
                     );
-                    debugPrint('VendorNotifier: ${vendor.name} - travelTime: $travelTimeStr');
 
                     if (travelTimeStr != null) {
                       final pickupMins = DistanceService.parseDurationToMinutes(pickupEtaStr.toString());
                       final travelMins = DistanceService.parseDurationToMinutes(travelTimeStr);
-                      debugPrint('VendorNotifier: ${vendor.name} - Calculating: $pickupMins + $travelMins');
-                      
                       if (pickupMins > 0 && travelMins > 0) {
                         final total = pickupMins + travelMins;
                         dynamicDeliveryTime = '$total-${total + 5} mins';
-                        debugPrint('VendorNotifier: ${vendor.name} - Result: $dynamicDeliveryTime');
                       }
                     }
                   }
@@ -119,9 +119,6 @@ class VendorNotifier extends Notifier<AsyncValue<List<model.Vendor>>> {
                 deliveryTime: dynamicDeliveryTime,
               );
             } catch (e) {
-              debugPrint('Serviceability check failed for ${vendor.name}: $e');
-              // On API error (network, missing coords, etc.) — return vendor as-is
-              // so it shows normally, matching the webapp behavior
               return vendor;
             }
           }),
@@ -129,7 +126,10 @@ class VendorNotifier extends Notifier<AsyncValue<List<model.Vendor>>> {
         validVendors = checkedVendors;
       }
 
-      // Fetch products for each vendor and merge
+      // Check generation again after heavy parallel work
+      if (gen != _generation) return;
+
+      // Fetch products for each vendor
       final vendorsWithProducts = await Future.wait(
         validVendors.map((vendor) async {
           try {
@@ -159,17 +159,23 @@ class VendorNotifier extends Notifier<AsyncValue<List<model.Vendor>>> {
         }),
       );
 
+      // Final generation check
+      if (gen != _generation) return;
+
       state = AsyncValue.data(vendorsWithProducts);
     } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
+      if (gen == _generation) {
+        state = AsyncValue.error(e, stack);
+      }
     }
   }
 
-  Future<void> refresh() {
+  Future<void> refresh() async {
     final locationState = ref.read(locationProvider);
     final location = locationState.location;
     final address = location?.displayString;
-    return _fetchVendors(location?.latitude, location?.longitude, address);
+    final currentGen = ++_generation;
+    return _fetchVendors(location?.latitude, location?.longitude, address, currentGen);
   }
   
   // Filtering logic

@@ -272,6 +272,13 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
 
     state = state.copyWith(isProcessing: true);
     try {
+      // 📍 Final Sentinel Check: Re-verify serviceability right before creating order
+      await checkServiceability();
+      if (!state.isServiceable) {
+        state = state.copyWith(isProcessing: false, error: "Kitchen just became unserviceable. Please try again later.");
+        return "Kitchen just became unserviceable";
+      }
+
       final orderData = {
         "vendor_id": cart.vendorId,
         "items": cart.items.map((item) => {
