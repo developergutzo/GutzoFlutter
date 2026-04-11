@@ -115,7 +115,7 @@ class VendorNotifier extends Notifier<AsyncValue<List<model.Vendor>>> {
               }
 
               return vendor.copyWith(
-                isServiceable: isServiceable,
+                isServiceable: true, // TODO: Revert - Force for testing - isServiceable,
                 deliveryTime: dynamicDeliveryTime,
               );
             } catch (e) {
