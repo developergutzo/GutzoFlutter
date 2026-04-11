@@ -7,9 +7,6 @@ import 'package:shared_core/services/location_service.dart';
 import 'package:flutter/foundation.dart';
 
 class CheckoutState {
-  final List<UserAddress> addresses;
-  final UserAddress? selectedAddress;
-  final bool isLoadingAddresses;
   final bool isCheckingServiceability;
   final double deliveryFee;
   final double platformFee;
@@ -27,9 +24,6 @@ class CheckoutState {
   final double donationAmount;
 
   CheckoutState({
-    this.addresses = const [],
-    this.selectedAddress,
-    this.isLoadingAddresses = false,
     this.isCheckingServiceability = false,
     this.deliveryFee = 0,
     this.platformFee = 10,
@@ -48,9 +42,6 @@ class CheckoutState {
   });
 
   CheckoutState copyWith({
-    List<UserAddress>? addresses,
-    UserAddress? selectedAddress,
-    bool? isLoadingAddresses,
     bool? isCheckingServiceability,
     double? deliveryFee,
     double? platformFee,
@@ -68,9 +59,6 @@ class CheckoutState {
     double? donationAmount,
   }) {
     return CheckoutState(
-      addresses: addresses ?? this.addresses,
-      selectedAddress: selectedAddress ?? this.selectedAddress,
-      isLoadingAddresses: isLoadingAddresses ?? this.isLoadingAddresses,
       isCheckingServiceability: isCheckingServiceability ?? this.isCheckingServiceability,
       deliveryFee: deliveryFee ?? this.deliveryFee,
       platformFee: platformFee ?? this.platformFee,
@@ -96,93 +84,40 @@ class CheckoutNotifier extends AutoDisposeNotifier<CheckoutState> {
     // Watch cart to update taxes whenever quantities/items change
     ref.listen(cartProvider, (_, __) => updateTaxes());
     
-    // Listen to location changes to update serviceability if no address is selected
+    // Listen to location changes to update serviceability immediately
     ref.listen(locationProvider, (previous, next) {
-      if (state.selectedAddress == null && next.location != null) {
-        print('📍 [Checkout] Location updated, re-checking serviceability via live location');
+      if (next.location != null) {
+        print('📍 [Checkout] Location detected/changed: ${next.location?.tag ?? next.location?.areaName}. Re-calculating...');
         checkServiceability();
+      } else {
+        // If location becomes null (e.g. deleted), reset serviceability
+        state = state.copyWith(isCheckingServiceability: false);
       }
     });
 
-    // Trigger address fetch on first build
-    Future.microtask(() => fetchAddresses());
+    // Initial check if location is already available
+    final initialLocation = ref.read(locationProvider).location;
+    if (initialLocation != null) {
+      Future.microtask(() => checkServiceability());
+    }
     
-    // Start with isCheckingServiceability=true so UI shows "Calculating..." 
-    // instead of "FREE" (deliveryFee defaults to 0) before Shadowfax responds
-    return CheckoutState(isCheckingServiceability: true);
+    return CheckoutState(isCheckingServiceability: initialLocation != null);
   }
 
   NodeApiService get _api => ref.read(nodeApiServiceProvider);
 
-  Future<void> fetchAddresses() async {
-    final user = ref.read(currentUserProvider);
-    if (user == null) {
-      print('🚫 [Checkout] fetchAddresses: No user, resetting fee state');
-      state = state.copyWith(isCheckingServiceability: false);
-      return;
-    }
-
-    state = state.copyWith(isLoadingAddresses: true);
-    try {
-      final res = await _api.getUserAddresses(user.phone);
-      if (res['success'] == true) {
-        final List<dynamic> data = res['data'] ?? [];
-        final addresses = data.map((json) => UserAddress.fromJson(json)).toList();
-        
-        UserAddress? selected;
-        if (addresses.isNotEmpty) {
-          selected = addresses.any((a) => a.isDefault) 
-              ? addresses.firstWhere((a) => a.isDefault)
-              : addresses.first;
-        }
-
-        state = state.copyWith(
-          addresses: addresses,
-          selectedAddress: selected,
-          isLoadingAddresses: false,
-        );
-
-        if (state.selectedAddress != null) {
-          checkServiceability();
-        } else {
-          // Priority Fallback: If no saved addresses, trigger live location fetch
-          print('📍 [Checkout] No saved addresses found, attempting live location fallback');
-          ref.read(locationProvider.notifier).loadLocation();
-          
-          // If location is already available, check it now
-          final loc = ref.read(locationProvider).location;
-          if (loc != null) {
-            checkServiceability();
-          } else {
-            // Still waiting for location - checkServiceability will be triggered by build() listener
-            print('⏳ [Checkout] Waiting for live location...');
-          }
-        }
-      } else {
-        state = state.copyWith(isLoadingAddresses: false, isCheckingServiceability: false);
-      }
-    } catch (e) {
-      print('❌ [Checkout] fetchAddresses ERROR: $e');
-      state = state.copyWith(isLoadingAddresses: false, isCheckingServiceability: false, error: e.toString());
-    }
-  }
-
+  // No longer needed as we rely on global locationProvider
   void selectAddress(UserAddress address) {
-    state = state.copyWith(selectedAddress: address);
-    checkServiceability();
+    // Handled by global location sync
   }
 
   Future<void> checkServiceability() async {
     final cart = ref.read(cartProvider);
-    final selectedAddress = state.selectedAddress;
-    final liveLocation = ref.read(locationProvider).location;
+    final location = ref.read(locationProvider).location;
 
-    // We can check serviceability if we have EITHER a selected address OR a live location
-    if (cart.items.isEmpty || (selectedAddress == null && liveLocation == null)) {
-      print('🚫 [Checkout] checkServiceability skipped: cart empty=${cart.items.isEmpty}, address null=${selectedAddress == null}, liveLocation null=${liveLocation == null}');
-      if (selectedAddress == null && liveLocation == null) {
-        state = state.copyWith(isCheckingServiceability: false);
-      }
+    if (cart.items.isEmpty || location == null) {
+      print('🚫 [Checkout] checkServiceability skipped: cart empty=${cart.items.isEmpty}, location null=${location == null}');
+      state = state.copyWith(isCheckingServiceability: false);
       return;
     }
 
@@ -199,18 +134,18 @@ class CheckoutNotifier extends AutoDisposeNotifier<CheckoutState> {
         "longitude": vendorData['longitude'],
       };
       
-      // Select coordinates: Saved Address takes priority, then Live Location
+      // Coordinates from single source of truth
       final drop = {
-        "address": selectedAddress?.fullAddress ?? liveLocation?.formattedAddress ?? "Live Location",
-        "latitude": selectedAddress?.latitude ?? liveLocation?.latitude,
-        "longitude": selectedAddress?.longitude ?? liveLocation?.longitude,
+        "address": location.formattedAddress ?? "Delivery Location",
+        "latitude": location.latitude,
+        "longitude": location.longitude,
       };
 
       print('📡 [Checkout] Pickup: $pickup');
-      print('📡 [Checkout] Drop (priority=${selectedAddress != null ? 'saved' : 'live'}): $drop');
+      print('📡 [Checkout] Drop: $drop');
 
-      if (drop['latitude'] == null || drop['longitude'] == null) {
-         print('❌ [Checkout] Missing coordinates, cannot check serviceability');
+      if (drop['latitude'] == 0.0 || drop['longitude'] == 0.0) {
+         print('❌ [Checkout] Missing coordinates (0.0), cannot check serviceability');
          state = state.copyWith(isCheckingServiceability: false);
          return;
       }
@@ -306,10 +241,11 @@ class CheckoutNotifier extends AutoDisposeNotifier<CheckoutState> {
   Future<String?> placeOrder() async {
     final user = ref.read(currentUserProvider);
     final cart = ref.read(cartProvider);
+    final location = ref.read(locationProvider).location;
     final currentState = state;
     
-    if (user == null || cart.items.isEmpty || currentState.selectedAddress == null) {
-      return "Missing required information";
+    if (user == null || cart.items.isEmpty || location == null) {
+      return "Missing required information (User, Cart, or Location)";
     }
 
     // Map devEnvironment to internal flags exactly like webapp CheckoutPage.tsx
@@ -350,7 +286,17 @@ class CheckoutNotifier extends AutoDisposeNotifier<CheckoutState> {
           "product_id": item.product.id,
           "quantity": item.quantity,
         }).toList(),
-        "delivery_address": currentState.selectedAddress!.toJson(),
+        "delivery_address": {
+          "full_address": location.formattedAddress ?? "GPS Location",
+          "city": location.city,
+          "state": location.state,
+          "country": location.country,
+          "latitude": location.latitude,
+          "longitude": location.longitude,
+          "type": "other",
+          "label": location.tag,
+          "street": "", // GPS doesn't always have street
+        },
         "delivery_phone": user.phone,
         "payment_method": "wallet",
         "special_instructions": [

@@ -14,6 +14,8 @@ import 'checkout_notifier.dart';
 import 'package:shared_core/utils/responsive.dart';
 import 'package:shared_core/widgets/max_width_container.dart';
 import 'package:shared_core/services/location_service.dart';
+import '../home/widgets/location_sheet.dart';
+import '../../providers/location_sync_provider.dart';
 
 class CheckoutScreen extends ConsumerWidget {
   const CheckoutScreen({super.key});
@@ -23,6 +25,9 @@ class CheckoutScreen extends ConsumerWidget {
     final cart = ref.watch(cartProvider);
     final checkout = ref.watch(checkoutProvider);
     final location = ref.watch(locationProvider);
+    
+    // 📍 Sync location from database if logged in
+    ref.watch(locationSyncProvider);
     
     // Automatically pop screen if last item is deleted to match gutzo.in UX
     ref.listen(cartProvider, (previous, next) {
@@ -69,25 +74,36 @@ class CheckoutScreen extends ConsumerWidget {
               color: Colors.black,
             ),
           ),
-          Row(
-            children: [
-              Text(
-                checkout.eta ?? 'Pending...',
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: Colors.grey[600],
+          InkWell(
+            onTap: () {
+              if (context.isDesktop || context.isTablet) {
+                // For web/tablet, show the location panel
+                // WebLocationPanel.show(context);
+                LocationSheet.show(context); // Fallback for now as panel might be hidden
+              } else {
+                LocationSheet.show(context);
+              }
+            },
+            child: Row(
+              children: [
+                Text(
+                  checkout.eta ?? 'Pending...',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
                 ),
-              ),
-              Text(
-                ' to ${(_getCityName(checkout, location))}',
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: Colors.grey[400],
-                  fontWeight: FontWeight.w500,
+                Text(
+                  ' to ${(_getCityName(checkout, location))}',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: Colors.grey[400],
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ),
-              const Icon(Icons.keyboard_arrow_down, size: 14, color: Colors.grey),
-            ],
+                const Icon(Icons.keyboard_arrow_down, size: 14, color: Colors.grey),
+              ],
+            ),
           ),
         ],
       ),
@@ -95,21 +111,10 @@ class CheckoutScreen extends ConsumerWidget {
   }
 
   String _getCityName(CheckoutState checkout, LocationState location) {
-    // 1. Prioritize tags for saved addresses (Home, Work, Custom)
-    final addr = checkout.selectedAddress;
-    if (addr != null) {
-      final tag = addr.customLabel ?? addr.label;
-      if (tag != null && tag.isNotEmpty) return tag;
-      
-      // Capitalize the type (home -> Home)
-      if (addr.type.isNotEmpty) {
-        return addr.type[0].toUpperCase() + addr.type.substring(1).toLowerCase();
-      }
-    }
-    
-    // 2. Fallback to descriptive device location
+    // 1. Prioritize tags for current location (Home, Work, Area Name)
     final loc = location.location;
     if (loc != null) {
+      if (loc.tag != null && loc.tag!.isNotEmpty) return loc.tag!;
       if (loc.city.isNotEmpty && loc.state.isNotEmpty) {
         return '${loc.city}, ${loc.state}';
       }
@@ -146,11 +151,20 @@ class CheckoutScreen extends ConsumerWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                Text(
-                  '${checkout.eta ?? 'Pending...'} • to ${_getCityName(checkout, location)}',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    color: Colors.grey[600],
+                InkWell(
+                  onTap: () {
+                    if (context.isDesktop || context.isTablet) {
+                      LocationSheet.show(context);
+                    } else {
+                      LocationSheet.show(context);
+                    }
+                  },
+                  child: Text(
+                    '${checkout.eta ?? 'Pending...'} • to ${_getCityName(checkout, location)}',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
                   ),
                 ),
               ],
@@ -248,7 +262,7 @@ class CheckoutScreen extends ConsumerWidget {
             gst: checkout.gst,
             donationAmount: checkout.isDonationChecked ? checkout.donationAmount : 0,
             isCalculatingFee: checkout.isCheckingServiceability,
-            hasAddress: checkout.selectedAddress != null || location.location != null,
+            hasAddress: location.location != null,
           ),
         ],
       ),
@@ -339,7 +353,7 @@ class CheckoutScreen extends ConsumerWidget {
             donationAmount: checkout.isDonationChecked ? checkout.donationAmount : 0,
             isInitiallyExpanded: true,
             isCalculatingFee: checkout.isCheckingServiceability,
-            hasAddress: checkout.selectedAddress != null || location.location != null,
+            hasAddress: location.location != null,
           ),
           const SizedBox(height: 24),
           if (!checkout.isServiceable) _buildServiceabilityWarning(),
