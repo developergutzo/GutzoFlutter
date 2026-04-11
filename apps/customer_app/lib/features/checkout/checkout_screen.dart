@@ -94,14 +94,22 @@ class CheckoutScreen extends ConsumerWidget {
                   ),
                 ),
                 Text(
-                  ' to ${(_getCityName(checkout, location))}',
+                  ' to ',
                   style: GoogleFonts.poppins(
                     fontSize: 12,
-                    color: Colors.grey[400],
-                    fontWeight: FontWeight.w500,
+                    color: AppColors.brandGreen,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
-                const Icon(Icons.keyboard_arrow_down, size: 14, color: Colors.grey),
+                Text(
+                  _getCityName(checkout, location),
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: AppColors.brandGreen,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const Icon(Icons.keyboard_arrow_down, size: 14, color: AppColors.brandGreen),
               ],
             ),
           ),
@@ -159,11 +167,16 @@ class CheckoutScreen extends ConsumerWidget {
                       LocationSheet.show(context);
                     }
                   },
-                  child: Text(
-                    '${checkout.eta ?? 'Pending...'} • to ${_getCityName(checkout, location)}',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      color: Colors.grey[600],
+                  child: RichText(
+                    text: TextSpan(
+                      style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[600]),
+                      children: [
+                        TextSpan(text: '${checkout.eta ?? 'Pending...'} • to '),
+                        TextSpan(
+                          text: _getCityName(checkout, location),
+                          style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.brandGreen),
+                        ),
+                      ],
                     ),
                   ),
                 ),
