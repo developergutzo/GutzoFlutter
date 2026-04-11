@@ -61,8 +61,9 @@ class PaytmService {
         return Map<String, dynamic>.from(result);
       }
       return {};
-    } catch (e) {
+    } catch (e, stack) {
       print('❌ [Paytm Bridge] Error: $e');
+      print('📄 [Paytm Bridge] Stacktrace: $stack');
       rethrow;
     }
   }

@@ -13,6 +13,7 @@ export const validate = (schema, property = 'body') => (req, res, next) => {
       field: d.path.join('.'),
       message: d.message.replace(/"/g, '')
     }));
+    console.error('❌ Validation Error Detail:', JSON.stringify(errors, null, 2));
     throw new ApiError(400, 'Validation failed', errors);
   }
 

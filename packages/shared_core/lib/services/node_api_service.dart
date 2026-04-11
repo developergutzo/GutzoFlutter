@@ -245,7 +245,16 @@ class NodeApiService {
     return _request("/orders", method: "POST", body: orderData, overridePhone: overridePhone);
   }
 
-  Future<dynamic> getOrderTracking(String orderId, {String? overridePhone}) async {
+  Future<Map<String, dynamic>> verifyPaymentStatus(String orderId, {String? overridePhone}) async {
+    return _request(
+      '/payments/verify-status',
+      method: 'POST',
+      body: {'order_id': orderId},
+      overridePhone: overridePhone,
+    );
+  }
+
+  Future<Map<String, dynamic>> getOrderTracking(String orderId, {String? overridePhone}) async {
     return _request("/orders/$orderId/track", overridePhone: overridePhone);
   }
 

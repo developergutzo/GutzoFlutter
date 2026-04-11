@@ -410,7 +410,57 @@ class CheckoutScreen extends ConsumerWidget {
                 MaterialPageRoute(builder: (_) => OrderTrackingScreen(orderId: result)),
              );
           } else if (result != null) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result), backgroundColor: Colors.redAccent));
+            // 🛡️ Premium Failure UI
+            final parts = result.split('|');
+            final title = parts[0];
+            final subtitle = parts.length > 1 ? parts[1] : 'Please try again.';
+
+            showModalBottomSheet(
+              context: context,
+              backgroundColor: Colors.transparent,
+              builder: (context) => Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, spreadRadius: 5),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 24),
+                      decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+                    ),
+                    const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 64),
+                    const SizedBox(height: 16),
+                    Text(title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Text(subtitle, textAlign: TextAlign.center, style: TextStyle(fontSize: 16, color: Colors.grey[600])),
+                    const SizedBox(height: 32),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.black,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          elevation: 0,
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Try Again', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
+            );
           }
         },
         style: ElevatedButton.styleFrom(
@@ -790,23 +840,69 @@ class CheckoutScreen extends ConsumerWidget {
               ElevatedButton(
                 onPressed: (checkout.isProcessing || !checkout.isServiceable || checkout.isCheckingServiceability) ? null : () async {
                   final result = await ref.read(checkoutProvider.notifier).placeOrder();
-                  // Check if result is a valid UUID (usually 36 chars) or at least not an error message
-                  if (result != null && result.length > 30 && !result.contains(' ')) { 
-                     // Track Order
-                     if (context.mounted) {
-                       Navigator.of(context).pushReplacement(
-                          MaterialPageRoute(builder: (context) => OrderTrackingScreen(orderId: result)),
-                       );
-                     }
+                  
+                  if (!context.mounted) return;
+
+                  // 🏁 Check for Success (Result is a UUID)
+                  final isSuccess = result != null && result.length > 30 && !result.contains('|');
+
+                  if (isSuccess) {
+                    // 🎉 Webapp Style: Brief success pause for premium feel
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(builder: (context) => OrderTrackingScreen(orderId: result!)),
+                    );
                   } else if (result != null) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(result),
-                          backgroundColor: Colors.redAccent,
+                    // 🛡️ Premium Failure UI (Matches Webapp Bento Style)
+                    final parts = result.split('|');
+                    final title = parts[0];
+                    final subtitle = parts.length > 1 ? parts[1] : 'Please try again.';
+
+                    showModalBottomSheet(
+                      context: context,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) => Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                          boxShadow: [
+                            BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, spreadRadius: 5),
+                          ],
                         ),
-                      );
-                    }
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 4,
+                              margin: const EdgeInsets.only(bottom: 24),
+                              decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+                            ),
+                            const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 64),
+                            const SizedBox(height: 16),
+                            Text(title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 8),
+                            Text(subtitle, textAlign: TextAlign.center, style: TextStyle(fontSize: 16, color: Colors.grey[600])),
+                            const SizedBox(height: 32),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.black,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                  elevation: 0,
+                                ),
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('Try Again', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                        ),
+                      ),
+                    );
                   }
                 },
                 style: ElevatedButton.styleFrom(

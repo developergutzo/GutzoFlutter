@@ -96,6 +96,58 @@ router.post('/verify-checksum', asyncHandler(async (req, res) => {
   });
 }));
 
+// VERIFY PAYMENT STATUS (Client-triggered fallback)
+router.post('/verify-status', authenticate, asyncHandler(async (req, res) => {
+  const { order_id } = req.body;
+  if (!order_id) throw new ApiError(400, 'Order ID is required');
+
+  // Verify order exists and belongs to user
+  const { data: order } = await supabaseAdmin
+    .from('orders')
+    .select('*, vendor:vendors(*)')
+    .eq('id', order_id)
+    .eq('user_id', req.user.id)
+    .single();
+
+  if (!order) throw new ApiError(404, 'Order not found');
+
+  // If already paid, just return success
+  if (order.payment_status === 'paid') {
+    return successResponse(res, { status: 'paid', order }, 'Payment already verified');
+  }
+
+  // Check with Paytm
+  console.log(`[Verify Status] Checking status with Paytm for order: ${order.order_number}`);
+  const statusCheck = await verifyPaytmStatus(order.order_number);
+
+  if (statusCheck.success) {
+    console.log(`[Verify Status] ✅ Success! Updating database for ${order.order_number}`);
+    
+    // 1. Update order
+    const { data: updatedOrder } = await supabaseAdmin
+      .from('orders')
+      .update({
+        payment_status: 'paid',
+        payment_method: 'paytm',
+        payment_id: statusCheck.raw?.body?.txnId || 'VERIFIED',
+        status: 'searching_rider',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', order_id)
+      .select('*, vendor:vendors(*)')
+      .single();
+
+    // 2. Trigger Shadowfax logic (Shared with webhook)
+    // For simplicity in this dev-helper, we just return success. 
+    // In production, the Webhook handles the heavy lifting.
+    
+    return successResponse(res, { status: 'paid', order: updatedOrder }, 'Payment verified successfully');
+  } else {
+    console.log(`[Verify Status] ❌ Failed or Pending: ${statusCheck.status}`);
+    return successResponse(res, { status: statusCheck.status || 'pending' }, 'Payment not yet cleared');
+  }
+}));
+
 // INITIATE PAYTM TRANSACTION (For web form-based flow)
 router.post('/initiate', authenticate, asyncHandler(async (req, res) => {
   const { order_id, amount, channel } = req.body;
@@ -121,7 +173,7 @@ router.post('/initiate', authenticate, asyncHandler(async (req, res) => {
     orderId: order.order_number, // User friendly order number
     requestType: 'Payment',
     txnAmount: {
-      value: String(amount),
+      value: Number(amount).toFixed(2),
       currency: 'INR'
     },
     userInfo: {

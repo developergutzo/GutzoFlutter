@@ -338,12 +338,34 @@ class CheckoutNotifier extends AutoDisposeNotifier<CheckoutState> {
             );
 
             // The SDK result status check
-            if (paytmResult['STATUS'] != 'TXN_SUCCESS') {
+            final status = paytmResult['STATUS']?.toString() ?? 'FAILED';
+            final rawMsg = paytmResult['RESPMSG']?.toString() ?? 
+                           paytmResult['nativeSdkForMerchantMessage']?.toString() ?? 
+                           'Unknown reason';
+
+            // 🗺️ Map technical strings to human-friendly messages
+            String friendlyMsg = 'Payment failed. Please try again.';
+            if (rawMsg.contains('onBackPressedCancelTransaction') || rawMsg.contains('User cancelled')) {
+              friendlyMsg = 'Transaction cancelled by user.';
+            } else if (rawMsg.contains('money was not deducted')) {
+              friendlyMsg = 'Transaction failed. No money was deducted.';
+            } else if (rawMsg.contains('Bank') || rawMsg.contains('System')) {
+              friendlyMsg = 'Bank server issue. Please try another method.';
+            }
+
+            if (status == 'TXN_SUCCESS') {
+              // 🔄 Proactive Sync: Tell backend to verify payment immediately (Bypasses Localhost Webhook lag)
+              print('📡 [Checkout] Payment successful. Triggering proactive sync...');
+              await _api.verifyPaymentStatus(orderId, overridePhone: user.phone);
+            } else {
               state = state.copyWith(isProcessing: false);
-              return "Payment failed: ${paytmResult['RESPMSG'] ?? 'Unknown error'}";
+              print('❌ [Checkout] Payment failed result: $paytmResult');
+              // Return a pipe-separated string for the UI to split into Title|Detail
+              return "Payment Failed|$friendlyMsg";
             }
           } catch (e) {
             state = state.copyWith(isProcessing: false);
+            print('❌ [Checkout] Payment Exception: $e');
             return "Payment Error: $e";
           }
         }
