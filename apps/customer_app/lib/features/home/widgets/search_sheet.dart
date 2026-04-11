@@ -1,4 +1,6 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_core/theme/app_colors.dart';
 import 'package:shared_core/services/search_service.dart';
@@ -12,12 +14,40 @@ class SearchSheet extends StatefulWidget {
       context: context,
       barrierDismissible: true,
       barrierLabel: 'Dismiss Search',
-      barrierColor: Colors.black.withValues(alpha: 0.5),
-      transitionDuration: const Duration(milliseconds: 240),
+      barrierColor: kIsWeb ? Colors.black.withValues(alpha: 0.3) : Colors.black.withValues(alpha: 0.5),
+      transitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (context, animation, secondaryAnimation) {
-        return const SearchSheet();
+        final child = const SearchSheet();
+        if (kIsWeb) {
+          return Stack(
+            children: [
+              Positioned.fill(
+                child: BackdropFilter(
+                  filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                  child: Container(color: Colors.transparent),
+                ),
+              ),
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 700),
+                  child: child,
+                ),
+              ),
+            ],
+          );
+        }
+        return child;
       },
       transitionBuilder: (context, animation, secondaryAnimation, child) {
+        if (kIsWeb) {
+          return FadeTransition(
+            opacity: animation,
+            child: ScaleTransition(
+              scale: Tween<double>(begin: 0.95, end: 1.0).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+              child: child,
+            ),
+          );
+        }
         return SlideTransition(
           position: Tween<Offset>(
             begin: const Offset(0, -1),
@@ -77,18 +107,19 @@ class _SearchSheetState extends State<SearchSheet> {
             children: [
               Container(
                 width: double.infinity,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
+                  borderRadius: kIsWeb ? BorderRadius.circular(28) : const BorderRadius.vertical(bottom: Radius.circular(28)),
+                  border: kIsWeb ? Border.all(color: AppColors.webGlassBorder, width: 0.5) : null,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 10,
-                      offset: Offset(0, 4),
+                      color: Colors.black.withValues(alpha: kIsWeb ? 0.08 : 0.1),
+                      blurRadius: kIsWeb ? 32 : 10,
+                      offset: Offset(0, kIsWeb ? 16 : 4),
                     ),
                   ],
                 ),
-                padding: const EdgeInsets.fromLTRB(24, 60, 24, 32),
+                padding: EdgeInsets.fromLTRB(28, kIsWeb ? 32 : 60, 28, 32),
                 child: SafeArea(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -128,11 +159,11 @@ class _SearchSheetState extends State<SearchSheet> {
                           prefixIcon: const Icon(Icons.search, color: Color(0xFF111827), size: 24),
                           contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
                           enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(12),
                             borderSide: const BorderSide(color: AppColors.border, width: 1.2),
                           ),
                           focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(12),
                             borderSide: const BorderSide(color: AppColors.brandGreen, width: 2.0),
                           ),
                           filled: true,

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_core/models/vendor.dart';
 import 'package:shared_core/theme/app_colors.dart';
+import 'package:shared_core/utils/responsive.dart';
 import '../features/vendor/vendor_detail_screen.dart';
 
-class VendorCard extends StatelessWidget {
+class VendorCard extends StatefulWidget {
   final Map<String, dynamic>? rawVendor;
   final String imageUrl;
   final String title;
@@ -26,136 +28,164 @@ class VendorCard extends StatelessWidget {
   });
 
   @override
+  State<VendorCard> createState() => _VendorCardState();
+}
+
+class _VendorCardState extends State<VendorCard> {
+  bool _isHovered = false;
+
+  @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () {
-        if (vendorModel != null) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => VendorDetailScreen(
-                vendor: vendorModel!,
-                searchQuery: searchQuery,
-              ),
-            ),
-          );
-        }
-      },
-      borderRadius: BorderRadius.circular(16),
-      child: Opacity(
-        opacity: vendorModel?.isServiceable == false ? 0.5 : 1.0,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Image with Badge
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: ColorFiltered(
-                    colorFilter: vendorModel?.isServiceable == false 
-                      ? const ColorFilter.mode(Colors.grey, BlendMode.saturation)
-                      : const ColorFilter.mode(Colors.transparent, BlendMode.multiply),
-                    child: Image.network(
-                      imageUrl.isNotEmpty ? imageUrl : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c',
-                      height: 190,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        height: 190,
-                        color: AppColors.shimmerBase,
-                        child: const Icon(Icons.image_not_supported_outlined, color: AppColors.textDisabled),
-                      ),
-                    ),
+    final bool isWeb = kIsWeb;
+    
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      cursor: SystemMouseCursors.click,
+      child: AnimatedScale(
+        scale: _isHovered && isWeb ? 1.02 : 1.0,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+        child: InkWell(
+          onTap: () {
+            if (widget.vendorModel != null) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => VendorDetailScreen(
+                    vendor: widget.vendorModel!,
+                    searchQuery: widget.searchQuery,
                   ),
                 ),
+              );
+            }
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: _isHovered && isWeb ? AppColors.brandGreen : AppColors.border.withValues(alpha: 0.4),
+                width: _isHovered && isWeb ? 1.5 : 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: _isHovered && isWeb 
+                    ? AppColors.brandGreen.withValues(alpha: 0.08) 
+                    : Colors.black.withValues(alpha: 0.03),
+                  blurRadius: _isHovered && isWeb ? 40 : 15,
+                  offset: Offset(0, _isHovered && isWeb ? 15 : 4),
+                )
               ],
             ),
-          const SizedBox(height: 12),
-          // Title Row
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textMain,
-              letterSpacing: -0.5,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 4),
-          
-          // Status Row (Rating • DeliveryTime / Serviceability)
-          Row(
-            children: [
-              const Icon(Icons.star, color: AppColors.brandGreen, size: 16),
-              const SizedBox(width: 4),
-              Text(
-                (rating == 0.0 ? 4.5 : rating).toStringAsFixed(1),
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textMain,
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Text('•', style: TextStyle(color: AppColors.textDisabled, fontSize: 14)),
-              const SizedBox(width: 8),
-              if (vendorModel?.isServiceable == false)
-                const Text(
-                  'Not Serviceable',
-                  style: TextStyle(
-                    color: Color(0xFFE74C3C),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
+            child: Opacity(
+              opacity: widget.vendorModel?.isServiceable == false ? 0.6 : 1.0,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Image with Badge
+                  Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: ColorFiltered(
+                          colorFilter: widget.vendorModel?.isServiceable == false 
+                            ? const ColorFilter.mode(Colors.grey, BlendMode.saturation)
+                            : const ColorFilter.mode(Colors.transparent, BlendMode.multiply),
+                          child: Hero(
+                            tag: 'vendor_${widget.vendorModel?.id ?? widget.title}',
+                            child: Image.network(
+                              widget.imageUrl.isNotEmpty ? widget.imageUrl : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c',
+                              height: context.isMobile ? 190 : 160,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => Container(
+                                height: 160,
+                                color: AppColors.shimmerBase,
+                                child: const Icon(Icons.image_not_supported_outlined, color: AppColors.textDisabled),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (widget.vendorModel?.isServiceable == false)
+                        Positioned.fill(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.black26,
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: const Center(
+                              child: Text(
+                                'Currently Unserviceable',
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
-                )
-              else
+                const SizedBox(height: 12),
+                // Title Row
                 Text(
-                  deliveryTime.isNotEmpty ? deliveryTime : '—',
-                  style: const TextStyle(
+                  widget.title,
+                  style: TextStyle(
+                    fontSize: context.isMobile ? 18 : 16,
+                    fontWeight: FontWeight.w900,
                     color: AppColors.textMain,
-                    fontSize: 14,
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          
-          // Cuisine section
-          Text(
-            cuisine.isNotEmpty ? cuisine : 'Multi-cuisine',
-            style: const TextStyle(
-              color: AppColors.textSub,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 4),
-          
-          // Location
-          Row(
-            children: [
-              const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textDisabled),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  _formatAddress(vendorModel?.location ?? ''),
-                  style: const TextStyle(
-                    color: AppColors.textDisabled,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w400,
+                    letterSpacing: -0.5,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
+                const SizedBox(height: 4),
+                
+                // Status Row (Rating • DeliveryTime)
+                Row(
+                  children: [
+                    const Icon(Icons.star_rounded, color: AppColors.brandGreen, size: 18),
+                    const SizedBox(width: 4),
+                    Text(
+                      (widget.rating == 0.0 ? 4.5 : widget.rating).toStringAsFixed(1),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textMain,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text('•', style: TextStyle(color: AppColors.textDisabled, fontSize: 14)),
+                    const SizedBox(width: 8),
+                    Text(
+                      widget.deliveryTime.isNotEmpty ? widget.deliveryTime : '25-35 mins',
+                      style: const TextStyle(
+                        color: AppColors.textMain,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                
+                // Cuisine section
+                Text(
+                  widget.cuisine.isNotEmpty ? widget.cuisine : 'Multi-cuisine',
+                  style: const TextStyle(
+                    color: AppColors.textSub,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                ],
               ),
-            ],
+            ),
           ),
-          ],
         ),
       ),
     );

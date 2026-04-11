@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_core/theme/app_colors.dart';
@@ -14,13 +15,39 @@ import 'add_address_detail_screen.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class LocationSheet extends ConsumerStatefulWidget {
-  const LocationSheet({super.key});
+  final bool isEmbedded;
+  final VoidCallback? onOpenMap;
+  final VoidCallback? onAddNew;
+  final VoidCallback? onLocationSelected;
+
+  const LocationSheet({
+    super.key,
+    this.isEmbedded = false,
+    this.onOpenMap,
+    this.onAddNew,
+    this.onLocationSelected,
+  });
 
   static void show(BuildContext context) {
-    Navigator.push(
-      context,
-      CupertinoPageRoute(builder: (_) => const LocationSheet()),
-    );
+    if (kIsWeb) {
+      showDialog(
+        context: context,
+        builder: (context) => Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          clipBehavior: Clip.antiAlias,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600, maxHeight: 800),
+            child: const LocationSheet(),
+          ),
+        ),
+      );
+    } else {
+      Navigator.push(
+        context,
+        CupertinoPageRoute(builder: (_) => const LocationSheet()),
+      );
+    }
   }
 
   @override
@@ -79,7 +106,11 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
           tag: p.mainText,
         );
         ref.read(locationProvider.notifier).overrideLocation(newLoc);
-        Navigator.of(context).pop();
+        if (widget.isEmbedded && widget.onLocationSelected != null) {
+          widget.onLocationSelected!();
+        } else {
+          Navigator.of(context).pop();
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -110,7 +141,11 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
         ),
       );
     }
-    Navigator.of(context).pop();
+    if (widget.isEmbedded && widget.onLocationSelected != null) {
+      widget.onLocationSelected!();
+    } else {
+      Navigator.of(context).pop();
+    }
   }
 
   IconData _iconForLabel(String? label) {
@@ -364,10 +399,12 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
   Widget build(BuildContext context) {
     final locationState = ref.watch(locationProvider);
     final isDetecting = locationState.isLoading;
-    final areaName = locationState.location?.areaName ?? 'Detecting...';
-    final stateName = locationState.location?.state ?? '';
     final paddingBottom = MediaQuery.of(context).viewInsets.bottom;
     final addressesAsync = ref.watch(savedAddressesProvider);
+
+    if (widget.isEmbedded) {
+      return _buildBody(context, paddingBottom, addressesAsync, isDetecting);
+    }
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -389,11 +426,16 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
         ),
         centerTitle: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.only(top: 8, left: 20, right: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+      body: _buildBody(context, paddingBottom, addressesAsync, isDetecting),
+    );
+  }
+
+  Widget _buildBody(BuildContext context, double paddingBottom, AsyncValue<List<UserAddress>> addressesAsync, bool isDetecting) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, left: 20, right: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
             const SizedBox(height: 16),
 
             // Search Field
@@ -437,9 +479,13 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
                 Expanded(
                   child: InkWell(
                     onTap: () {
-                      Navigator.of(context).push(
-                        CupertinoPageRoute(builder: (_) => const LocationPickScreen()),
-                      );
+                      if (widget.isEmbedded && widget.onOpenMap != null) {
+                        widget.onOpenMap!();
+                      } else {
+                        Navigator.of(context).push(
+                          CupertinoPageRoute(builder: (_) => const LocationPickScreen()),
+                        );
+                      }
                     },
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
@@ -489,11 +535,15 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
                 Expanded(
                   child: InkWell(
                     onTap: () {
-                      Navigator.of(context).push(
-                        CupertinoPageRoute(
-                          builder: (_) => const LocationPickScreen(isAddingAddress: true),
-                        ),
-                      );
+                      if (widget.isEmbedded && widget.onAddNew != null) {
+                        widget.onAddNew!();
+                      } else {
+                        Navigator.of(context).push(
+                          CupertinoPageRoute(
+                            builder: (_) => const LocationPickScreen(isAddingAddress: true),
+                          ),
+                        );
+                      }
                     },
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
@@ -649,7 +699,6 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
             ],
           ],
         ),
-      ),
-    );
+      );
   }
 }

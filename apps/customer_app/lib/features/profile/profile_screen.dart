@@ -8,10 +8,21 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_core/services/auth_service.dart';
 import 'package:shared_core/services/node_api_service.dart';
 import 'package:shared_core/theme/app_colors.dart';
+import 'package:shared_core/utils/responsive.dart';
 import '../orders/orders_history_screen.dart';
+import '../../widgets/modern_dialog.dart';
+
+enum ProfilePanelView { main, edit, settings, orders, help, about }
 
 class ProfileScreen extends ConsumerStatefulWidget {
-  const ProfileScreen({super.key});
+  final bool isEmbedded;
+  final Function(ProfilePanelView)? onNavigate;
+
+  const ProfileScreen({
+    super.key,
+    this.isEmbedded = false,
+    this.onNavigate,
+  });
 
   @override
   ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
@@ -23,90 +34,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   void _showLogoutDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
-      builder: (ctx) => Dialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Log Out?',
-                    style: GoogleFonts.poppins(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textMain,
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () => Navigator.pop(ctx),
-                    child: const Icon(Icons.close, color: AppColors.textMain, size: 20),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Are you sure you want to log out?',
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textDisabled,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      style: TextButton.styleFrom(
-                        backgroundColor: const Color(0xFFF5F5F5),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      onPressed: () => Navigator.pop(ctx),
-                      child: Text(
-                        'No',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textSub,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextButton(
-                      style: TextButton.styleFrom(
-                        backgroundColor: AppColors.errorBg,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        ref.read(authServiceProvider).signOut();
-                        Navigator.of(context).popUntil((route) => route.isFirst);
-                      },
-                      child: Text(
-                        'Yes',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.errorRed,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
+      builder: (context) => ModernDialog(
+        title: 'Log Out?',
+        message: 'Are you sure you want to log out?',
+        primaryLabel: 'Logout',
+        secondaryLabel: 'Cancel',
+        isDestructive: true,
+        onPrimary: () {
+          Navigator.pop(context);
+          ref.read(authServiceProvider).signOut();
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        },
       ),
     );
   }
@@ -141,6 +79,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   void _showImageSourceActionSheet() {
+    if (context.isDesktop || context.isTablet) {
+      _pickAndUploadImage(ImageSource.gallery);
+      return;
+    }
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -221,62 +164,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final String displayEmail = (user != null && user.email.isNotEmpty) ? user.email : '';
     final String? avatarUrl = user?.avatarUrl;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F8),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF7F7F8),
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        leading: GestureDetector(
-          onTap: () => Navigator.of(context).pop(),
-          child: const Icon(Icons.arrow_back, color: AppColors.textMain),
-        ),
-        title: Text(
-          'My Profile',
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w600,
-            fontSize: 17,
-            color: AppColors.textMain,
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, color: AppColors.textMain),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            color: Colors.white,
-            elevation: 4,
-            offset: const Offset(0, 42),
-            onSelected: (val) {
-              if (val == 'logout') {
-                _showLogoutDialog(context, ref);
-              } else if (val == 'settings') {
-                Navigator.push(
-                  context,
-                  CupertinoPageRoute(builder: (_) => _SettingsScreen()),
-                );
-              } else if (val == 'edit') {
-                Navigator.push(
-                  context,
-                  CupertinoPageRoute(builder: (_) => _EditProfileScreen()),
-                );
-              }
-            },
-            itemBuilder: (context) => [
-              _popupItem(Icons.edit_outlined, 'Edit profile', 'edit'),
-              _popupItem(Icons.settings_outlined, 'Settings', 'settings'),
-              _popupItem(Icons.logout, 'Logout', 'logout'),
-            ],
-          ),
-          const SizedBox(width: 4),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+    final body = SingleChildScrollView(
+        padding: EdgeInsets.symmetric(horizontal: widget.isEmbedded ? 0 : 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const SizedBox(height: 32),
+            SizedBox(height: widget.isEmbedded ? 16 : 32),
 
             // Avatar
             GestureDetector(
@@ -358,7 +251,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 padding: const EdgeInsets.only(top: 2),
                 child: Text(
                   displayPhone,
-                  style: GoogleFonts.poppins(fontSize: 14, color: AppColors.textDisabled),
+                  style: GoogleFonts.poppins(fontSize: 14, color: AppColors.textSub),
                 ),
               ),
 
@@ -367,7 +260,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 padding: const EdgeInsets.only(top: 2),
                 child: Text(
                   displayEmail,
-                  style: GoogleFonts.poppins(fontSize: 13, color: AppColors.textDisabled),
+                  style: GoogleFonts.poppins(fontSize: 13, color: AppColors.textSub),
                 ),
               ),
 
@@ -376,22 +269,96 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             // Menu items
             _card([
               _row(context, Icons.receipt_long_outlined, 'My Orders', () {
-                Navigator.push(context, CupertinoPageRoute(builder: (_) => const OrdersHistoryScreen()));
+                if (widget.isEmbedded && widget.onNavigate != null) {
+                  widget.onNavigate!(ProfilePanelView.orders);
+                } else {
+                  Navigator.push(context, CupertinoPageRoute(builder: (_) => const OrdersHistoryScreen()));
+                }
               }),
               _divider(),
               _row(context, Icons.help_outline, 'Help & Support', () {
-                Navigator.push(context, CupertinoPageRoute(builder: (_) => const _HelpSupportScreen()));
+                if (widget.isEmbedded && widget.onNavigate != null) {
+                  widget.onNavigate!(ProfilePanelView.help);
+                } else {
+                  Navigator.push(context, CupertinoPageRoute(builder: (_) => const ProfileHelpView()));
+                }
               }),
               _divider(),
               _row(context, Icons.info_outline, 'About Gutzo', () {
-                Navigator.push(context, CupertinoPageRoute(builder: (_) => const _AboutScreen()));
+                if (widget.isEmbedded && widget.onNavigate != null) {
+                  widget.onNavigate!(ProfilePanelView.about);
+                } else {
+                  Navigator.push(context, CupertinoPageRoute(builder: (_) => const ProfileAboutView()));
+                }
               }),
             ]),
 
             const SizedBox(height: 40),
           ],
         ),
+      );
+
+    if (widget.isEmbedded) return body;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF7F7F8),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFF7F7F8),
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        leading: GestureDetector(
+          onTap: () => Navigator.of(context).pop(),
+          child: const Icon(Icons.arrow_back, color: AppColors.textMain),
+        ),
+        title: Text(
+          'My Profile',
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600,
+            fontSize: 17,
+            color: AppColors.textMain,
+          ),
+        ),
+        centerTitle: true,
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, color: AppColors.textMain),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            color: Colors.white,
+            elevation: 4,
+            offset: const Offset(0, 42),
+            onSelected: (val) {
+              if (val == 'logout') {
+                _showLogoutDialog(context, ref);
+              } else if (val == 'settings') {
+                if (widget.isEmbedded && widget.onNavigate != null) {
+                  widget.onNavigate!(ProfilePanelView.settings);
+                } else {
+                  Navigator.push(
+                    context,
+                    CupertinoPageRoute(builder: (_) => const ProfileSettingsView()),
+                  );
+                }
+              } else if (val == 'edit') {
+                if (widget.isEmbedded && widget.onNavigate != null) {
+                  widget.onNavigate!(ProfilePanelView.edit);
+                } else {
+                  Navigator.push(
+                    context,
+                    CupertinoPageRoute(builder: (_) => const ProfileEditView()),
+                  );
+                }
+              }
+            },
+            itemBuilder: (context) => [
+              _popupItem(Icons.edit_outlined, 'Edit profile', 'edit'),
+              _popupItem(Icons.settings_outlined, 'Settings', 'settings'),
+              _popupItem(Icons.logout, 'Logout', 'logout'),
+            ],
+          ),
+          const SizedBox(width: 4),
+        ],
       ),
+      body: body,
     );
   }
 
@@ -446,30 +413,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
 // ─── Settings Screen (accessed via 3-dot menu) ────────────────────────────────
 
-class _SettingsScreen extends ConsumerWidget {
+class ProfileSettingsView extends ConsumerWidget {
+  final bool isEmbedded;
+  final VoidCallback? onBack;
+
+  const ProfileSettingsView({
+    super.key,
+    this.isEmbedded = false,
+    this.onBack,
+  });
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F8),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF7F7F8),
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        leading: GestureDetector(
-          onTap: () => Navigator.of(context).pop(),
-          child: const Icon(Icons.arrow_back, color: AppColors.textMain),
-        ),
-        title: Text(
-          'Settings',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 17, color: AppColors.textMain),
-        ),
-        centerTitle: true,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
+    final body = Padding(
+        padding: EdgeInsets.all(isEmbedded ? 0 : 20),
         child: Column(
           children: [
-            const SizedBox(height: 8),
+            SizedBox(height: isEmbedded ? 0 : 8),
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -512,7 +472,27 @@ class _SettingsScreen extends ConsumerWidget {
             ),
           ],
         ),
+      );
+
+    if (isEmbedded) return body;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF7F7F8),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFF7F7F8),
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        leading: GestureDetector(
+          onTap: () => Navigator.of(context).pop(),
+          child: const Icon(Icons.arrow_back, color: AppColors.textMain),
+        ),
+        title: Text(
+          'Settings',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 17, color: AppColors.textMain),
+        ),
+        centerTitle: true,
       ),
+      body: body,
     );
   }
 
@@ -541,90 +521,17 @@ class _SettingsScreen extends ConsumerWidget {
   void _showDeleteDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
-      builder: (ctx) => Dialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Delete Account?',
-                    style: GoogleFonts.poppins(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textMain,
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () => Navigator.pop(ctx),
-                    child: const Icon(Icons.close, color: AppColors.textMain, size: 20),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'This will permanently delete your account and all data. This action cannot be undone.',
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textDisabled,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      style: TextButton.styleFrom(
-                        backgroundColor: const Color(0xFFF0F0F0),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      onPressed: () => Navigator.pop(ctx),
-                      child: Text(
-                        'Cancel',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textMain,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextButton(
-                      style: TextButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        ref.read(authServiceProvider).signOut();
-                        Navigator.of(context).popUntil((route) => route.isFirst);
-                      },
-                      child: Text(
-                        'Delete',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
+      builder: (context) => ModernDialog(
+        title: 'Delete Account?',
+        message: 'This will permanently delete your account and all data. This action cannot be undone.',
+        primaryLabel: 'Delete',
+        secondaryLabel: 'Cancel',
+        isDestructive: true,
+        onPrimary: () {
+          Navigator.pop(context);
+          ref.read(authServiceProvider).signOut();
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        },
       ),
     );
   }
@@ -632,12 +539,21 @@ class _SettingsScreen extends ConsumerWidget {
 
 // ─── Edit Profile Screen ───────────────────────────────────────────────────────
 
-class _EditProfileScreen extends ConsumerStatefulWidget {
+class ProfileEditView extends ConsumerStatefulWidget {
+  final bool isEmbedded;
+  final VoidCallback? onBack;
+
+  const ProfileEditView({
+    super.key,
+    this.isEmbedded = false,
+    this.onBack,
+  });
+
   @override
-  ConsumerState<_EditProfileScreen> createState() => _EditProfileScreenState();
+  ConsumerState<ProfileEditView> createState() => _ProfileEditViewState();
 }
 
-class _EditProfileScreenState extends ConsumerState<_EditProfileScreen> {
+class _ProfileEditViewState extends ConsumerState<ProfileEditView> {
   // Which field is currently being edited: null | 'name' | 'email'
   String? _editing;
   bool _saving = false;
@@ -751,28 +667,12 @@ class _EditProfileScreenState extends ConsumerState<_EditProfileScreen> {
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F8),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF7F7F8),
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        leading: GestureDetector(
-          onTap: () => Navigator.of(context).pop(),
-          child: const Icon(Icons.arrow_back, color: AppColors.textMain),
-        ),
-        title: Text(
-          'Edit Profile',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 17, color: AppColors.textMain),
-        ),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+    final body = SingleChildScrollView(
+        padding: EdgeInsets.all(widget.isEmbedded ? 0 : 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 8),
+            SizedBox(height: widget.isEmbedded ? 0 : 8),
 
             // ── WhatsApp Number (always read-only) ──
             _fieldLabel('WhatsApp Number'),
@@ -789,7 +689,7 @@ class _EditProfileScreenState extends ConsumerState<_EditProfileScreen> {
                   Expanded(
                     child: Text(
                       '+91 ${user?.phone ?? ''}',
-                      style: GoogleFonts.poppins(fontSize: 15, color: AppColors.textDisabled),
+                      style: GoogleFonts.poppins(fontSize: 15, color: AppColors.textSub),
                     ),
                   ),
                   const Icon(Icons.verified, color: AppColors.brandGreen, size: 16),
@@ -827,7 +727,27 @@ class _EditProfileScreenState extends ConsumerState<_EditProfileScreen> {
             ),
           ],
         ),
+      );
+
+    if (widget.isEmbedded) return body;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF7F7F8),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFF7F7F8),
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        leading: GestureDetector(
+          onTap: () => Navigator.of(context).pop(),
+          child: const Icon(Icons.arrow_back, color: AppColors.textMain),
+        ),
+        title: Text(
+          'Edit Profile',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 17, color: AppColors.textMain),
+        ),
+        centerTitle: true,
       ),
+      body: body,
     );
   }
 
@@ -1127,8 +1047,9 @@ class _PrivacyScreen extends StatelessWidget {
   }
 }
 
-class _HelpSupportScreen extends StatelessWidget {
-  const _HelpSupportScreen();
+class ProfileHelpView extends StatelessWidget {
+  final bool isEmbedded;
+  const ProfileHelpView({super.key, this.isEmbedded = false});
 
   Future<void> _makePhoneCall(String phoneNumber) async {
     final Uri launchUri = Uri(
@@ -1142,24 +1063,8 @@ class _HelpSupportScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F8),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF7F7F8),
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        leading: GestureDetector(
-          onTap: () => Navigator.of(context).pop(),
-          child: const Icon(Icons.arrow_back, color: AppColors.textMain),
-        ),
-        title: Text(
-          'Help & Support',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 17, color: AppColors.textMain),
-        ),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+    final body = SingleChildScrollView(
+        padding: EdgeInsets.all(isEmbedded ? 0 : 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1265,20 +1170,14 @@ class _HelpSupportScreen extends StatelessWidget {
             const SizedBox(height: 32),
           ],
         ),
-      ),
-    );
-  }
-}
+      );
 
-class _AboutScreen extends StatelessWidget {
-  const _AboutScreen();
+    if (isEmbedded) return body;
 
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF7F7F8),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFF7F7F8),
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         leading: GestureDetector(
@@ -1286,20 +1185,41 @@ class _AboutScreen extends StatelessWidget {
           child: const Icon(Icons.arrow_back, color: AppColors.textMain),
         ),
         title: Text(
-          'About Gutzo',
+          'Help & Support',
           style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 17, color: AppColors.textMain),
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
+      body: body,
+    );
+  }
+}
+
+class ProfileAboutView extends StatelessWidget {
+  final bool isEmbedded;
+  const ProfileAboutView({super.key, this.isEmbedded = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final body = SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Image.asset(
-              'assets/images/gutzo_premium_badge_illustration.png',
-              height: 100,
-              width: 100,
+            ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: Image.asset(
+                'assets/images/gutzo_team_about.png',
+                height: 240,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  height: 240,
+                  width: double.infinity,
+                  color: AppColors.bg,
+                  child: const Icon(Icons.group_outlined, size: 48, color: AppColors.brandGreen),
+                ),
+              ),
             ),
             const SizedBox(height: 24),
             Text(
@@ -1375,7 +1295,27 @@ class _AboutScreen extends StatelessWidget {
             const SizedBox(height: 24),
           ],
         ),
+      );
+
+    if (isEmbedded) return body;
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        leading: GestureDetector(
+          onTap: () => Navigator.of(context).pop(),
+          child: const Icon(Icons.arrow_back, color: AppColors.textMain),
+        ),
+        title: Text(
+          'About Gutzo',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 17, color: AppColors.textMain),
+        ),
+        centerTitle: true,
       ),
+      body: body,
     );
   }
 

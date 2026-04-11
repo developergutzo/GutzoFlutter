@@ -413,10 +413,8 @@ class LocationService {
     // Get position
     debugPrint('Invoking Geolocator.getCurrentPosition...');
     final position = await Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-        timeLimit: Duration(seconds: 10),
-      ),
+      desiredAccuracy: LocationAccuracy.high,
+      timeLimit: const Duration(seconds: 10),
     );
     debugPrint('Received position: ${position.latitude}, ${position.longitude}');
 
@@ -458,20 +456,22 @@ class LocationService {
 class LocationNotifier extends Notifier<LocationState> {
   @override
   LocationState build() {
-    // Listen for GPS being toggled ON/OFF
-    final subscription = Geolocator.getServiceStatusStream().listen((status) {
-      if (status == ServiceStatus.enabled) {
-        debugPrint('LocationNotifier: GPS enabled, re-triggering loadLocation...');
-        refreshLocation(); // Use refresh to ignore cache
-      } else {
-        debugPrint('LocationNotifier: GPS disabled, updating state...');
-        state = state.copyWith(error: 'LOCATION_OFF');
-      }
-    });
+    // Listen for GPS being toggled ON/OFF (Mobile only)
+    if (!kIsWeb) {
+      final subscription = Geolocator.getServiceStatusStream().listen((status) {
+        if (status == ServiceStatus.enabled) {
+          debugPrint('LocationNotifier: GPS enabled, re-triggering loadLocation...');
+          refreshLocation(); // Use refresh to ignore cache
+        } else {
+          debugPrint('LocationNotifier: GPS disabled, updating state...');
+          state = state.copyWith(error: 'LOCATION_OFF');
+        }
+      });
 
-    ref.onDispose(() {
-      subscription.cancel();
-    });
+      ref.onDispose(() {
+        subscription.cancel();
+      });
+    }
 
     return const LocationState(isLoading: true); 
   }

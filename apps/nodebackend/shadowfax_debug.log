@@ -288,3 +288,311 @@ Response Data: {"is_order_created":true,"message":"Order created successfully","
 Payload: {"order_details":{"order_id":"GZ202603222203S2R1","actual_order_value":90,"paid":true,"is_prepaid":true,"cash_to_be_collected":0,"payment_mode":"prepaid","delivery_charge_to_be_collected_from_customer":0},"pickup_details":{"name":"Coimbatore Cafe, SITRA","contact_number":"8903589068","address":"164/165, Avinashi Rd, Coimbatore, Tamil Nadu 641004","latitude":11.0383350227169,"longitude":77.0381654512353},"drop_details":{"contact_number":"+919003802398","address":"3328+XVJ, Teachers Colony, Chinniyampalayam, Coimbatore, Tamil Nadu 641062, India","city":"Coimbatore","state":"Tamil Nadu","latitude":11.0525166,"longitude":77.0671836},"user_details":{"name":"Gutzo","contact_number":"9003802398","credits_key":"2f184788-0daa-47c1-b887-f4e7c8f6ddbf"},"communications":{"send_sms_to_pickup_person":true,"send_sms_to_drop_person":true,"send_rts_sms_to_pickup_person":true},"validations":{"pickup":{"is_otp_required":true,"otp":"1234"},"drop":{"is_otp_required":true,"otp":"5678"}}}
 Response Status: 200
 Response Data: {"is_order_created":true,"message":"Order created successfully","flash_order_id":"SFX_MOCK_1774197239921_iqqp2m9rk","pickup_otp":"1234","drop_otp":"5678","total_amount":50,"rain_rider_incentive":0,"high_demand_surge":0}
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50c
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50c
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50c
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50c
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50c
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50c
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50d
+Raw Count: 0
+Data: []

@@ -25,6 +25,18 @@ class Vendor {
   final bool? isOpen;
   final String? nextOpenTime;
   final bool? isServiceable;
+  final String? pincode;
+  final String? companyType;
+  final String? ownerName;
+  final String? companyRegNo;
+  final String? ownerAadharNo;
+  final String? panCardNo;
+  final String? fssaiLicense;
+  final String? gstNumber;
+  final String? bankAccountNo;
+  final String? ifscCode;
+  final String? bankName;
+  final String? accountHolderName;
 
   Vendor({
     required this.id,
@@ -51,6 +63,18 @@ class Vendor {
     this.isOpen,
     this.nextOpenTime,
     this.isServiceable,
+    this.pincode,
+    this.companyType,
+    this.ownerName,
+    this.companyRegNo,
+    this.ownerAadharNo,
+    this.panCardNo,
+    this.fssaiLicense,
+    this.gstNumber,
+    this.bankAccountNo,
+    this.ifscCode,
+    this.bankName,
+    this.accountHolderName,
   });
 
   factory Vendor.fromJson(Map<String, dynamic> json) {
@@ -58,7 +82,7 @@ class Vendor {
       id: json['id']?.toString() ?? '',
       name: json['name'] as String? ?? '',
       description: json['description'] as String? ?? '',
-      location: json['location'] as String? ?? '',
+      location: (json['address'] ?? json['location']) as String? ?? '',
       rating: (json['rating'] as num?)?.toDouble() ?? 4.5,
       image: json['image'] as String? ?? '',
       deliveryTime: (json['deliveryTime'] ?? json['delivery_time']) as String? ?? '',
@@ -81,6 +105,18 @@ class Vendor {
       isOpen: json['isOpen'] ?? json['is_open'] as bool?,
       nextOpenTime: json['nextOpenTime'] ?? json['next_open_time'] as String?,
       isServiceable: json['isServiceable'] ?? json['is_serviceable'] as bool?,
+      pincode: json['pincode'] as String?,
+      companyType: json['company_type'] as String?,
+      ownerName: json['owner_name'] as String?,
+      companyRegNo: json['company_reg_no'] as String?,
+      ownerAadharNo: json['owner_aadhar_no'] as String?,
+      panCardNo: json['pan_card_no'] as String?,
+      fssaiLicense: json['fssai_license'] as String?,
+      gstNumber: json['gst_number'] as String?,
+      bankAccountNo: (json['bank_account_no'] ?? json['bank_account_number']) as String?,
+      ifscCode: json['ifsc_code'] as String?,
+      bankName: json['bank_name'] as String?,
+      accountHolderName: json['account_holder_name'] as String?,
     );
   }
 
@@ -89,7 +125,7 @@ class Vendor {
       'id': id,
       'name': name,
       'description': description,
-      'location': location,
+      'address': location,
       'rating': rating,
       'image': image,
       'delivery_time': deliveryTime,
@@ -110,8 +146,50 @@ class Vendor {
       'is_open': isOpen,
       'next_open_time': nextOpenTime,
       'is_serviceable': isServiceable,
+      'pincode': pincode,
+      'company_type': companyType,
+      'owner_name': ownerName,
+      'company_reg_no': companyRegNo,
+      'owner_aadhar_no': ownerAadharNo,
+      'pan_card_no': panCardNo,
+      'fssai_license': fssaiLicense,
+      'gst_number': gstNumber,
+      'bank_account_no': bankAccountNo,
+      'ifsc_code': ifscCode,
+      'bank_name': bankName,
+      'account_holder_name': accountHolderName,
     };
   }
+
+  Map<String, dynamic> toProfileUpdateJson() {
+    return {
+      'name': name,
+      'description': description,
+      'cuisine_type': cuisineType,
+      'address': location,
+      'phone': phone,
+      'image': image,
+      'delivery_time': deliveryTime,
+      'minimum_order': minimumOrder,
+      'delivery_fee': deliveryFee,
+      'pincode': pincode,
+      'company_type': companyType,
+      'owner_name': ownerName,
+      'company_reg_no': companyRegNo,
+      'owner_aadhar_no': ownerAadharNo,
+      'pan_card_no': panCardNo,
+      'fssai_license': fssaiLicense,
+      'gst_number': gstNumber,
+      'bank_account_no': bankAccountNo,
+      'ifsc_code': ifscCode,
+      'bank_name': bankName,
+      'account_holder_name': accountHolderName,
+    };
+  }
+
+
+
+
 
   Vendor copyWith({
     String? id,
@@ -138,6 +216,18 @@ class Vendor {
     bool? isOpen,
     String? nextOpenTime,
     bool? isServiceable,
+    String? pincode,
+    String? companyType,
+    String? ownerName,
+    String? companyRegNo,
+    String? ownerAadharNo,
+    String? panCardNo,
+    String? fssaiLicense,
+    String? gstNumber,
+    String? bankAccountNo,
+    String? ifscCode,
+    String? bankName,
+    String? accountHolderName,
   }) {
     return Vendor(
       id: id ?? this.id,
@@ -164,6 +254,18 @@ class Vendor {
       isOpen: isOpen ?? this.isOpen,
       nextOpenTime: nextOpenTime ?? this.nextOpenTime,
       isServiceable: isServiceable ?? this.isServiceable,
+      pincode: pincode ?? this.pincode,
+      companyType: companyType ?? this.companyType,
+      ownerName: ownerName ?? this.ownerName,
+      companyRegNo: companyRegNo ?? this.companyRegNo,
+      ownerAadharNo: ownerAadharNo ?? this.ownerAadharNo,
+      panCardNo: panCardNo ?? this.panCardNo,
+      fssaiLicense: fssaiLicense ?? this.fssaiLicense,
+      gstNumber: gstNumber ?? this.gstNumber,
+      bankAccountNo: bankAccountNo ?? this.bankAccountNo,
+      ifscCode: ifscCode ?? this.ifscCode,
+      bankName: bankName ?? this.bankName,
+      accountHolderName: accountHolderName ?? this.accountHolderName,
     );
   }
 }

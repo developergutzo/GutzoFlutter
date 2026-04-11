@@ -10,7 +10,8 @@ import 'package:shimmer/shimmer.dart';
 import 'order_tracking_screen.dart';
 
 class OrdersHistoryScreen extends ConsumerStatefulWidget {
-  const OrdersHistoryScreen({super.key});
+  final bool isEmbedded;
+  const OrdersHistoryScreen({super.key, this.isEmbedded = false});
 
   @override
   ConsumerState<OrdersHistoryScreen> createState() => _OrdersHistoryScreenState();
@@ -33,6 +34,32 @@ class _OrdersHistoryScreenState extends ConsumerState<OrdersHistoryScreen> {
   Widget build(BuildContext context) {
     final ordersAsync = ref.watch(ordersProvider);
 
+    final body = ordersAsync.when(
+        loading: () => _buildLoadingState(),
+        error: (err, stack) => _buildErrorState(err.toString()),
+        data: (orders) {
+          if (orders.isEmpty) {
+            return _buildEmptyState();
+          }
+          return RefreshIndicator(
+            color: AppColors.brandGreen,
+            onRefresh: () async {
+              return ref.refresh(ordersProvider.future);
+            },
+            child: ListView.separated(
+              padding: EdgeInsets.all(widget.isEmbedded ? 0 : 16),
+              itemCount: orders.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                return _buildOrderCard(context, orders[index]);
+              },
+            ),
+          );
+        },
+      );
+
+    if (widget.isEmbedded) return body;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -46,29 +73,7 @@ class _OrdersHistoryScreenState extends ConsumerState<OrdersHistoryScreen> {
           child: const Icon(Icons.arrow_back),
         ),
       ),
-      body: ordersAsync.when(
-        loading: () => _buildLoadingState(),
-        error: (err, stack) => _buildErrorState(err.toString()),
-        data: (orders) {
-          if (orders.isEmpty) {
-            return _buildEmptyState();
-          }
-          return RefreshIndicator(
-            color: AppColors.brandGreen,
-            onRefresh: () async {
-              return ref.refresh(ordersProvider.future);
-            },
-            child: ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: orders.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                return _buildOrderCard(context, orders[index]);
-              },
-            ),
-          );
-        },
-      ),
+      body: body,
     );
   }
 

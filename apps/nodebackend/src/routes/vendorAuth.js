@@ -17,31 +17,45 @@ router.post('/check-status', asyncHandler(async (req, res) => {
   const { phone } = req.body;
   if (!phone) throw new ApiError(400, 'Phone number is required');
 
-  // 1. Check vendors table
-  const { data: vendor } = await supabaseAdmin
-    .from('vendors')
-    .select('id, is_active')
-    .eq('phone', phone)
-    .single();
+  const cleanPhone = phone.trim();
+  const searchPhones = [
+    cleanPhone,
+    cleanPhone.startsWith('+91') ? cleanPhone.slice(3) : `+91${cleanPhone}`,
+    cleanPhone.startsWith('91') ? cleanPhone.slice(2) : `91${cleanPhone}`
+  ];
 
-  if (vendor) {
-    if (!vendor.is_active) {
-      // Optional: could handle inactive differently, but for now treating as 'vendor' implies password check
-      // or we could block here. Let's return status 'vendor' but frontend will hit login and fail on is_active check if we keep that logic there.
-      // Actually user request says "password match then show".
-      // Let's stick to returning 'vendor'.
-    }
-    return successResponse(res, { status: 'vendor' });
+  console.log('🔍 Auth: Checking status for phones:', searchPhones);
+
+  // 1. Check vendors table - fetch full profile for Flutter synchronization
+  const { data: vendors, error: vendorError } = await supabaseAdmin
+    .from('vendors')
+    .select('*')
+    .in('phone', searchPhones)
+    .limit(1);
+
+  if (vendorError) {
+     console.error('❌ Auth: Vendor query error:', vendorError);
+  }
+
+  if (vendors && vendors.length > 0) {
+    const vendor = vendors[0];
+    console.log('✅ Auth: Found vendor:', vendor.name, '(' + vendor.id + ')');
+    return successResponse(res, { 
+      status: 'vendor',
+      vendor: vendor 
+    });
   }
 
   // 2. Check vendor_leads table
-  const { data: lead } = await supabaseAdmin
+  const { data: leads } = await supabaseAdmin
     .from('vendor_leads')
     .select('id, status, remarks')
-    .eq('phone', phone)
-    .single();
+    .in('phone', searchPhones)
+    .limit(1);
 
-  if (lead) {
+  if (leads && leads.length > 0) {
+    const lead = leads[0];
+    console.log('ℹ️ Auth: Found lead with status:', lead.status);
     return successResponse(res, {
       status: 'lead',
       leadStatus: lead.status,
@@ -262,20 +276,46 @@ router.delete('/:id/products/:productId', asyncHandler(async (req, res) => {
 router.put('/:id/profile', asyncHandler(async (req, res) => {
   const { id } = req.params;
 
-  // Prevent updating critical fields like id, username, password via this route
-  const { id: _, username, password, ...safeUpdates } = req.body;
+  // 1. Define allowed fields for profile update to prevent column mismatch errors
+  const allowedFields = [
+    'name', 'description', 'address', 'cuisine_type', 'phone', 'pincode',
+    'company_type', 'owner_name', 'company_reg_no', 'owner_aadhar_no',
+    'pan_card_no', 'fssai_license', 'gst_number', 'bank_account_no',
+    'ifsc_code', 'bank_name', 'account_holder_name', 'image',
+    'latitude', 'longitude'
+  ];
 
+
+
+  // 2. Filter the body
+  const updates = {};
+  allowedFields.forEach(field => {
+    // Only include field if it's provided and not an empty string
+    // This prevents violating check constraints on empty mandatory fields like company_type
+    if (req.body[field] !== undefined && req.body[field] !== "") {
+      updates[field] = req.body[field];
+    }
+  });
+
+
+  console.log('📝 Profile Update: Applying updates for vendor:', id, Object.keys(updates));
+
+  // 3. Update Supabase
   const { data: vendor, error } = await supabaseAdmin
     .from('vendors')
-    .update(safeUpdates)
+    .update(updates)
     .eq('id', id)
     .select()
     .single();
 
-  if (error) throw new ApiError(500, 'Failed to update profile');
+  if (error) {
+    console.error('❌ Profile Update Error:', error);
+    throw new ApiError(500, `Failed to update profile: ${error.message}`);
+  }
 
   successResponse(res, { vendor }, 'Profile updated successfully');
 }));
+
 
 // ============================================
 // FORGOT PASSWORD - REQUEST OTP

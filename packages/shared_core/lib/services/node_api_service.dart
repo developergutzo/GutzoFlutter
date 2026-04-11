@@ -1,11 +1,11 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class NodeApiService {
-  //final String baseUrl = "https://api.gutzo.in";
-  final String baseUrl = "http://192.168.1.37:5000";
+  final String baseUrl = kIsWeb ? "http://localhost:5000" : "http://10.0.2.2:5000";
   final SupabaseClient _supabase;
 
   NodeApiService(this._supabase);
@@ -47,21 +47,46 @@ class NodeApiService {
     final url = Uri.parse("$baseUrl${endpoint.startsWith('/api') ? endpoint : '/api${endpoint.startsWith('/') ? endpoint : '/$endpoint'}'}");
     final headers = await _getHeaders(overridePhone: overridePhone);
 
-    http.Response response;
-    if (method == "POST") {
-      response = await http.post(url, headers: headers, body: jsonEncode(body));
-    } else if (method == "PUT") {
-      response = await http.put(url, headers: headers, body: jsonEncode(body));
-    } else if (method == "DELETE") {
-      response = await http.delete(url, headers: headers);
-    } else {
-      response = await http.get(url, headers: headers);
+    print('🚀 NodeAPI Request: $method $url');
+    print('📋 Headers: $headers');
+    if (body != null) {
+      final jsonBody = jsonEncode(body);
+      print('📦 Body: $jsonBody');
+      if (jsonBody.contains('"location":')) {
+        print('🚨 WARNING: Body contains "location" key! This might cause Supabase 500 error.');
+      }
     }
 
+    http.Response response;
+    try {
+      const timeoutDuration = Duration(seconds: 10);
+      if (method == "POST") {
+        response = await http.post(url, headers: headers, body: jsonEncode(body)).timeout(timeoutDuration);
+      } else if (method == "PUT") {
+        response = await http.put(url, headers: headers, body: jsonEncode(body)).timeout(timeoutDuration);
+      } else if (method == "PATCH") {
+        response = await http.patch(url, headers: headers, body: jsonEncode(body)).timeout(timeoutDuration);
+      } else if (method == "DELETE") {
+        response = await http.delete(url, headers: headers).timeout(timeoutDuration);
+      } else {
+        response = await http.get(url, headers: headers).timeout(timeoutDuration);
+      }
+    } catch (e) {
+      String errorMessage = 'Connection failed. Please check if your computer (${url.host}) is reachable from your mobile device.';
+      if (e.toString().contains('SocketException')) {
+        errorMessage = 'Network unreachable. Check if you are on the same Wi-Fi and the firewall allows port ${url.port}.';
+      } else if (e.toString().contains('TimeoutException')) {
+        errorMessage = 'Connection timed out. Host ${url.host}:${url.port} is not responding.';
+      }
+      print('❌ NodeAPI Error: $errorMessage ($e)');
+      throw Exception(errorMessage);
+    }
+
+    print('✅ NodeAPI Response: ${response.statusCode}');
     final responseData = jsonDecode(response.body);
 
     if (response.statusCode >= 400) {
-      throw Exception(responseData["message"] ?? "HTTP ${response.statusCode}");
+      throw Exception(responseData["message"] ?? "HTTP ${response.statusCode}: ${response.reasonPhrase}");
     }
 
     return responseData;
@@ -232,6 +257,70 @@ class NodeApiService {
       "orderId": orderNumber,
       "mockShadowfax": mockShadowfax
     }, overridePhone: overridePhone);
+  }
+
+  // --- Partner/Vendor Methods ---
+  Future<Map<String, dynamic>> checkVendorStatus(String phone) async {
+    return _request("/vendor-auth/check-status", method: "POST", body: {"phone": phone});
+  }
+
+  Future<Map<String, dynamic>> getVendorProfile(String vendorId) async {
+    return _request("/vendor-auth/$vendorId");
+  }
+
+  Future<Map<String, dynamic>> vendorLogin(String email, String password) async {
+    return _request("/vendor-auth/login", method: "POST", body: {
+      "email": email,
+      "password": password,
+    });
+  }
+
+  Future<Map<String, dynamic>> updateVendorStatus(String vendorId, bool isOpen) async {
+    return _request("/vendor-auth/$vendorId/status", method: "POST", body: {"isOpen": isOpen});
+  }
+
+  Future<Map<String, dynamic>> getPartnerVendorOrders(String vendorId, {String? status}) async {
+    String endpoint = "/vendor-auth/$vendorId/orders";
+    if (status != null) {
+      endpoint += "?status=$status";
+    }
+    return _request(endpoint);
+  }
+
+  Future<Map<String, dynamic>> getVendorDashboardStats(String vendorId) async {
+    return _request("/vendor-auth/$vendorId/dashboard-stats");
+  }
+
+  Future<Map<String, dynamic>> updateVendorOrderStatus(String vendorId, String orderId, String status) async {
+    return _request("/vendor-auth/$vendorId/orders/$orderId/status", method: "PATCH", body: {"status": status});
+  }
+
+  Future<Map<String, dynamic>> getPartnerVendorMenu(String vendorId) async {
+    return _request("/vendor-auth/$vendorId/products");
+  }
+
+  Future<Map<String, dynamic>> addVendorProduct(String vendorId, Map<String, dynamic> data) async {
+    return _request("/vendor-auth/$vendorId/products", method: "POST", body: data);
+  }
+
+  Future<Map<String, dynamic>> updateVendorProduct(String vendorId, String productId, Map<String, dynamic> data) async {
+    return _request("/vendor-auth/$vendorId/products/$productId", method: "PUT", body: data);
+  }
+
+  Future<Map<String, dynamic>> deleteVendorProduct(String vendorId, String productId) async {
+    return _request("/vendor-auth/$vendorId/products/$productId", method: "DELETE");
+  }
+
+  Future<Map<String, dynamic>> updateVendorProfile(String vendorId, Map<String, dynamic> data) async {
+    return _request("/vendor-auth/$vendorId/profile", method: "PUT", body: data);
+  }
+
+  Future<Map<String, dynamic>> getVendorGSTReport(String vendorId, String from, String to) async {
+    return _request("/vendor-auth/$vendorId/gst-report?from=$from&to=$to");
+  }
+
+  Future<Map<String, dynamic>> createShadowfaxOrder(String orderId) async {
+    return _request("/shadowfax/create-order", method: "POST", body: {"orderId": orderId});
   }
 }
 

@@ -11,6 +11,8 @@ import '../../widgets/quantity_selector.dart';
 import '../vendor/vendor_detail_screen.dart';
 import '../auth/auth_screen.dart';
 import 'checkout_notifier.dart';
+import 'package:shared_core/utils/responsive.dart';
+import 'package:shared_core/widgets/max_width_container.dart';
 
 class CheckoutScreen extends ConsumerWidget {
   const CheckoutScreen({super.key});
@@ -30,97 +32,282 @@ class CheckoutScreen extends ConsumerWidget {
     });
 
     if (cart.items.isEmpty) {
-      // Returning a clean background avoids the "empty cart" UI flicker 
-      // during the automatic navigation back process.
       return const Scaffold(backgroundColor: Colors.white);
     }
 
     final vendor = cart.items.first.vendor;
+    final isWeb = context.isDesktop || context.isTablet;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              vendor.name,
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: Colors.black,
-              ),
+      appBar: isWeb ? _buildWebAppBar(context, vendor, checkout) : _buildMobileAppBar(context, vendor, checkout),
+      body: isWeb 
+          ? _buildWebLayout(context, ref, cart, checkout, vendor)
+          : _buildMobileLayout(context, ref, cart, checkout, vendor),
+      bottomSheet: isWeb ? null : _buildPayFooter(context, ref, cart, checkout),
+    );
+  }
+
+  PreferredSizeWidget _buildMobileAppBar(BuildContext context, Vendor vendor, CheckoutState checkout) {
+    return AppBar(
+      backgroundColor: Colors.white,
+      elevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: Colors.black),
+        onPressed: () => Navigator.pop(context),
+      ),
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            vendor.name,
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: Colors.black,
             ),
-            Row(
+          ),
+          Row(
+            children: [
+              Text(
+                checkout.eta ?? '38-43 mins',
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+              ),
+              Text(
+                ' to ${checkout.selectedAddress?.city ?? 'Location'}',
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: Colors.grey[400],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const Icon(Icons.keyboard_arrow_down, size: 14, color: Colors.grey),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  PreferredSizeWidget _buildWebAppBar(BuildContext context, Vendor vendor, CheckoutState checkout) {
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(80),
+      child: Container(
+        color: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        alignment: Alignment.center,
+        child: Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.black),
+              onPressed: () => Navigator.pop(context),
+            ),
+            const SizedBox(width: 16),
+            Text(
+              'Secure Checkout',
+              style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.w700),
+            ),
+            const Spacer(),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  checkout.eta ?? '38-43 mins',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
+                  'Ordering from ${vendor.name}',
+                  style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600),
                 ),
                 Text(
-                  ' to ${checkout.selectedAddress?.city ?? 'Location'}',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: Colors.grey[400],
-                    fontWeight: FontWeight.w500,
-                  ),
+                  'Delivering to ${checkout.selectedAddress?.city ?? 'Select Address'}',
+                  style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textDisabled),
                 ),
-                const Icon(Icons.keyboard_arrow_down, size: 14, color: Colors.grey),
               ],
             ),
           ],
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 200),
-        child: Column(
+    );
+  }
+
+  Widget _buildMobileLayout(BuildContext context, WidgetRef ref, CartState cart, CheckoutState checkout, Vendor vendor) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(bottom: 200),
+      child: Column(
+        children: [
+          const SizedBox(height: 12),
+          _buildItemsSection(context, ref, cart, checkout, vendor),
+          _buildBillingSection(cart, checkout),
+          _buildCancellationPolicy(),
+          _buildDevSettings(context, ref, checkout),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWebLayout(BuildContext context, WidgetRef ref, CartState cart, CheckoutState checkout, Vendor vendor) {
+    return SingleChildScrollView(
+      child: MaxWidthContainer(
+        padding: const EdgeInsets.only(top: 40, bottom: 100),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 12),
-            
-            // Items Card
-            _buildSectionCard(
+            // Left Column (Items & Instructions)
+            Expanded(
+              flex: 3,
               child: Column(
                 children: [
-                  ...cart.items.map((item) => _buildCartItem(item)),
-                  const SizedBox(height: 16),
-                  _buildAddMoreButton(context, vendor),
-                  const SizedBox(height: 16),
-                  _buildActionButtons(context, ref, checkout),
+                  _buildItemsSection(context, ref, cart, checkout, vendor),
+                  const SizedBox(height: 24),
+                  _buildCancellationPolicy(),
+                  const SizedBox(height: 24),
+                  _buildDevSettings(context, ref, checkout),
                 ],
               ),
             ),
-            
-            // Billing Card
-            _buildSectionCard(
-              child: _BillingSummary(
-                subtotal: cart.subtotal,
-                originalSubtotal: cart.originalSubtotal,
-                deliveryFee: checkout.useFreeFees ? 0 : checkout.deliveryFee,
-                platformFee: checkout.useFreeFees ? 0 : checkout.platformFee,
-                packagingFee: checkout.packagingFee,
-                gst: checkout.gst,
-                donationAmount: checkout.isDonationChecked ? checkout.donationAmount : 0,
+            const SizedBox(width: 40),
+            // Right Column (Billing & Pay) - Sticky-like
+            Expanded(
+              flex: 2,
+              child: Column(
+                children: [
+                  _buildWebBillingSidebar(context, ref, cart, checkout),
+                ],
               ),
             ),
-
-            // Policy Card
-            _buildCancellationPolicy(),
-            
-            // Dev Environment Settings
-            _buildDevSettings(context, ref, checkout),
           ],
         ),
       ),
-      bottomSheet: _buildPayFooter(context, ref, cart, checkout),
+    );
+  }
+
+  Widget _buildItemsSection(BuildContext context, WidgetRef ref, CartState cart, CheckoutState checkout, Vendor vendor) {
+    return _buildSectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Order Items',
+            style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 16),
+          ...cart.items.map((item) => _buildCartItem(item)),
+          const SizedBox(height: 24),
+          _buildAddMoreButton(context, vendor),
+          const SizedBox(height: 24),
+          _buildActionButtons(context, ref, checkout),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBillingSection(CartState cart, CheckoutState checkout) {
+    return _buildSectionCard(
+      child: _BillingSummary(
+        subtotal: cart.subtotal,
+        originalSubtotal: cart.originalSubtotal,
+        deliveryFee: checkout.useFreeFees ? 0 : checkout.deliveryFee,
+        platformFee: checkout.useFreeFees ? 0 : checkout.platformFee,
+        packagingFee: checkout.packagingFee,
+        gst: checkout.gst,
+        donationAmount: checkout.isDonationChecked ? checkout.donationAmount : 0,
+      ),
+    );
+  }
+
+  Widget _buildWebBillingSidebar(BuildContext context, WidgetRef ref, CartState cart, CheckoutState checkout) {
+    final total = cart.subtotal + 
+                (checkout.useFreeFees ? 0 : checkout.deliveryFee) + 
+                (checkout.useFreeFees ? 0 : checkout.platformFee) + 
+                checkout.packagingFee +
+                checkout.gst +
+                (checkout.isDonationChecked ? checkout.donationAmount : 0);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 30,
+            offset: const Offset(0, 15),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Order Summary',
+            style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 32),
+          _BillingSummary(
+            subtotal: cart.subtotal,
+            originalSubtotal: cart.originalSubtotal,
+            deliveryFee: checkout.useFreeFees ? 0 : checkout.deliveryFee,
+            platformFee: checkout.useFreeFees ? 0 : checkout.platformFee,
+            packagingFee: checkout.packagingFee,
+            gst: checkout.gst,
+            donationAmount: checkout.isDonationChecked ? checkout.donationAmount : 0,
+            isInitiallyExpanded: true,
+          ),
+          const SizedBox(height: 40),
+          _buildPayButton(context, ref, checkout, total),
+          const SizedBox(height: 24),
+          Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.verified_user_sharp, color: AppColors.brandGreen, size: 16),
+                const SizedBox(width: 8),
+                Text(
+                  'Safe & Secure Payments',
+                  style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textDisabled, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPayButton(BuildContext context, WidgetRef ref, CheckoutState checkout, double total) {
+    final user = ref.watch(currentUserProvider);
+    return SizedBox(
+      width: double.infinity,
+      height: 64,
+      child: ElevatedButton(
+        onPressed: checkout.isProcessing ? null : () async {
+          if (user == null) {
+            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AuthScreen()));
+            return;
+          }
+          final result = await ref.read(checkoutProvider.notifier).placeOrder();
+          if (result != null && result.length > 30 && !result.contains(' ')) { 
+             Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (_) => OrderTrackingScreen(orderId: result)),
+             );
+          } else if (result != null) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result), backgroundColor: Colors.redAccent));
+          }
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.brandGreen,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          elevation: 0,
+        ),
+        child: checkout.isProcessing 
+          ? const CircularProgressIndicator(color: Colors.white)
+          : Text(
+              user == null ? 'Login to Pay' : 'Confirm Order • ₹${total.toStringAsFixed(2)}',
+              style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
+            ),
+      ),
     );
   }
 
@@ -577,6 +764,7 @@ class _BillingSummary extends StatefulWidget {
   final double packagingFee;
   final double gst;
   final double donationAmount;
+  final bool isInitiallyExpanded;
 
   const _BillingSummary({
     required this.subtotal,
@@ -586,6 +774,7 @@ class _BillingSummary extends StatefulWidget {
     required this.packagingFee,
     required this.gst,
     required this.donationAmount,
+    this.isInitiallyExpanded = false,
   });
 
   @override
@@ -593,7 +782,13 @@ class _BillingSummary extends StatefulWidget {
 }
 
 class _BillingSummaryState extends State<_BillingSummary> {
-  bool _isExpanded = false;
+  late bool _isExpanded;
+
+  @override
+  void initState() {
+    super.initState();
+    _isExpanded = widget.isInitiallyExpanded;
+  }
 
   @override
   Widget build(BuildContext context) {

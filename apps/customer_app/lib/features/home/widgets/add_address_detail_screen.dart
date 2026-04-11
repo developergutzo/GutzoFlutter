@@ -10,7 +10,7 @@ import 'package:shared_core/theme/app_colors.dart';
 import 'package:shared_core/models/address.dart';
 import '../../../providers/address_provider.dart';
 
-class AddAddressDetailScreen extends ConsumerStatefulWidget {
+class AddAddressDetailScreen extends StatelessWidget {
   final LatLng position;
   final DetailedAddress address;
   final UserAddress? existingAddress;
@@ -23,10 +23,52 @@ class AddAddressDetailScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<AddAddressDetailScreen> createState() => _AddAddressDetailScreenState();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.arrow_back, color: AppColors.textMain),
+        ),
+        title: Text(
+          'Add Address Details',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 18, color: AppColors.textMain),
+        ),
+        surfaceTintColor: Colors.transparent,
+      ),
+      body: AddAddressDetailView(
+        position: position,
+        address: address,
+        existingAddress: existingAddress,
+      ),
+    );
+  }
 }
 
-class _AddAddressDetailScreenState extends ConsumerState<AddAddressDetailScreen> {
+class AddAddressDetailView extends ConsumerStatefulWidget {
+  final LatLng position;
+  final DetailedAddress address;
+  final UserAddress? existingAddress;
+  final bool isEmbedded;
+  final VoidCallback? onSaved;
+
+  const AddAddressDetailView({
+    super.key,
+    required this.position,
+    required this.address,
+    this.existingAddress,
+    this.isEmbedded = false,
+    this.onSaved,
+  });
+
+  @override
+  ConsumerState<AddAddressDetailView> createState() => _AddAddressDetailViewState();
+}
+
+class _AddAddressDetailViewState extends ConsumerState<AddAddressDetailView> {
   final _formKey = GlobalKey<FormState>();
   final _houseController = TextEditingController();
   final _areaController = TextEditingController();
@@ -58,7 +100,6 @@ class _AddAddressDetailScreenState extends ConsumerState<AddAddressDetailScreen>
       _selectedCategory = addr.type;
       _initialTypeSet = true;
     } else {
-      // Pre-fill from geocoding with enhanced components
       final house = widget.address.houseNumber ?? widget.address.streetNumber ?? '';
       final flat = widget.address.flatNumber ?? '';
       final building = widget.address.buildingName ?? '';
@@ -66,7 +107,6 @@ class _AddAddressDetailScreenState extends ConsumerState<AddAddressDetailScreen>
       final area = widget.address.area ?? '';
       final route = widget.address.route ?? '';
       
-      // Combine House/Flat/Block/Building for the specific premise field
       List<String> houseParts = [];
       if (house.isNotEmpty) houseParts.add(house);
       if (flat.isNotEmpty) houseParts.add(flat);
@@ -76,14 +116,12 @@ class _AddAddressDetailScreenState extends ConsumerState<AddAddressDetailScreen>
       if (houseParts.isNotEmpty) {
         _houseController.text = houseParts.join(', ');
       } else {
-        // Fallback: auto populate with the most specific available address part
         final splitAddr = widget.address.formattedAddress.split(',');
         if (splitAddr.isNotEmpty && splitAddr[0].trim().isNotEmpty) {
           _houseController.text = splitAddr[0].trim();
         }
       }
       
-      // Combine Road/Area
       List<String> areaParts = [];
       if (route.isNotEmpty) areaParts.add(route);
       if (area.isNotEmpty && !route.contains(area)) areaParts.add(area);
@@ -92,14 +130,12 @@ class _AddAddressDetailScreenState extends ConsumerState<AddAddressDetailScreen>
       _pincodeController.text = widget.address.postalCode ?? '';
     }
     
-    // Listeners for UI updates (glow effects & real-time validation)
     _houseFocus.addListener(() => setState(() {}));
     _areaFocus.addListener(() => setState(() {}));
     _pincodeFocus.addListener(() => setState(() {}));
     _phoneFocus.addListener(() => setState(() {}));
     _customFocus.addListener(() => setState(() {}));
 
-    // Listeners for real-time button enabling
     _houseController.addListener(() => setState(() {}));
     _pincodeController.addListener(() => setState(() {}));
     _customLabelController.addListener(() => setState(() {}));
@@ -156,10 +192,12 @@ class _AddAddressDetailScreenState extends ConsumerState<AddAddressDetailScreen>
       
       if (mounted) {
         ref.invalidate(savedAddressesProvider);
-        // Pop back to the Saved Addresses list (Detail -> Picker)
-        // This will land the user back on the LocationSheet which refreshes automatically
-        Navigator.of(context).pop();
-        Navigator.of(context).pop();
+        if (widget.isEmbedded && widget.onSaved != null) {
+          widget.onSaved!();
+        } else {
+          Navigator.of(context).pop();
+          Navigator.of(context).pop();
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -186,7 +224,6 @@ class _AddAddressDetailScreenState extends ConsumerState<AddAddressDetailScreen>
       return label == 'work' || a.type == 'work';
     });
 
-    // Smart default selection on first load
     if (!_initialTypeSet && addressesAsync.hasValue) {
       if (!hasHome) {
         _selectedCategory = 'home';
@@ -198,7 +235,6 @@ class _AddAddressDetailScreenState extends ConsumerState<AddAddressDetailScreen>
       _initialTypeSet = true;
     }
 
-    // Real-time validation logic
     final houseVal = _houseController.text.trim();
     final pincodeVal = _pincodeController.text.trim();
     final customVal = _customLabelController.text.trim();
@@ -207,33 +243,17 @@ class _AddAddressDetailScreenState extends ConsumerState<AddAddressDetailScreen>
                        pincodeVal.length == 6 && 
                        RegExp(r'^\d{6}$').hasMatch(pincodeVal);
     
-    if (_selectedCategory == 'other' && customVal.isEmpty) {
+    if (widget.isEmbedded && customVal.isEmpty && _selectedCategory == 'other') {
       isFormValid = false;
     }
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back, color: AppColors.textMain),
-        ),
-        title: Text(
-          'Add Address Details',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 18, color: AppColors.textMain),
-        ),
-        surfaceTintColor: Colors.transparent,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        child: Form(
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Summary box (Read-only)
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -350,7 +370,6 @@ class _AddAddressDetailScreenState extends ConsumerState<AddAddressDetailScreen>
             ],
           ),
         ),
-      ),
     );
   }
 

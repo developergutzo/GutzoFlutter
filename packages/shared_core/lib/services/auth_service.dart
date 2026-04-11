@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/user.dart' as model;
+import 'node_api_service.dart';
 
 final supabaseClientProvider = Provider<SupabaseClient>((ref) {
   return Supabase.instance.client;
@@ -139,6 +140,49 @@ class AuthService {
         avatarUrl: url,
         createdAt: current.createdAt,
       ));
+    }
+  }
+
+  Future<bool> sendOtp(String phone) async {
+    try {
+      final apiService = _ref.read(nodeApiServiceProvider);
+      final response = await apiService.sendOtp(phone);
+      return response['success'] == true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<bool> verifyOtp(String phone, String otp) async {
+    try {
+      final apiService = _ref.read(nodeApiServiceProvider);
+      final response = await apiService.verifyOtp(phone, otp);
+      if (response['success'] == true) {
+        // For partner app, we might not have a "name" yet, or we fetch it later
+        final vendorName = response['data']?['vendor']?['name'] ?? 'Partner';
+        await login(phone: phone, name: vendorName);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<Map<String, dynamic>?> partnerLogin(String email, String password) async {
+    try {
+      final apiService = _ref.read(nodeApiServiceProvider);
+      final response = await apiService.vendorLogin(email, password);
+      if (response['success'] == true) {
+        final vendor = response['data']['vendor'];
+        final phone = vendor['phone'] ?? '';
+        final name = vendor['name'] ?? 'Partner';
+        await login(phone: phone, name: name);
+        return vendor;
+      }
+      return null;
+    } catch (e) {
+      return null;
     }
   }
 

@@ -3,8 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_core/services/cart_service.dart';
 import 'package:shared_core/theme/app_colors.dart';
+import 'package:shared_core/utils/responsive.dart';
+import 'package:shared_core/widgets/max_width_container.dart';
 import '../features/checkout/checkout_screen.dart';
 import '../features/vendor/vendor_detail_screen.dart';
+
+import 'modern_dialog.dart';
 
 class CartStrip extends ConsumerWidget {
   final bool isPremium;
@@ -13,9 +17,160 @@ class CartStrip extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cart = ref.watch(cartProvider);
-    
     if (cart.items.isEmpty) return const SizedBox.shrink();
 
+    return Responsive(
+      mobile: _buildMobileCart(context, ref, cart),
+      desktop: _buildWebCart(context, ref, cart),
+    );
+  }
+
+  Widget _buildWebCart(BuildContext context, WidgetRef ref, dynamic cart) {
+    final vendor = cart.items.first.vendor;
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.only(bottom: 40),
+        child: Center(
+          child: Container(
+            width: 700, // Substantial desktop presence
+            height: 84,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(42), // Pure pill shape
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.12),
+                  blurRadius: 40,
+                  offset: const Offset(0, 16),
+                )
+              ],
+              border: Border.all(color: AppColors.brandGreen.withValues(alpha: 0.1), width: 1),
+            ),
+            child: Row(
+              children: [
+                // Left: Item Count Indicator
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: AppColors.brandGreen.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Stack(
+                      alignment: Alignment.topRight,
+                      children: [
+                        const Icon(Icons.shopping_bag_outlined, color: AppColors.brandGreen, size: 28),
+                        if (cart.totalItems > 0)
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: AppColors.brandGreen,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Text(
+                              cart.totalItems.toString(),
+                              style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // Center-Left: Vendor Info
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        vendor.name,
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textMain,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        'Items from this kitchen are in your cart',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: AppColors.textSub,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Center-Right: Total Amount
+                Container(
+                  height: 40,
+                  width: 1,
+                  color: AppColors.border.withValues(alpha: 0.5),
+                  margin: const EdgeInsets.symmetric(horizontal: 24),
+                ),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const Text('TOTAL PAYABLE', style: TextStyle(color: AppColors.textDisabled, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
+                    Text(
+                      '₹${cart.subtotal.toStringAsFixed(0)}',
+                      style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.w900, color: AppColors.textMain, height: 1.1),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 24),
+                // Right: Checkout Button
+                ElevatedButton(
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CheckoutScreen())),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.brandGreen,
+                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 0),
+                    minimumSize: const Size(180, 60),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    elevation: 0,
+                  ),
+                  child: Row(
+                    children: [
+                      const Text('VIEW CART', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: Colors.white, letterSpacing: 0.5)),
+                      const SizedBox(width: 12),
+                      const Icon(Icons.arrow_forward_rounded, size: 20, color: Colors.white),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Close Button to Clear Cart
+                GestureDetector(
+                  onTap: () => _showClearCartDialog(context, ref, vendor.name),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFFEFEB),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Center(
+                      child: Icon(Icons.close, size: 20, color: Color(0xFFE64A19)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6), // End padding for pill shape closure
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileCart(BuildContext context, WidgetRef ref, dynamic cart) {
     if (isPremium) {
       final vendor = cart.items.first.vendor;
       return Container(
@@ -113,9 +268,9 @@ class CartStrip extends ConsumerWidget {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    Text(
+                    const Text(
                       'Checkout',
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
                         color: Colors.white,
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -131,8 +286,8 @@ class CartStrip extends ConsumerWidget {
                 child: Container(
                   width: 28,
                   height: 28,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFEFEB),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFFEFEB),
                     shape: BoxShape.circle,
                   ),
                   child: const Center(
@@ -211,89 +366,16 @@ class CartStrip extends ConsumerWidget {
   void _showClearCartDialog(BuildContext context, WidgetRef ref, String vendorName) {
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Clear cart?',
-                    style: GoogleFonts.poppins(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textMain,
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.close, size: 24, color: AppColors.textMain),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Are you sure you want to clear your cart from $vendorName?',
-                style: GoogleFonts.poppins(
-                  fontSize: 15,
-                  color: AppColors.textMain,
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: TextButton.styleFrom(
-                        backgroundColor: AppColors.brandGreen.withValues(alpha: 0.1),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: Text(
-                        'NO',
-                        style: GoogleFonts.poppins(
-                          color: AppColors.brandGreen,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        ref.read(cartProvider.notifier).clear();
-                        Navigator.pop(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.brandGreen,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        elevation: 0,
-                      ),
-                      child: Text(
-                        'YES',
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
+      builder: (context) => ModernDialog(
+        title: 'Clear cart?',
+        message: 'Are you sure you want to clear your cart from $vendorName?',
+        primaryLabel: 'Clear',
+        secondaryLabel: 'Cancel',
+        isDestructive: true,
+        onPrimary: () {
+          ref.read(cartProvider.notifier).clear();
+          Navigator.pop(context);
+        },
       ),
     );
   }

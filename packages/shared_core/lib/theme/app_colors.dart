@@ -32,4 +32,19 @@ class AppColors {
 
   // Health Filter Colors
   static const Color brandBlue = Color(0xFF0052CC);
+
+  // Web Specific Tokens
+  static const Color webGlassBg = Color.fromRGBO(255, 255, 255, 0.85);
+  static const Color webGlassBorder = Color.fromRGBO(255, 255, 255, 0.4);
+  static const Color webCardShadow = Color.fromRGBO(0, 0, 0, 0.04);
+  static const Color webHoverBg = Color(0xFFF8F9FA);
+  static const Color webDivider = Color(0xFFF1F5F9);
+  
+  static List<BoxShadow> premiumShadow = [
+    BoxShadow(
+      color: Colors.black.withValues(alpha: 0.04),
+      blurRadius: 24,
+      offset: const Offset(0, 12),
+    ),
+  ];
 }
