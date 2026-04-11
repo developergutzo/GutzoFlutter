@@ -90,7 +90,7 @@ class CheckoutState {
   }
 }
 
-class CheckoutNotifier extends Notifier<CheckoutState> {
+class CheckoutNotifier extends AutoDisposeNotifier<CheckoutState> {
   @override
   CheckoutState build() {
     // Watch cart to update taxes whenever quantities/items change
@@ -393,4 +393,4 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
   }
 }
 
-final checkoutProvider = NotifierProvider<CheckoutNotifier, CheckoutState>(() => CheckoutNotifier());
+final checkoutProvider = NotifierProvider.autoDispose<CheckoutNotifier, CheckoutState>(() => CheckoutNotifier());
