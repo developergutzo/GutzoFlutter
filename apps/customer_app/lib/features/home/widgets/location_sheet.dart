@@ -61,7 +61,8 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
   bool _isSearching = false;
   Timer? _debounce;
   bool _isFetchingDetails = false;
-  String? _selectedAddressId;
+  String? _selectedAddressId; // Still useful for immediate tap feedback
+
 
   @override
   void initState() {
@@ -247,7 +248,20 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
   }
 
   Widget _buildAddressCard(UserAddress address) {
-    final isSelected = _selectedAddressId == address.id || address.isDefault;
+    final locationState = ref.watch(locationProvider);
+    final activeLoc = locationState.location;
+    
+    // Improved detection: Check if this address matches the currently active global location
+    bool isSelected = false;
+    if (activeLoc != null && address.latitude != null && address.longitude != null) {
+      final double latDiff = (activeLoc.latitude - address.latitude!).abs();
+      final double lngDiff = (activeLoc.longitude - address.longitude!).abs();
+      // Use a small epsilon for coordinate matching
+      if (latDiff < 0.0001 && lngDiff < 0.0001) {
+        isSelected = true;
+      }
+    }
+    
     final displayLabel = address.customLabel ?? address.label ?? 'Other';
 
     return Container(
