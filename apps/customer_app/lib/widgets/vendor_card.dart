@@ -92,9 +92,9 @@ class _VendorCardState extends State<VendorCard> {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(14),
                         child: ColorFiltered(
-                          colorFilter: widget.vendorModel?.isServiceable == false 
-                            ? const ColorFilter.mode(Colors.grey, BlendMode.saturation)
-                            : const ColorFilter.mode(Colors.transparent, BlendMode.multiply),
+                          colorFilter: widget.vendorModel?.isServiceable == false
+                              ? const ColorFilter.mode(Colors.grey, BlendMode.saturation)
+                              : const ColorFilter.mode(Colors.transparent, BlendMode.multiply),
                           child: Hero(
                             tag: 'vendor_${widget.vendorModel?.id ?? widget.title}',
                             child: Image.network(
