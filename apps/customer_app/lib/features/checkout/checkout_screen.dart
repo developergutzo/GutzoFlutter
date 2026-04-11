@@ -271,7 +271,7 @@ class CheckoutScreen extends ConsumerWidget {
                 (checkout.useFreeFees ? 0 : checkout.deliveryFee) + 
                 (checkout.useFreeFees ? 0 : checkout.platformFee) + 
                 checkout.packagingFee +
-                checkout.gst +
+                // checkout.gst + // GST is now inclusive
                 (checkout.isDonationChecked ? checkout.donationAmount : 0);
 
     return Container(
@@ -648,7 +648,7 @@ class CheckoutScreen extends ConsumerWidget {
                 (checkout.useFreeFees ? 0 : checkout.deliveryFee) + 
                 (checkout.useFreeFees ? 0 : checkout.platformFee) + 
                 checkout.packagingFee +
-                checkout.gst +
+                // checkout.gst + // GST is now inclusive
                 (checkout.isDonationChecked ? checkout.donationAmount : 0);
 
     final savings = cart.originalSubtotal - cart.subtotal;
@@ -853,7 +853,7 @@ class _BillingSummaryState extends State<_BillingSummary> {
                   widget.deliveryFee + 
                   widget.platformFee + 
                   widget.packagingFee +
-                  widget.gst + 
+                  // widget.gst + // GST is now inclusive
                   widget.donationAmount;
 
     return Column(

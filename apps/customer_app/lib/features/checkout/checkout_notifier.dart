@@ -38,7 +38,7 @@ class CheckoutState {
     this.isProcessing = false,
     this.error,
     this.devEnvironment = 'full_mock',
-    this.useFreeFees = true,
+    this.useFreeFees = false,
     this.orderNote = '',
     this.dontAddCutlery = false,
     this.isDonationChecked = false,
@@ -91,6 +91,9 @@ class CheckoutState {
 class CheckoutNotifier extends Notifier<CheckoutState> {
   @override
   CheckoutState build() {
+    // Watch cart to update taxes whenever quantities/items change
+    ref.listen(cartProvider, (_, __) => updateTaxes());
+    
     // Trigger address fetch on first build
     Future.microtask(() => fetchAddresses());
     return CheckoutState();
@@ -160,11 +163,22 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
 
       final res = await _api.getDeliveryServiceability(pickup, drop);
       if (res['success'] == true) {
-        final data = res['data'];
+        final data = res['data'] as Map<String, dynamic>;
+        
+        // Handle nested 'value' object from Shadowfax API, matching webapp logic
+        final nestedData = data['value'] is Map ? data['value'] as Map : null;
+        
+        // Optimistic default to true for serviceability if not explicitly false, matching web
+        final isServiceable = data['is_serviceable'] ?? nestedData?['is_serviceable'] ?? true;
+        
+        // Map delivery fee and ETA from either top level or nested value
+        final deliveryFee = (data['total_amount'] ?? nestedData?['total_amount'] ?? 100).toDouble();
+        final eta = data['pickup_eta'] ?? nestedData?['pickup_eta']?.toString();
+
         state = state.copyWith(
-          isServiceable: data['is_serviceable'] ?? false, // Default to false if key missing
-          deliveryFee: (data['total_amount'] ?? 100).toDouble(),
-          eta: data['pickup_eta'],
+          isServiceable: isServiceable,
+          deliveryFee: deliveryFee,
+          eta: eta,
           isCheckingServiceability: false,
         );
       } else {
