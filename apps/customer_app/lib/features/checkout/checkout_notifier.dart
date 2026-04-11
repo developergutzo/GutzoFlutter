@@ -162,14 +162,24 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
       if (res['success'] == true) {
         final data = res['data'];
         state = state.copyWith(
-          isServiceable: data['is_serviceable'] ?? true,
+          isServiceable: data['is_serviceable'] ?? false, // Default to false if key missing
           deliveryFee: (data['total_amount'] ?? 100).toDouble(),
           eta: data['pickup_eta'],
           isCheckingServiceability: false,
         );
+      } else {
+        state = state.copyWith(
+          isServiceable: false,
+          isCheckingServiceability: false,
+          deliveryFee: 100,
+        );
       }
     } catch (e) {
-      state = state.copyWith(isCheckingServiceability: false, deliveryFee: 100);
+      state = state.copyWith(
+        isServiceable: false, // Explicitly set to false on error
+        isCheckingServiceability: false, 
+        deliveryFee: 100,
+      );
     }
     updateTaxes();
   }

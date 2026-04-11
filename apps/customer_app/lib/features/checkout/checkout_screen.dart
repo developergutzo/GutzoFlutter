@@ -204,14 +204,64 @@ class CheckoutScreen extends ConsumerWidget {
 
   Widget _buildBillingSection(CartState cart, CheckoutState checkout) {
     return _buildSectionCard(
-      child: _BillingSummary(
-        subtotal: cart.subtotal,
-        originalSubtotal: cart.originalSubtotal,
-        deliveryFee: checkout.useFreeFees ? 0 : checkout.deliveryFee,
-        platformFee: checkout.useFreeFees ? 0 : checkout.platformFee,
-        packagingFee: checkout.packagingFee,
-        gst: checkout.gst,
-        donationAmount: checkout.isDonationChecked ? checkout.donationAmount : 0,
+      child: Column(
+        children: [
+          if (!checkout.isServiceable) _buildServiceabilityWarning(),
+          _BillingSummary(
+            subtotal: cart.subtotal,
+            originalSubtotal: cart.originalSubtotal,
+            deliveryFee: checkout.useFreeFees ? 0 : checkout.deliveryFee,
+            platformFee: checkout.useFreeFees ? 0 : checkout.platformFee,
+            packagingFee: checkout.packagingFee,
+            gst: checkout.gst,
+            donationAmount: checkout.isDonationChecked ? checkout.donationAmount : 0,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildServiceabilityWarning() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF5F5),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFEB2B2)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.error_outline, color: Color(0xFFC53030), size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Location Not Serviceable',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFFC53030),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'We are sorry, but our delivery partners do not serve this specific location yet. Please try a different address.',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF9B2C2C),
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -255,6 +305,8 @@ class CheckoutScreen extends ConsumerWidget {
             donationAmount: checkout.isDonationChecked ? checkout.donationAmount : 0,
             isInitiallyExpanded: true,
           ),
+          const SizedBox(height: 24),
+          if (!checkout.isServiceable) _buildServiceabilityWarning(),
           const SizedBox(height: 40),
           _buildPayButton(context, ref, checkout, total),
           const SizedBox(height: 24),
@@ -282,7 +334,7 @@ class CheckoutScreen extends ConsumerWidget {
       width: double.infinity,
       height: 64,
       child: ElevatedButton(
-        onPressed: checkout.isProcessing ? null : () async {
+        onPressed: (checkout.isProcessing || !checkout.isServiceable) ? null : () async {
           if (user == null) {
             Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AuthScreen()));
             return;
@@ -297,14 +349,18 @@ class CheckoutScreen extends ConsumerWidget {
           }
         },
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.brandGreen,
+          backgroundColor: checkout.isServiceable ? AppColors.brandGreen : Colors.grey[400],
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           elevation: 0,
         ),
         child: checkout.isProcessing 
           ? const CircularProgressIndicator(color: Colors.white)
           : Text(
-              user == null ? 'Login to Pay' : 'Confirm Order • ₹${total.toStringAsFixed(2)}',
+              user == null 
+                  ? 'Login to Pay' 
+                  : (checkout.isServiceable 
+                      ? 'Confirm Order • ₹${total.toStringAsFixed(2)}' 
+                      : 'Not Serviceable'),
               style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
             ),
       ),
@@ -654,7 +710,7 @@ class CheckoutScreen extends ConsumerWidget {
               )
             else
               ElevatedButton(
-                onPressed: checkout.isProcessing ? null : () async {
+                onPressed: (checkout.isProcessing || !checkout.isServiceable) ? null : () async {
                   final result = await ref.read(checkoutProvider.notifier).placeOrder();
                   // Check if result is a valid UUID (usually 36 chars) or at least not an error message
                   if (result != null && result.length > 30 && !result.contains(' ')) { 
@@ -676,7 +732,7 @@ class CheckoutScreen extends ConsumerWidget {
                   }
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.brandGreen,
+                  backgroundColor: checkout.isServiceable ? AppColors.brandGreen : Colors.grey[400],
                   minimumSize: const Size(double.infinity, 56),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   elevation: 0,
@@ -684,7 +740,7 @@ class CheckoutScreen extends ConsumerWidget {
                 child: checkout.isProcessing 
                   ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3))
                   : Text(
-                    'Pay ₹${total.toStringAsFixed(2)}',
+                    checkout.isServiceable ? 'Pay ₹${total.toStringAsFixed(2)}' : 'Location Not Serviceable',
                     style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white),
                   ),
               ),
