@@ -5,7 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class NodeApiService {
-  final String baseUrl = kIsWeb ? "http://localhost:5000" : "http://10.0.2.2:5000";
+  //final String baseUrl = kIsWeb ? "http://localhost:5000" : "http://10.0.2.2:5000";
+  final String baseUrl = "http://192.168.1.37:5000";
   final SupabaseClient _supabase;
 
   NodeApiService(this._supabase);
