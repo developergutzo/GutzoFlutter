@@ -1,10 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:paytm_allinonesdk/paytm_allinonesdk.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_core/services/node_api_service.dart';
 import 'package:flutter/foundation.dart';
 
 class PaytmService {
   final NodeApiService _apiService;
+  static const _channel = MethodChannel('in.gutzo.customer_app/paytm');
 
   PaytmService(this._apiService);
 
@@ -27,30 +28,41 @@ class PaytmService {
         throw Exception(response['message'] ?? 'Failed to initiate transaction');
       }
 
-      final paytmResponse = response['paytmResponse'];
-      final body = paytmResponse['body'];
-      final String txnToken = body['txnToken'];
-      final String mid = body['mid'];
-      final String order_number = paytmResponse['orderId'] ?? orderId;
+      final data = response['data'] ?? {};
+      final paytmResponse = data['paytmResponse'];
+      
+      if (paytmResponse == null) {
+        throw Exception('Invalid payment response from server');
+      }
 
-      print('🚀 Paytm SDK Initiate: mid=$mid, orderId=$order_number, token=$txnToken');
+      final body = paytmResponse['body'] ?? {};
+      final String txnToken = body['txnToken'] ?? "";
+      final String mid = data['mid'] ?? "";
+      final String order_number = data['orderId'] ?? paytmResponse['orderId'] ?? orderId;
 
-      // 2. Start the native SDK
-      final Map<dynamic, dynamic> result = await AllInOneSdk.startTransaction(
-        mid,
-        order_number,
-        amount.toStringAsFixed(2),
-        txnToken,
-        "", // Use empty string instead of null as the SDK expects a String
-        isStaging,
-        false, // AppInvoke: false for now to rely on SDK's netbanking/wallet fallback if app not present
-      ) ?? {};
+      final args = {
+        'mid': mid,
+        'orderId': order_number,
+        'amount': amount.toStringAsFixed(2),
+        'txnToken': txnToken,
+        'callbackUrl': "", // Native handle default
+        'isStaging': isStaging,
+        'restrictAppInvoke': false,
+      };
 
-      print('✅ Paytm SDK Result: $result');
+      print('📡 [Paytm Bridge] Sending to Native: $args');
 
-      return Map<String, dynamic>.from(result);
+      // 2. Start the native SDK via MethodChannel
+      final dynamic result = await _channel.invokeMethod('startTransaction', args);
+
+      print('✅ [Paytm Bridge] Native Result: $result');
+
+      if (result is Map) {
+        return Map<String, dynamic>.from(result);
+      }
+      return {};
     } catch (e) {
-      print('❌ Paytm Service Error: $e');
+      print('❌ [Paytm Bridge] Error: $e');
       rethrow;
     }
   }

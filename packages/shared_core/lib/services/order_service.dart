@@ -31,9 +31,12 @@ final activeOrderTrackingProvider = StreamProvider.family<OrderTrackingData, Str
   final api = ref.read(nodeApiServiceProvider);
   final supabase = Supabase.instance.client;
 
+  final user = ref.watch(currentUserProvider);
+  final userPhone = user?.phone;
+
   // Initial fetch
   Future<OrderTrackingData> fetch() async {
-    final response = await api.getOrderTracking(orderId);
+    final response = await api.getOrderTracking(orderId, overridePhone: userPhone);
     if (response is Map && response['data'] != null) {
       return OrderTrackingData.fromJson(Map<String, dynamic>.from(response['data']));
     } else if (response is Map) {

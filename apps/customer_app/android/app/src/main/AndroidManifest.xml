@@ -61,5 +61,8 @@
             <action android:name="android.intent.action.DIAL" />
             <data android:scheme="tel" />
         </intent>
+        <!-- Paytm App Presence -->
+        <package android:name="com.paytm.allinone" />
+        <package android:name="net.one97.paytm" />
     </queries>
 </manifest>

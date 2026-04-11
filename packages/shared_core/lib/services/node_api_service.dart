@@ -245,8 +245,8 @@ class NodeApiService {
     return _request("/orders", method: "POST", body: orderData, overridePhone: overridePhone);
   }
 
-  Future<dynamic> getOrderTracking(String orderId) async {
-    return _request("/orders/$orderId/track");
+  Future<dynamic> getOrderTracking(String orderId, {String? overridePhone}) async {
+    return _request("/orders/$orderId/track", overridePhone: overridePhone);
   }
 
   Future<dynamic> getUserOrders({int page = 1, int limit = 20, String? overridePhone}) async {

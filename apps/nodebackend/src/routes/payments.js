@@ -173,6 +173,7 @@ router.post('/initiate', authenticate, asyncHandler(async (req, res) => {
     successResponse(res, {
       checksum,
       mid: PAYTM_MID,
+      orderId: order.order_number,
       paytmResponse: data,
       message: 'Paytm payment initiated'
     });
