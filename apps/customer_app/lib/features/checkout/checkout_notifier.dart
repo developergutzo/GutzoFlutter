@@ -3,6 +3,8 @@ import 'package:shared_core/models/address.dart';
 import 'package:shared_core/services/cart_service.dart';
 import 'package:shared_core/services/node_api_service.dart';
 import 'package:shared_core/services/auth_service.dart';
+import 'package:shared_core/services/location_service.dart';
+import 'package:flutter/foundation.dart';
 
 class CheckoutState {
   final List<UserAddress> addresses;
@@ -94,16 +96,31 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
     // Watch cart to update taxes whenever quantities/items change
     ref.listen(cartProvider, (_, __) => updateTaxes());
     
+    // Listen to location changes to update serviceability if no address is selected
+    ref.listen(locationProvider, (previous, next) {
+      if (state.selectedAddress == null && next.location != null) {
+        print('📍 [Checkout] Location updated, re-checking serviceability via live location');
+        checkServiceability();
+      }
+    });
+
     // Trigger address fetch on first build
     Future.microtask(() => fetchAddresses());
-    return CheckoutState();
+    
+    // Start with isCheckingServiceability=true so UI shows "Calculating..." 
+    // instead of "FREE" (deliveryFee defaults to 0) before Shadowfax responds
+    return CheckoutState(isCheckingServiceability: true);
   }
 
   NodeApiService get _api => ref.read(nodeApiServiceProvider);
 
   Future<void> fetchAddresses() async {
     final user = ref.read(currentUserProvider);
-    if (user == null) return;
+    if (user == null) {
+      print('🚫 [Checkout] fetchAddresses: No user, resetting fee state');
+      state = state.copyWith(isCheckingServiceability: false);
+      return;
+    }
 
     state = state.copyWith(isLoadingAddresses: true);
     try {
@@ -124,12 +141,29 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
           selectedAddress: selected,
           isLoadingAddresses: false,
         );
+
         if (state.selectedAddress != null) {
           checkServiceability();
+        } else {
+          // Priority Fallback: If no saved addresses, trigger live location fetch
+          print('📍 [Checkout] No saved addresses found, attempting live location fallback');
+          ref.read(locationProvider.notifier).loadLocation();
+          
+          // If location is already available, check it now
+          final loc = ref.read(locationProvider).location;
+          if (loc != null) {
+            checkServiceability();
+          } else {
+            // Still waiting for location - checkServiceability will be triggered by build() listener
+            print('⏳ [Checkout] Waiting for live location...');
+          }
         }
+      } else {
+        state = state.copyWith(isLoadingAddresses: false, isCheckingServiceability: false);
       }
     } catch (e) {
-      state = state.copyWith(isLoadingAddresses: false, error: e.toString());
+      print('❌ [Checkout] fetchAddresses ERROR: $e');
+      state = state.copyWith(isLoadingAddresses: false, isCheckingServiceability: false, error: e.toString());
     }
   }
 
@@ -141,8 +175,18 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
   Future<void> checkServiceability() async {
     final cart = ref.read(cartProvider);
     final selectedAddress = state.selectedAddress;
-    if (cart.items.isEmpty || selectedAddress == null) return;
+    final liveLocation = ref.read(locationProvider).location;
 
+    // We can check serviceability if we have EITHER a selected address OR a live location
+    if (cart.items.isEmpty || (selectedAddress == null && liveLocation == null)) {
+      print('🚫 [Checkout] checkServiceability skipped: cart empty=${cart.items.isEmpty}, address null=${selectedAddress == null}, liveLocation null=${liveLocation == null}');
+      if (selectedAddress == null && liveLocation == null) {
+        state = state.copyWith(isCheckingServiceability: false);
+      }
+      return;
+    }
+
+    print('📡 [Checkout] checkServiceability START');
     state = state.copyWith(isCheckingServiceability: true);
     try {
       final vendorId = cart.vendorId!;
@@ -155,25 +199,44 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
         "longitude": vendorData['longitude'],
       };
       
+      // Select coordinates: Saved Address takes priority, then Live Location
       final drop = {
-        "address": selectedAddress.fullAddress,
-        "latitude": selectedAddress.latitude,
-        "longitude": selectedAddress.longitude,
+        "address": selectedAddress?.fullAddress ?? liveLocation?.formattedAddress ?? "Live Location",
+        "latitude": selectedAddress?.latitude ?? liveLocation?.latitude,
+        "longitude": selectedAddress?.longitude ?? liveLocation?.longitude,
       };
 
+      print('📡 [Checkout] Pickup: $pickup');
+      print('📡 [Checkout] Drop (priority=${selectedAddress != null ? 'saved' : 'live'}): $drop');
+
+      if (drop['latitude'] == null || drop['longitude'] == null) {
+         print('❌ [Checkout] Missing coordinates, cannot check serviceability');
+         state = state.copyWith(isCheckingServiceability: false);
+         return;
+      }
+
       final res = await _api.getDeliveryServiceability(pickup, drop);
+      print('📡 [Checkout] Serviceability RAW response: $res');
+      
       if (res['success'] == true) {
         final data = res['data'] as Map<String, dynamic>;
+        print('📡 [Checkout] data keys: ${data.keys.toList()}');
         
         // Handle nested 'value' object from Shadowfax API, matching webapp logic
         final nestedData = data['value'] is Map ? data['value'] as Map : null;
+        print('📡 [Checkout] nestedData: $nestedData');
         
         // Optimistic default to true for serviceability if not explicitly false, matching web
         final isServiceable = data['is_serviceable'] ?? nestedData?['is_serviceable'] ?? true;
         
         // Map delivery fee and ETA from either top level or nested value
-        final deliveryFee = (data['total_amount'] ?? nestedData?['total_amount'] ?? 100).toDouble();
+        // Match webapp logic: res.data.total_amount || 100 (treats 0 as falsy)
+        double deliveryFee = (data['total_amount'] ?? nestedData?['total_amount'] ?? 100).toDouble();
+        if (deliveryFee == 0) deliveryFee = 100;
+
         final eta = data['pickup_eta'] ?? nestedData?['pickup_eta']?.toString();
+
+        print('✅ [Checkout] PARSED: serviceable=$isServiceable, deliveryFee=$deliveryFee, eta=$eta');
 
         state = state.copyWith(
           isServiceable: isServiceable,
@@ -182,6 +245,7 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
           isCheckingServiceability: false,
         );
       } else {
+        print('❌ [Checkout] API returned success=false');
         state = state.copyWith(
           isServiceable: false,
           isCheckingServiceability: false,
@@ -189,6 +253,7 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
         );
       }
     } catch (e) {
+      print('❌ [Checkout] checkServiceability ERROR: $e');
       state = state.copyWith(
         isServiceable: false, // Explicitly set to false on error
         isCheckingServiceability: false, 

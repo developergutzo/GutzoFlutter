@@ -13,6 +13,7 @@ import '../auth/auth_screen.dart';
 import 'checkout_notifier.dart';
 import 'package:shared_core/utils/responsive.dart';
 import 'package:shared_core/widgets/max_width_container.dart';
+import 'package:shared_core/services/location_service.dart';
 
 class CheckoutScreen extends ConsumerWidget {
   const CheckoutScreen({super.key});
@@ -21,6 +22,7 @@ class CheckoutScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cart = ref.watch(cartProvider);
     final checkout = ref.watch(checkoutProvider);
+    final location = ref.watch(locationProvider);
     
     // Automatically pop screen if last item is deleted to match gutzo.in UX
     ref.listen(cartProvider, (previous, next) {
@@ -40,15 +42,15 @@ class CheckoutScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
-      appBar: isWeb ? _buildWebAppBar(context, vendor, checkout) : _buildMobileAppBar(context, vendor, checkout),
+      appBar: isWeb ? _buildWebAppBar(context, vendor, checkout, location) : _buildMobileAppBar(context, vendor, checkout, location),
       body: isWeb 
-          ? _buildWebLayout(context, ref, cart, checkout, vendor)
-          : _buildMobileLayout(context, ref, cart, checkout, vendor),
+          ? _buildWebLayout(context, ref, cart, checkout, vendor, location)
+          : _buildMobileLayout(context, ref, cart, checkout, vendor, location),
       bottomSheet: isWeb ? null : _buildPayFooter(context, ref, cart, checkout),
     );
   }
 
-  PreferredSizeWidget _buildMobileAppBar(BuildContext context, Vendor vendor, CheckoutState checkout) {
+  PreferredSizeWidget _buildMobileAppBar(BuildContext context, Vendor vendor, CheckoutState checkout, LocationState location) {
     return AppBar(
       backgroundColor: Colors.white,
       elevation: 0,
@@ -70,14 +72,14 @@ class CheckoutScreen extends ConsumerWidget {
           Row(
             children: [
               Text(
-                checkout.eta ?? '38-43 mins',
+                checkout.eta ?? 'Pending...',
                 style: GoogleFonts.poppins(
                   fontSize: 12,
                   color: Colors.grey[600],
                 ),
               ),
               Text(
-                ' to ${checkout.selectedAddress?.city ?? 'Location'}',
+                ' to ${checkout.selectedAddress?.city ?? location.location?.city ?? 'Location'}',
                 style: GoogleFonts.poppins(
                   fontSize: 12,
                   color: Colors.grey[400],
@@ -92,36 +94,36 @@ class CheckoutScreen extends ConsumerWidget {
     );
   }
 
-  PreferredSizeWidget _buildWebAppBar(BuildContext context, Vendor vendor, CheckoutState checkout) {
+  PreferredSizeWidget _buildWebAppBar(BuildContext context, Vendor vendor, CheckoutState checkout, LocationState location) {
     return PreferredSize(
       preferredSize: const Size.fromHeight(80),
       child: Container(
         color: Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 40),
-        alignment: Alignment.center,
         child: Row(
           children: [
             IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.black),
+              icon: const Icon(Icons.arrow_back),
               onPressed: () => Navigator.pop(context),
             ),
-            const SizedBox(width: 16),
-            Text(
-              'Secure Checkout',
-              style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.w700),
-            ),
-            const Spacer(),
+            const SizedBox(width: 20),
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Ordering from ${vendor.name}',
-                  style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600),
+                  vendor.name,
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 Text(
-                  'Delivering to ${checkout.selectedAddress?.city ?? 'Select Address'}',
-                  style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textDisabled),
+                  '${checkout.eta ?? 'Pending...'} • to ${checkout.selectedAddress?.city ?? location.location?.city ?? 'Location'}',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
                 ),
               ],
             ),
@@ -131,22 +133,24 @@ class CheckoutScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildMobileLayout(BuildContext context, WidgetRef ref, CartState cart, CheckoutState checkout, Vendor vendor) {
+  Widget _buildMobileLayout(BuildContext context, WidgetRef ref, CartState cart, CheckoutState checkout, Vendor vendor, LocationState location) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.only(bottom: 200),
       child: Column(
         children: [
-          const SizedBox(height: 12),
           _buildItemsSection(context, ref, cart, checkout, vendor),
-          _buildBillingSection(cart, checkout),
+          const SizedBox(height: 12),
+          _buildBillingSection(cart, checkout, location),
+          const SizedBox(height: 12),
           _buildCancellationPolicy(),
+          const SizedBox(height: 12),
           _buildDevSettings(context, ref, checkout),
+          const SizedBox(height: 100), // Space for footer
         ],
       ),
     );
   }
 
-  Widget _buildWebLayout(BuildContext context, WidgetRef ref, CartState cart, CheckoutState checkout, Vendor vendor) {
+  Widget _buildWebLayout(BuildContext context, WidgetRef ref, CartState cart, CheckoutState checkout, Vendor vendor, LocationState location) {
     return SingleChildScrollView(
       child: MaxWidthContainer(
         padding: const EdgeInsets.only(top: 40, bottom: 100),
@@ -172,7 +176,7 @@ class CheckoutScreen extends ConsumerWidget {
               flex: 2,
               child: Column(
                 children: [
-                  _buildWebBillingSidebar(context, ref, cart, checkout),
+                  _buildWebBillingSidebar(context, ref, cart, checkout, location),
                 ],
               ),
             ),
@@ -202,7 +206,7 @@ class CheckoutScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildBillingSection(CartState cart, CheckoutState checkout) {
+  Widget _buildBillingSection(CartState cart, CheckoutState checkout, LocationState location) {
     return _buildSectionCard(
       child: Column(
         children: [
@@ -215,6 +219,8 @@ class CheckoutScreen extends ConsumerWidget {
             packagingFee: checkout.packagingFee,
             gst: checkout.gst,
             donationAmount: checkout.isDonationChecked ? checkout.donationAmount : 0,
+            isCalculatingFee: checkout.isCheckingServiceability,
+            hasAddress: checkout.selectedAddress != null || location.location != null,
           ),
         ],
       ),
@@ -266,7 +272,7 @@ class CheckoutScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildWebBillingSidebar(BuildContext context, WidgetRef ref, CartState cart, CheckoutState checkout) {
+  Widget _buildWebBillingSidebar(BuildContext context, WidgetRef ref, CartState cart, CheckoutState checkout, LocationState location) {
     final total = cart.subtotal + 
                 (checkout.useFreeFees ? 0 : checkout.deliveryFee) + 
                 (checkout.useFreeFees ? 0 : checkout.platformFee) + 
@@ -304,6 +310,8 @@ class CheckoutScreen extends ConsumerWidget {
             gst: checkout.gst,
             donationAmount: checkout.isDonationChecked ? checkout.donationAmount : 0,
             isInitiallyExpanded: true,
+            isCalculatingFee: checkout.isCheckingServiceability,
+            hasAddress: checkout.selectedAddress != null || location.location != null,
           ),
           const SizedBox(height: 24),
           if (!checkout.isServiceable) _buildServiceabilityWarning(),
@@ -330,11 +338,12 @@ class CheckoutScreen extends ConsumerWidget {
 
   Widget _buildPayButton(BuildContext context, WidgetRef ref, CheckoutState checkout, double total) {
     final user = ref.watch(currentUserProvider);
+    final isDisabled = checkout.isProcessing || !checkout.isServiceable || checkout.isCheckingServiceability;
     return SizedBox(
       width: double.infinity,
       height: 64,
       child: ElevatedButton(
-        onPressed: (checkout.isProcessing || !checkout.isServiceable) ? null : () async {
+        onPressed: isDisabled ? null : () async {
           if (user == null) {
             Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AuthScreen()));
             return;
@@ -349,13 +358,22 @@ class CheckoutScreen extends ConsumerWidget {
           }
         },
         style: ElevatedButton.styleFrom(
-          backgroundColor: checkout.isServiceable ? AppColors.brandGreen : Colors.grey[400],
+          backgroundColor: (checkout.isServiceable && !checkout.isCheckingServiceability) ? AppColors.brandGreen : Colors.grey[400],
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           elevation: 0,
         ),
         child: checkout.isProcessing 
           ? const CircularProgressIndicator(color: Colors.white)
-          : Text(
+          : checkout.isCheckingServiceability
+            ? Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
+                  const SizedBox(width: 10),
+                  Text('Calculating Total...', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
+                ],
+              )
+            : Text(
               user == null 
                   ? 'Login to Pay' 
                   : (checkout.isServiceable 
@@ -710,7 +728,7 @@ class CheckoutScreen extends ConsumerWidget {
               )
             else
               ElevatedButton(
-                onPressed: (checkout.isProcessing || !checkout.isServiceable) ? null : () async {
+                onPressed: (checkout.isProcessing || !checkout.isServiceable || checkout.isCheckingServiceability) ? null : () async {
                   final result = await ref.read(checkoutProvider.notifier).placeOrder();
                   // Check if result is a valid UUID (usually 36 chars) or at least not an error message
                   if (result != null && result.length > 30 && !result.contains(' ')) { 
@@ -732,17 +750,26 @@ class CheckoutScreen extends ConsumerWidget {
                   }
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: checkout.isServiceable ? AppColors.brandGreen : Colors.grey[400],
+                  backgroundColor: (checkout.isServiceable && !checkout.isCheckingServiceability) ? AppColors.brandGreen : Colors.grey[400],
                   minimumSize: const Size(double.infinity, 56),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   elevation: 0,
                 ),
                 child: checkout.isProcessing 
                   ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3))
-                  : Text(
-                    checkout.isServiceable ? 'Pay ₹${total.toStringAsFixed(2)}' : 'Location Not Serviceable',
-                    style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white),
-                  ),
+                  : checkout.isCheckingServiceability
+                    ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
+                          const SizedBox(width: 10),
+                          Text('Calculating Total...', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
+                        ],
+                      )
+                    : Text(
+                        checkout.isServiceable ? 'Pay ₹${total.toStringAsFixed(2)}' : 'Location Not Serviceable',
+                        style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white),
+                      ),
               ),
             const SizedBox(height: 12),
             Text(
@@ -821,6 +848,8 @@ class _BillingSummary extends StatefulWidget {
   final double gst;
   final double donationAmount;
   final bool isInitiallyExpanded;
+  final bool isCalculatingFee;
+  final bool hasAddress;
 
   const _BillingSummary({
     required this.subtotal,
@@ -829,8 +858,10 @@ class _BillingSummary extends StatefulWidget {
     required this.platformFee,
     required this.packagingFee,
     required this.gst,
-    required this.donationAmount,
+    this.donationAmount = 0,
     this.isInitiallyExpanded = false,
+    this.isCalculatingFee = false,
+    this.hasAddress = true,
   });
 
   @override
@@ -888,27 +919,38 @@ class _BillingSummaryState extends State<_BillingSummary> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        if (savings > 0)
+                        if (widget.isCalculatingFee)
                           Text(
-                            '₹${(total + savings).toStringAsFixed(2)}',
+                            'Calculating...',
                             style: GoogleFonts.poppins(
                               fontSize: 13,
+                              fontWeight: FontWeight.w500,
                               color: Colors.grey[400],
-                              decoration: TextDecoration.lineThrough,
+                            ),
+                          )
+                        else ...[
+                          if (savings > 0)
+                            Text(
+                              '₹${(total + savings).toStringAsFixed(2)}',
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                color: Colors.grey[400],
+                                decoration: TextDecoration.lineThrough,
+                              ),
+                            ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '₹${total.toStringAsFixed(2)}',
+                            style: GoogleFonts.poppins(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.black,
                             ),
                           ),
-                        const SizedBox(width: 6),
-                        Text(
-                          '₹${total.toStringAsFixed(2)}',
-                          style: GoogleFonts.poppins(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.black,
-                          ),
-                        ),
+                        ],
                       ],
                     ),
-                    if (savings > 0)
+                    if (savings > 0 && !widget.isCalculatingFee)
                       Padding(
                         padding: const EdgeInsets.only(top: 2),
                         child: Text(
@@ -936,7 +978,12 @@ class _BillingSummaryState extends State<_BillingSummary> {
           _buildBillRow('Item Total', widget.subtotal),
           if (savings > 0)
             _buildBillRow('Gutzo Savings', -savings, isDiscount: true),
-          _buildBillRow('Delivery Partner Fee', widget.deliveryFee),
+          if (widget.isCalculatingFee)
+            _buildCalculatingRow('Delivery Partner Fee')
+          else if (!widget.hasAddress)
+            _buildActionRow('Delivery Partner Fee', 'Enter Address')
+          else
+            _buildBillRow('Delivery Partner Fee', widget.deliveryFee),
           _buildBillRow('Platform Fee', widget.platformFee),
           if (widget.packagingFee > 0)
             _buildBillRow('Packaging Fee', widget.packagingFee),
@@ -946,7 +993,10 @@ class _BillingSummaryState extends State<_BillingSummary> {
             child: Divider(height: 1, thickness: 1, color: Color(0xFFF1F3F4)),
           ),
           
-          _buildBillRow('Total Payable', total, isBold: true),
+          if (widget.isCalculatingFee)
+            _buildCalculatingRow('Total Payable', isBold: true)
+          else
+            _buildBillRow('Total Payable', total, isBold: true),
           
           Align(
             alignment: Alignment.centerRight,
@@ -972,8 +1022,36 @@ class _BillingSummaryState extends State<_BillingSummary> {
     );
   }
 
+  /// Row shown when an action is required (e.g. "Enter Address")
+  Widget _buildActionRow(String label, String action) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label, 
+            style: GoogleFonts.poppins(
+              fontSize: 13, 
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            )
+          ),
+          Text(
+            action, 
+            style: GoogleFonts.poppins(
+              fontSize: 13, 
+              color: AppColors.brandGreen, 
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildBillRow(String label, double value, {bool isDiscount = false, bool isBold = false}) {
-    final isFree = value == 0 && !isDiscount;
+    final isFree = value == 0 && !isDiscount && !isBold;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
@@ -992,7 +1070,35 @@ class _BillingSummaryState extends State<_BillingSummary> {
             style: GoogleFonts.poppins(
               fontSize: 13, 
               color: isDiscount || isFree ? AppColors.brandGreen : (isBold ? Colors.black : Colors.grey[800]), 
-              fontWeight: (isBold || isDiscount) ? FontWeight.w700 : FontWeight.w600,
+              fontWeight: (isBold || isDiscount || isFree) ? FontWeight.w700 : FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Shimmer row shown while Shadowfax serviceability API is in-flight
+  Widget _buildCalculatingRow(String label, {bool isBold = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              color: isBold ? Colors.black : Colors.grey[600],
+              fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
+            ),
+          ),
+          Text(
+            'Calculating...',
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[400],
             ),
           ),
         ],

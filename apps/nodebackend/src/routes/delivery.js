@@ -38,7 +38,7 @@ router.post('/serviceability', async (req, res) => {
       }
     };
 
-    // console.log('Sending Serviceability Request:', JSON.stringify(formattedPayload, null, 2));
+    console.log(`[Serviceability] Request from App:`, JSON.stringify(formattedPayload));
 
     const response = await fetch(`${SHADOWFAX_API_URL}/order/serviceability/`, {
       method: 'POST',
@@ -50,18 +50,9 @@ router.post('/serviceability', async (req, res) => {
     });
 
     const data = await response.json();
+    console.log(`[Serviceability] Shadowfax Response [${response.status}]:`, JSON.stringify(data));
 
     if (response.ok) {
-        // Shadowfax success response
-        // data structure: { value: { is_serviceable: true, pickup_eta: "10 Mins", ... } } 
-        // Note: The docs say structure varies by example, but standard success is usually inside 'value' or direct keys 
-        // depending on if it's Swagger example or real response.
-        // Real response usually flat properties or inside a wrapper.
-        // Let's pass the whole data back for frontend to parse, or parse here.
-        // Docs example: "value": { "is_serviceable": true, "pickup_eta": "10 Mins", ... }
-        // Wait, the docs showed "examples" key. The actual response likely just has the fields directly or data wrapper.
-        // Let's assume standard response matches the schema: ServiceabilityRequest -> ServiceabilityResponse (implied).
-        // I will return the full data.
         res.json({ success: true, data: data });
     } else {
         console.error('Shadowfax Error:', data);
