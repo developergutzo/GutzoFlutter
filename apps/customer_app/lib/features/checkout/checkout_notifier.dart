@@ -175,7 +175,7 @@ class CheckoutNotifier extends AutoDisposeNotifier<CheckoutState> {
         print('✅ [Checkout] PARSED: serviceable=$isServiceable, deliveryFee=$deliveryFee, eta=$eta');
 
         state = state.copyWith(
-          isServiceable: true, // TODO: Revert - Force for testing - isServiceable,
+          isServiceable: isServiceable,
           deliveryFee: deliveryFee,
           eta: eta,
           isCheckingServiceability: false,
@@ -183,7 +183,7 @@ class CheckoutNotifier extends AutoDisposeNotifier<CheckoutState> {
       } else {
         print('❌ [Checkout] API returned success=false');
         state = state.copyWith(
-          isServiceable: true, // TODO: Revert - Force for testing - false,
+          isServiceable: false,
           isCheckingServiceability: false,
           deliveryFee: 100,
         );
@@ -191,7 +191,7 @@ class CheckoutNotifier extends AutoDisposeNotifier<CheckoutState> {
     } catch (e) {
       print('❌ [Checkout] checkServiceability ERROR: $e');
       state = state.copyWith(
-        isServiceable: true, // TODO: Revert - Force for testing - false, // Explicitly set to false on error
+        isServiceable: false, // Explicitly set to false on error
         isCheckingServiceability: false, 
         deliveryFee: 100,
       );
