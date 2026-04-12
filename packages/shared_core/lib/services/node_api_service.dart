@@ -5,8 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class NodeApiService {
-  //final String baseUrl = kIsWeb ? "http://localhost:5000" : "http://10.0.2.2:5000";
-  final String baseUrl = "http://192.168.1.37:5000";
+  String get baseUrl {
+    if (kIsWeb) return "http://localhost:5000";
+    if (defaultTargetPlatform == TargetPlatform.android) return "http://10.0.2.2:5000";
+    return "http://localhost:5000";
+  }
   final SupabaseClient _supabase;
 
   NodeApiService(this._supabase);
@@ -84,7 +87,16 @@ class NodeApiService {
     }
 
     print('✅ NodeAPI Response: ${response.statusCode}');
-    final responseData = jsonDecode(response.body);
+    
+    dynamic responseData;
+    try {
+      responseData = jsonDecode(response.body);
+    } catch (e) {
+      if (response.statusCode >= 400) {
+        throw Exception("Server Error (HTTP ${response.statusCode}): ${response.reasonPhrase}");
+      }
+      throw Exception("Invalid server response format");
+    }
 
     if (response.statusCode >= 400) {
       throw Exception(responseData["message"] ?? "HTTP ${response.statusCode}: ${response.reasonPhrase}");

@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:location/location.dart' as loc;
+import '../models/address.dart';
 
 /// Location data matching the web app's LocationData interface
 class LocationData {
@@ -19,7 +21,9 @@ class LocationData {
   final String? flatNumber;
   final String? buildingName;
   final String? block;
+  final String? area;
   final String? tag;
+  final String? selectedAddressId;
 
   LocationData({
     required this.city,
@@ -33,7 +37,9 @@ class LocationData {
     this.flatNumber,
     this.buildingName,
     this.block,
+    this.area,
     this.tag,
+    this.selectedAddressId,
   });
 
   String get displayString {
@@ -83,6 +89,21 @@ class LocationData {
       buildingName: buildingName ?? this.buildingName,
       block: block ?? this.block,
       tag: tag ?? this.tag,
+    );
+  }
+
+  static LocationData fromUserAddress(UserAddress address) {
+    return LocationData(
+      city: address.city,
+      state: address.state,
+      country: address.country,
+      formattedAddress: address.fullAddress,
+      latitude: address.latitude ?? 0.0,
+      longitude: address.longitude ?? 0.0,
+      timestamp: DateTime.now(),
+      houseNumber: address.street,
+      tag: address.label ?? address.type,
+      area: address.area,
     );
   }
 }
@@ -410,11 +431,11 @@ class LocationService {
       throw Exception('Location permissions are permanently denied');
     }
 
-    // Get position
-    debugPrint('Invoking Geolocator.getCurrentPosition...');
+    // Get position with maximum precision
+    debugPrint('Invoking Geolocator.getCurrentPosition (Best Accuracy)...');
     final position = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
-      timeLimit: const Duration(seconds: 10),
+      desiredAccuracy: LocationAccuracy.bestForNavigation,
+      timeLimit: const Duration(seconds: 15),
     );
     debugPrint('Received position: ${position.latitude}, ${position.longitude}');
 
@@ -460,18 +481,29 @@ class LocationNotifier extends Notifier<LocationState> {
     if (!kIsWeb) {
       final subscription = Geolocator.getServiceStatusStream().listen((status) {
         if (status == ServiceStatus.enabled) {
-          debugPrint('LocationNotifier: GPS enabled, re-triggering loadLocation...');
-          refreshLocation(); // Use refresh to ignore cache
+          debugPrint('📍 LocationNotifier: GPS enabled, re-triggering authoritative load...');
+          refreshLocation();
         } else {
-          debugPrint('LocationNotifier: GPS disabled, updating state...');
+          debugPrint('📍 LocationNotifier: GPS disabled, updating state...');
           state = state.copyWith(error: 'LOCATION_OFF');
         }
       });
 
+      // Listen for app lifecycle changes (resume)
+      final observer = _AppLifecycleObserver(() {
+        debugPrint('📍 LocationNotifier: App resumed, refreshing location...');
+        refreshLocation();
+      });
+      WidgetsBinding.instance.addObserver(observer);
+
       ref.onDispose(() {
         subscription.cancel();
+        WidgetsBinding.instance.removeObserver(observer);
       });
     }
+
+    // Trigger initial authoritative load (force: true)
+    Future.microtask(() => refreshLocation());
 
     return const LocationState(isLoading: true); 
   }
@@ -554,3 +586,16 @@ class LocationNotifier extends Notifier<LocationState> {
 final locationProvider = NotifierProvider<LocationNotifier, LocationState>(() {
   return LocationNotifier();
 });
+
+/// Internal observer to refresh location on app resume
+class _AppLifecycleObserver extends WidgetsBindingObserver {
+  final VoidCallback onResume;
+  _AppLifecycleObserver(this.onResume);
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState appState) {
+    if (appState == AppLifecycleState.resumed) {
+      onResume();
+    }
+  }
+}

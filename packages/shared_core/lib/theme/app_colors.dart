@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 class AppColors {
   // Brand Constants
   static const Color brandGreen = Color(0xFF1BA672);
+  static const Color deepGreen = Color(0xFF073024); // Solid deep green for background
   static const Color brandGreenHover = Color(0xFF14885E);
   static const Color brandGreenPressed = Color(0xFF0E6B49);
   static const Color brandGreenLight = Color(0xFFE8F6F1);

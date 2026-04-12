@@ -13,6 +13,7 @@ import 'package:shared_core/models/address.dart';
 import '../../../providers/address_provider.dart';
 import 'location_pick_screen.dart';
 import 'add_address_detail_screen.dart';
+import '../../auth/auth_screen.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class LocationSheet extends ConsumerStatefulWidget {
@@ -462,15 +463,19 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
                   icon: Icons.my_location,
                   label: 'Current Location',
                   isLoading: isDetecting,
-                  onTap: () => ref.read(locationProvider.notifier).refreshLocation(),
+                  onTap: () => Navigator.of(context).push(
+                    CupertinoPageRoute(builder: (_) => const LocationPickScreen(isAddingAddress: false)),
+                  ),
                 )),
                 const SizedBox(width: 12),
                 Expanded(child: _buildActionButton(
                   icon: Icons.add_location_alt_outlined,
                   label: 'Add Address',
-                  onTap: () => Navigator.of(context).push(
-                    CupertinoPageRoute(builder: (_) => const LocationPickScreen(isAddingAddress: true)),
-                  ),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      CupertinoPageRoute(builder: (_) => const LocationPickScreen(isAddingAddress: true)),
+                    );
+                  },
                 )),
               ],
             ),
