@@ -586,22 +586,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                // Rating
-                if (product.rating != null)
-                  Row(
-                    children: [
-                      const Icon(Icons.star, color: AppColors.brandGreen, size: 14),
-                      const SizedBox(width: 4),
-                      Text(
-                        "${product.rating} (${product.ratingCount ?? 0})",
-                        style: GoogleFonts.poppins(
-                          color: AppColors.textMain,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
+                const SizedBox(height: 6),
                 const SizedBox(height: 6),
                 _highlightedText(
                   product.description,
@@ -631,27 +616,66 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
                       ),
                     ],
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: product.displayImage.toLowerCase().endsWith('.svg')
-                      ? SvgPicture.network(
-                          product.displayImage,
-                          width: 110,
-                          height: 110,
-                          fit: BoxFit.cover,
-                        )
-                      : Image.network(
-                          product.displayImage,
-                          width: 110,
-                          height: 110,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            width: 110,
-                            height: 110,
-                            color: const Color(0xFFF5F5F5),
-                            child: const Icon(Icons.restaurant, color: Colors.grey),
+                  child: Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: product.displayImage.toLowerCase().endsWith('.svg')
+                          ? SvgPicture.network(
+                              product.displayImage,
+                              width: 110,
+                              height: 110,
+                              fit: BoxFit.cover,
+                            )
+                          : Image.network(
+                              product.displayImage,
+                              width: 110,
+                              height: 110,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => Container(
+                                width: 110,
+                                height: 110,
+                                color: const Color(0xFFF5F5F5),
+                                child: const Icon(Icons.restaurant, color: Colors.grey),
+                              ),
+                            ),
+                      ),
+                      Positioned(
+                        top: 6,
+                        right: 6,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.95),
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(color: Colors.black12, blurRadius: 4, offset: const Offset(0, 2))
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.star_rounded, color: Colors.amber, size: 12),
+                              const SizedBox(width: 2),
+                              Text(
+                                (product.rating ?? widget.vendor.rating).toStringAsFixed(1),
+                                style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w800, color: Colors.black),
+                              ),
+                              Container(
+                                margin: const EdgeInsets.symmetric(horizontal: 4),
+                                width: 1,
+                                height: 8,
+                                color: Colors.black.withValues(alpha: 0.1),
+                              ),
+                              Text(
+                                widget.vendor.deliveryTime.isNotEmpty ? widget.vendor.deliveryTime.split(' ').first : '25',
+                                style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w800, color: Colors.black),
+                              ),
+                            ],
                           ),
                         ),
+                      ),
+                    ],
                   ),
                 ),
                 Positioned(
@@ -769,31 +793,6 @@ class _WebProductCardState extends State<_WebProductCard> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      if (widget.product.rating != null) ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.amber.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.star_rounded, color: Colors.amber, size: 14),
-                              const SizedBox(width: 2),
-                              Text(
-                                widget.product.rating!.toString(),
-                                style: GoogleFonts.poppins(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.amber[900],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -854,35 +853,64 @@ class _WebProductCardState extends State<_WebProductCard> {
               children: [
                 Hero(
                   tag: 'product_img_${widget.product.id}',
-                  child: Container(
-                    width: 90, // Condensed
-                    height: 90,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: widget.product.displayImage.toLowerCase().endsWith('.svg')
-                          ? SvgPicture.network(
-                              widget.product.displayImage,
-                              fit: BoxFit.cover,
-                            )
-                          : Image.network(
-                              widget.product.displayImage,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) => Container(
-                                color: const Color(0xFFF9FAFB),
-                                child: Icon(Icons.restaurant_rounded, color: Colors.grey[300], size: 40),
-                              ),
+                  child: Stack(
+                    children: [
+                      Container(
+                        width: 90, // Condensed
+                        height: 90,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.08),
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
                             ),
-                    ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: widget.product.displayImage.toLowerCase().endsWith('.svg')
+                              ? SvgPicture.network(
+                                  widget.product.displayImage,
+                                  fit: BoxFit.cover,
+                                )
+                              : Image.network(
+                                  widget.product.displayImage,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) => Container(
+                                    color: const Color(0xFFF9FAFB),
+                                    child: Icon(Icons.restaurant_rounded, color: Colors.grey[300], size: 40),
+                                  ),
+                                ),
+                        ),
+                      ),
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.95),
+                            borderRadius: BorderRadius.circular(6),
+                            boxShadow: [
+                              BoxShadow(color: Colors.black12, blurRadius: 4, offset: const Offset(0, 2))
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.star_rounded, color: Colors.amber, size: 10),
+                              const SizedBox(width: 2),
+                              Text(
+                                (widget.product.rating ?? widget.vendor.rating).toStringAsFixed(1),
+                                style: GoogleFonts.poppins(fontSize: 8, fontWeight: FontWeight.w800, color: Colors.black),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 12),

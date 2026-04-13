@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_core/models/vendor.dart';
 import 'package:shared_core/models/product.dart';
@@ -124,31 +125,44 @@ class _VendorCardState extends ConsumerState<VendorCard> {
                           context),
                     ),
                     Positioned(
-                      top: 10,
-                      right: 10,
+                      top: 12,
+                      right: 12,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.95),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
                           boxShadow: [
-                            BoxShadow(color: Colors.black12, blurRadius: 4, offset: const Offset(0, 2))
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            )
                           ],
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.star_rounded, color: Colors.amber, size: 14),
+                            const Icon(Icons.star_rounded, color: Colors.amber, size: 16),
+                            const SizedBox(width: 4),
                             Text(
-                              " ${(widget.rating == 0.0 ? 4.5 : widget.rating).toStringAsFixed(1)}",
-                              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.black),
+                              (widget.rating == 0.0 ? 4.5 : widget.rating).toStringAsFixed(1),
+                              style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.black),
                             ),
-                            const Text(' | ', style: TextStyle(color: Colors.black26, fontSize: 10)),
+                            Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 6),
+                              width: 1,
+                              height: 10,
+                              color: Colors.black.withValues(alpha: 0.1),
+                            ),
                             Text(
                               widget.deliveryTime.isNotEmpty ? widget.deliveryTime.split(' ').first : '25',
-                              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.black),
+                              style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.black),
                             ),
-                            const Text(' MINS', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w700, color: Colors.black54)),
+                            Text(
+                              ' MINS',
+                              style: GoogleFonts.poppins(fontSize: 8, fontWeight: FontWeight.w700, color: Colors.black.withValues(alpha: 0.5)),
+                            ),
                           ],
                         ),
                       ),
