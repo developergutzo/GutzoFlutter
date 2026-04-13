@@ -796,10 +796,12 @@ class _MarketplaceBody extends ConsumerWidget {
   Widget _buildVendorsList(AsyncValue vendorsAsync, WidgetRef ref) {
     return vendorsAsync.when(
       data: (vendors) {
-        final selectedFilter = ref.watch(homeFilterProvider);
+        final selectedGoal = ref.watch(homeFilterProvider);
+        final backendFilter = _FilterChipsRow.goalMapping[selectedGoal] ?? 'All';
+
         final filteredVendors = (vendors as List<Vendor>).where((Vendor v) {
-          if (selectedFilter == 'All') return true;
-          final bool matches = v.tags?.any((tag) => tag.toLowerCase().contains(selectedFilter.toLowerCase())) ?? false;
+          if (backendFilter == 'All') return true;
+          final bool matches = v.tags?.any((tag) => tag.toLowerCase().contains(backendFilter.toLowerCase())) ?? false;
           return matches;
         }).toList();
 
@@ -831,10 +833,12 @@ class _MarketplaceBody extends ConsumerWidget {
   Widget _buildVendorsGrid(AsyncValue vendorsAsync, WidgetRef ref) {
     return vendorsAsync.when(
       data: (vendors) {
-        final selectedFilter = ref.watch(homeFilterProvider);
+        final selectedGoal = ref.watch(homeFilterProvider);
+        final backendFilter = _FilterChipsRow.goalMapping[selectedGoal] ?? 'All';
+
         final filteredVendors = (vendors as List<Vendor>).where((Vendor v) {
-          if (selectedFilter == 'All') return true;
-          final bool matches = v.tags?.any((tag) => tag.toLowerCase().contains(selectedFilter.toLowerCase())) ?? false;
+          if (backendFilter == 'All') return true;
+          final bool matches = v.tags?.any((tag) => tag.toLowerCase().contains(backendFilter.toLowerCase())) ?? false;
           return matches;
         }).toList();
 
@@ -864,100 +868,68 @@ class _MarketplaceBody extends ConsumerWidget {
   }
 }
 
-class _WebFilterRow extends ConsumerWidget {
-  const _WebFilterRow();
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final selectedFilter = ref.watch(homeFilterProvider);
-    final filtersAsync = ref.watch(healthFiltersProvider);
-    return filtersAsync.when(
-      data: (healthFilters) {
-        final filters = ['All', ...healthFilters.map((e) => e.name)];
-        return SizedBox(
-          height: 50,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: filters.length,
-            itemBuilder: (context, index) {
-              final filter = filters[index];
-              final isSelected = selectedFilter == filter;
-              return Padding(
-                padding: const EdgeInsets.only(left: 12),
-                child: ActionChip(
-                  label: Text(filter, style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
-                  onPressed: () => ref.read(homeFilterProvider.notifier).setFilter(filter),
-                  backgroundColor: isSelected ? AppColors.brandGreen : Colors.white,
-                  labelStyle: TextStyle(color: isSelected ? Colors.white : AppColors.textMain),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                ),
-              );
-            },
-          ),
-        );
-      },
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-    );
-  }
-}
-
 class _FilterChipsRow extends ConsumerWidget {
   const _FilterChipsRow();
 
+  static const Map<String, String> goalMapping = {
+    'All': 'All',
+    'Flat Tummy': 'Low Calorie',
+    'Muscle Gain': 'High Protein',
+    'Skin Glow': 'High Fiber',
+    'Clinical/Sugar': 'Sugar Free',
+  };
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selectedFilter = ref.watch(homeFilterProvider);
-    final filtersAsync = ref.watch(healthFiltersProvider);
+    final selectedGoal = ref.watch(homeFilterProvider);
+    final goals = goalMapping.keys.toList();
 
-    return filtersAsync.when(
-      data: (healthFilters) {
-        final filters = ['All', ...healthFilters.map((e) => e.name)];
-
-        return SliverPadding(
-          padding: const EdgeInsets.only(top: 8, bottom: 4),
-          sliver: SliverToBoxAdapter(
-            child: SizedBox(
-              height: 50,
-              child: ListView.builder(
+    return SliverPadding(
+      padding: const EdgeInsets.only(top: 8, bottom: 4),
+      sliver: SliverToBoxAdapter(
+        child: SizedBox(
+          height: 60,
+          child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: filters.length,
+            itemCount: goals.length,
             itemBuilder: (context, index) {
-              final filter = filters[index];
-              final isSelected = selectedFilter == filter;
+              final goal = goals[index];
+              final isSelected = selectedGoal == goal;
 
               return Padding(
                 padding: const EdgeInsets.only(right: 12),
                 child: Center(
                   child: InkWell(
-                    onTap: () => ref.read(homeFilterProvider.notifier).setFilter(filter),
-                    borderRadius: BorderRadius.circular(25),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    onTap: () => ref.read(homeFilterProvider.notifier).setFilter(goal),
+                    borderRadius: BorderRadius.circular(16),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                       decoration: BoxDecoration(
                         color: isSelected ? AppColors.brandGreen : Colors.white,
-                        borderRadius: BorderRadius.circular(25),
+                        borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: isSelected ? AppColors.brandGreen : Colors.grey.withValues(alpha: 0.3),
-                          width: 1,
+                          color: isSelected ? AppColors.brandGreen : AppColors.border,
+                          width: 1.5,
                         ),
                         boxShadow: isSelected
                             ? [
                                 BoxShadow(
                                   color: AppColors.brandGreen.withValues(alpha: 0.2),
-                                  blurRadius: 8,
+                                  blurRadius: 12,
                                   offset: const Offset(0, 4),
                                 )
                               ]
                             : [],
                       ),
                       child: Text(
-                        filter,
+                        goal,
                         style: TextStyle(
                           color: isSelected ? Colors.white : AppColors.textMain,
-                          fontSize: 14,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                          letterSpacing: -0.2,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
                         ),
                       ),
                     ),
@@ -969,37 +941,37 @@ class _FilterChipsRow extends ConsumerWidget {
         ),
       ),
     );
-      },
-      loading: () => SliverPadding(
-        padding: const EdgeInsets.only(top: 8, bottom: 4),
-        sliver: SliverToBoxAdapter(
-          child: SizedBox(
-            height: 50,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: 5,
-              itemBuilder: (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: Shimmer.fromColors(
-                    baseColor: AppColors.shimmerBase,
-                    highlightColor: AppColors.shimmerHighlight,
-                    child: Container(
-                      width: 100,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                    ),
-                  ),
-                );
-              },
+  }
+}
+
+class _WebFilterRow extends ConsumerWidget {
+  const _WebFilterRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selectedGoal = ref.watch(homeFilterProvider);
+    final goals = _FilterChipsRow.goalMapping.keys.toList();
+
+    return SizedBox(
+      height: 50,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: goals.length,
+        itemBuilder: (context, index) {
+          final goal = goals[index];
+          final isSelected = selectedGoal == goal;
+          return Padding(
+            padding: const EdgeInsets.only(left: 12),
+            child: ActionChip(
+              label: Text(goal, style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+              onPressed: () => ref.read(homeFilterProvider.notifier).setFilter(goal),
+              backgroundColor: isSelected ? AppColors.brandGreen : Colors.white,
+              labelStyle: TextStyle(color: isSelected ? Colors.white : AppColors.textMain),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-          ),
-        ),
+          );
+        },
       ),
-      error: (err, stack) => const SliverToBoxAdapter(child: SizedBox.shrink()),
     );
   }
 }

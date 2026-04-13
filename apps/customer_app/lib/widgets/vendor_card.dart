@@ -90,7 +90,7 @@ class _VendorCardState extends State<VendorCard> {
                   Stack(
                     children: [
                       ClipRRect(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(20),
                         child: ColorFiltered(
                           colorFilter: widget.vendorModel?.isServiceable == false
                               ? const ColorFilter.mode(Colors.grey, BlendMode.saturation)
@@ -98,12 +98,14 @@ class _VendorCardState extends State<VendorCard> {
                           child: Hero(
                             tag: 'vendor_${widget.vendorModel?.id ?? widget.title}',
                             child: Image.network(
-                              widget.imageUrl.isNotEmpty ? widget.imageUrl : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c',
-                              height: context.isMobile ? 190 : 160,
+                              (widget.vendorModel?.products != null && widget.vendorModel!.products!.isNotEmpty)
+                                  ? widget.vendorModel!.products!.first.displayImage
+                                  : (widget.imageUrl.isNotEmpty ? widget.imageUrl : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'),
+                              height: context.isMobile ? 220 : 180,
                               width: double.infinity,
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) => Container(
-                                height: 160,
+                                height: 180,
                                 color: AppColors.shimmerBase,
                                 child: const Icon(Icons.image_not_supported_outlined, color: AppColors.textDisabled),
                               ),
@@ -116,7 +118,7 @@ class _VendorCardState extends State<VendorCard> {
                           child: Container(
                             decoration: BoxDecoration(
                               color: Colors.black26,
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(20),
                             ),
                             child: const Center(
                               child: Text(
@@ -128,22 +130,73 @@ class _VendorCardState extends State<VendorCard> {
                         ),
                     ],
                   ),
-                const SizedBox(height: 12),
-                // Title Row
-                Text(
-                  widget.title,
-                  style: TextStyle(
-                    fontSize: context.isMobile ? 18 : 16,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.textMain,
-                    letterSpacing: -0.5,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 16),
                 
-                // Status Row (Rating • DeliveryTime)
+                // Primary Title: Dish Name or Vendor Name
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            (widget.vendorModel?.products != null && widget.vendorModel!.products!.isNotEmpty)
+                                ? widget.vendorModel!.products!.first.name
+                                : widget.title,
+                            style: TextStyle(
+                              fontSize: context.isMobile ? 20 : 18,
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.textMain,
+                              letterSpacing: -0.6,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'by ${widget.title} • ${widget.deliveryTime.isNotEmpty ? widget.deliveryTime : "25-35 mins"}',
+                            style: const TextStyle(
+                              color: AppColors.textSub,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Revenue Button: + ADD
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.orange[700], // Brand action color
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.orange.withValues(alpha: 0.2),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          )
+                        ],
+                      ),
+                      child: const Text(
+                        '+ ADD',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 14,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 12),
+                // Status Row (Rating • Cuisine)
                 Row(
                   children: [
                     const Icon(Icons.star_rounded, color: AppColors.brandGreen, size: 18),
@@ -151,36 +204,27 @@ class _VendorCardState extends State<VendorCard> {
                     Text(
                       (widget.rating == 0.0 ? 4.5 : widget.rating).toStringAsFixed(1),
                       style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: 13,
                         fontWeight: FontWeight.w800,
                         color: AppColors.textMain,
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const Text('•', style: TextStyle(color: AppColors.textDisabled, fontSize: 14)),
+                    const Text('•', style: TextStyle(color: AppColors.textDisabled, fontSize: 13)),
                     const SizedBox(width: 8),
-                    Text(
-                      widget.deliveryTime.isNotEmpty ? widget.deliveryTime : '25-35 mins',
-                      style: const TextStyle(
-                        color: AppColors.textMain,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
+                    Expanded(
+                      child: Text(
+                        widget.cuisine.isNotEmpty ? widget.cuisine : 'Multi-cuisine',
+                        style: const TextStyle(
+                          color: AppColors.textDisabled,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 8),
-                
-                // Cuisine section
-                Text(
-                  widget.cuisine.isNotEmpty ? widget.cuisine : 'Multi-cuisine',
-                  style: const TextStyle(
-                    color: AppColors.textSub,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
                 ],
               ),
