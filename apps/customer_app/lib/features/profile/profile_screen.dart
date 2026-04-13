@@ -37,8 +37,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       builder: (context) => ModernDialog(
         title: 'Log Out?',
         message: 'Are you sure you want to log out?',
-        primaryLabel: 'Logout',
-        secondaryLabel: 'Cancel',
+        primaryLabel: 'Yes',
+        secondaryLabel: 'No',
         isDestructive: true,
         onPrimary: () {
           Navigator.pop(context);

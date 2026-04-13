@@ -120,16 +120,6 @@ class ModernDialog extends StatelessWidget {
                     // Actions
                     Row(
                       children: [
-                        if (secondaryLabel != null) ...[
-                          Expanded(
-                            child: _ActionButton(
-                              label: secondaryLabel!,
-                              onPressed: onSecondary ?? () => Navigator.pop(context),
-                              isPrimary: false,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                        ],
                         Expanded(
                           child: _ActionButton(
                             label: primaryLabel.toUpperCase(),
@@ -138,6 +128,17 @@ class ModernDialog extends StatelessWidget {
                             isDestructive: isDestructive,
                           ),
                         ),
+                        if (secondaryLabel != null) ...[
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _ActionButton(
+                              label: secondaryLabel!,
+                              onPressed: onSecondary ?? () => Navigator.pop(context),
+                              isPrimary: false,
+                              isDestructive: isDestructive,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ],
@@ -175,7 +176,7 @@ class _ActionButtonState extends State<_ActionButton> {
   Widget build(BuildContext context) {
     final bgColor = widget.isPrimary 
         ? (widget.isDestructive ? AppColors.errorRed : AppColors.brandGreen)
-        : Colors.transparent;
+        : (widget.isDestructive ? AppColors.errorBg : Colors.transparent);
     
     final textColor = widget.isPrimary 
         ? Colors.white 
