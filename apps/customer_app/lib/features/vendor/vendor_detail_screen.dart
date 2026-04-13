@@ -24,12 +24,12 @@ class VendorDetailScreen extends ConsumerStatefulWidget {
 
 class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
   late Future<List<Product>> _productsFuture;
-  String _selectedCategory = 'All';
+
 
   @override
   void initState() {
     super.initState();
-    _selectedCategory = 'All';
+
     _productsFuture = _loadProducts();
   }
 
@@ -97,29 +97,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
               }).toList()
             : <Product>[];
 
-        // Normalize categories
-        final categorySet = products
-            .map((p) => p.category.trim())
-            .where((c) => c.isNotEmpty)
-            .toSet();
-            
-        final List<String> categories = ['All'];
-        
-        final sortedCategories = categorySet.toList()..sort();
-        categories.addAll(sortedCategories);
-        
-        // Identify effective category (don't modify state in build!)
-        String effectiveCategory = _selectedCategory;
-        if (!categories.contains(effectiveCategory)) {
-           effectiveCategory = categories.contains('All') ? 'All' : (categories.isNotEmpty ? categories.first : 'All');
-        }
-
-        final List<Product> filteredProducts;
-        if (effectiveCategory == 'All') {
-          filteredProducts = products;
-        } else {
-          filteredProducts = products.where((p) => p.category.trim().toLowerCase() == effectiveCategory.trim().toLowerCase()).toList();
-        }
+        final List<Product> filteredProducts = products;
 
         final isWeb = context.isDesktop || context.isTablet;
 
@@ -129,8 +107,8 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
             children: [
               Positioned.fill(
                 child: isWeb 
-                  ? _buildWebLayout(context, products, categories, effectiveCategory, filteredProducts)
-                  : _buildMobileLayout(context, products, categories, effectiveCategory, filteredProducts),
+                  ? _buildWebLayout(context, products, filteredProducts)
+                  : _buildMobileLayout(context, products, filteredProducts),
               ),
               const Positioned(
                 left: 0,
@@ -145,7 +123,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
     );
   }
 
-  Widget _buildMobileLayout(BuildContext context, List<Product> products, List<String> categories, String effectiveCategory, List<Product> filteredProducts) {
+  Widget _buildMobileLayout(BuildContext context, List<Product> products, List<Product> filteredProducts) {
     return MaxWidthContainer(
       child: CustomScrollView(
         slivers: [
@@ -172,14 +150,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
               child: _buildVendorHeaderInfo(),
             ),
           ),
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _CategoryHeaderDelegate(
-              categories: categories,
-              selectedCategory: effectiveCategory,
-              onCategorySelected: (cat) => setState(() => _selectedCategory = cat),
-            ),
-          ),
+
           filteredProducts.isEmpty
               ? _buildEmptyProductsView()
               : SliverPadding(
@@ -196,7 +167,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
     );
   }
 
-  Widget _buildWebLayout(BuildContext context, List<Product> products, List<String> categories, String effectiveCategory, List<Product> filteredProducts) {
+  Widget _buildWebLayout(BuildContext context, List<Product> products, List<Product> filteredProducts) {
     return Column(
       children: [
         // Web Header
@@ -241,63 +212,6 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildVendorHeaderInfo(),
-                        const SizedBox(height: 48),
-                        Text(
-                          "CATEGORIES",
-                          style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.2,
-                            color: AppColors.textDisabled,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        ...categories.map((cat) {
-                          final isSelected = cat == effectiveCategory;
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 4),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              decoration: BoxDecoration(
-                                color: isSelected ? AppColors.brandGreen.withValues(alpha: 0.08) : Colors.transparent,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: InkWell(
-                                onTap: () => setState(() => _selectedCategory = cat),
-                                borderRadius: BorderRadius.circular(12),
-                                child: Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                                  child: Row(
-                                    children: [
-                                      if (isSelected)
-                                        Container(
-                                          width: 3,
-                                          height: 16,
-                                          margin: const EdgeInsets.only(right: 12),
-                                          decoration: BoxDecoration(
-                                            color: AppColors.brandGreen,
-                                            borderRadius: BorderRadius.circular(2),
-                                          ),
-                                        ),
-                                      Expanded(
-                                        child: Text(
-                                          cat,
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 14,
-                                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                                            color: isSelected ? AppColors.brandGreen : AppColors.textMain,
-                                            letterSpacing: isSelected ? -0.2 : 0,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        }),
                         const SizedBox(height: 120), // Padding for floating cart
                       ],
                     ),
@@ -725,54 +639,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
   }
 }
 
-class _CategoryHeaderDelegate extends SliverPersistentHeaderDelegate {
-  final List<String> categories;
-  final String selectedCategory;
-  final Function(String) onCategorySelected;
 
-  _CategoryHeaderDelegate({
-    required this.categories,
-    required this.selectedCategory,
-    required this.onCategorySelected,
-  });
-
-  @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return Container(
-      color: Colors.white,
-      height: 60,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        itemCount: categories.length,
-        itemBuilder: (context, index) {
-          final cat = categories[index];
-          final isSelected = cat == selectedCategory;
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
-            child: ChoiceChip(
-              label: Text(cat),
-              selected: isSelected,
-              onSelected: (selected) => onCategorySelected(cat),
-              selectedColor: AppColors.brandGreen,
-              labelStyle: TextStyle(
-                color: isSelected ? Colors.white : AppColors.textMain,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  @override
-  double get maxExtent => 60;
-  @override
-  double get minExtent => 60;
-  @override
-  bool shouldRebuild(covariant _CategoryHeaderDelegate oldDelegate) => true;
-}
 
 class _WebProductCard extends StatefulWidget {
   final Product product;
