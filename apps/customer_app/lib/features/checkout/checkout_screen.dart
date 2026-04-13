@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_core/theme/app_colors.dart';
@@ -190,17 +191,248 @@ class CheckoutScreen extends ConsumerWidget {
   }
 
   Widget _buildMobileLayout(BuildContext context, WidgetRef ref, CartState cart, CheckoutState checkout, Vendor vendor, LocationState location) {
+    final user = ref.watch(currentUserProvider);
+    
     return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
       child: Column(
         children: [
-          _buildItemsSection(context, ref, cart, checkout, vendor),
           const SizedBox(height: 12),
+          // 1. Identity Block (High-Velocity Login)
+          if (user == null) _buildIdentityBlock(context, ref),
+          
+          // 2. Habit Summary (The Commitment Card)
+          if (checkout.isHabitSubscription) _buildHabitSummaryCard(checkout),
+
+          // 3. Delivery Section (Serviceability Sentinel)
+          _buildDeliverySection(context, ref, checkout, location),
+
+          // 4. Cart Items (The Value Confirmation)
+          _buildItemsSection(context, ref, cart, checkout, vendor),
+          
+          const SizedBox(height: 12),
+          // 5. Billing Details
           _buildBillingSection(cart, checkout, location),
+
           const SizedBox(height: 12),
           _buildCancellationPolicy(),
+          
+          const SizedBox(height: 24),
+          // 6. Direct Payment Strip (Tiny Actions)
+          if (user != null && checkout.isServiceable) _buildUpiStripped(context, ref, checkout, cart),
+          
           const SizedBox(height: 12),
           _buildDevSettings(context, ref, checkout),
-          const SizedBox(height: 100), // Space for footer
+          const SizedBox(height: 48),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIdentityBlock(BuildContext context, WidgetRef ref) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.brandGreen.withValues(alpha: 0.3), width: 2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Start your Transformation",
+            style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.textMain),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "Enter your 10-digit phone to sync your 5-Day Plan",
+            style: GoogleFonts.poppins(fontSize: 14, color: AppColors.textSub),
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: TextField(
+              keyboardType: TextInputType.phone,
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                hintText: "10 Digit Mobile Number",
+                prefixText: "+91 ",
+                prefixStyle: GoogleFonts.poppins(fontWeight: FontWeight.w700, color: Colors.black),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: ElevatedButton(
+              onPressed: () {
+                // Trigger OTP logic via AuthService
+                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AuthScreen()));
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.brandGreen,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 0,
+              ),
+              child: const Text("CONTINUE", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHabitSummaryCard(CheckoutState checkout) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.brandGreen, AppColors.brandGreen.withValues(alpha: 0.8)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.auto_awesome, color: Colors.white, size: 24),
+              const SizedBox(width: 8),
+              Text(
+                "YOU'RE COMMITTING",
+                style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 1),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            "5-Day ${checkout.selectedGoal ?? 'Health'} Reset",
+            style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "Day 1 starts tomorrow at 1:00 PM. No scrolling, no decisions, just results.",
+            style: GoogleFonts.poppins(fontSize: 14, color: Colors.white.withValues(alpha: 0.9)),
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.verified, color: Colors.white, size: 16),
+                const SizedBox(width: 8),
+                Text(
+                  "15% Habit Discount Applied",
+                  style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDeliverySection(BuildContext context, WidgetRef ref, CheckoutState checkout, LocationState location) {
+    return _buildSectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text("Delivery Location", style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700)),
+              TextButton(
+                onPressed: () => LocationSheet.show(context),
+                child: Text("CHANGE", style: TextStyle(color: AppColors.brandGreen, fontWeight: FontWeight.w800, fontSize: 13)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Icon(Icons.location_on, color: AppColors.brandGreen),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  location.location?.formattedAddress ?? "Detecting location...",
+                  style: GoogleFonts.poppins(fontSize: 14, color: AppColors.textMain),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          if (!checkout.isServiceable) ...[
+            const SizedBox(height: 16),
+            _buildServiceabilityWarning(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUpiStripped(BuildContext context, WidgetRef ref, CheckoutState checkout, CartState cart) {
+    final total = cart.subtotal + 
+                (checkout.useFreeFees ? 0 : checkout.deliveryFee) + 
+                (checkout.useFreeFees ? 0 : checkout.platformFee) + 
+                checkout.packagingFee +
+                (checkout.isDonationChecked ? checkout.donationAmount : 0);
+
+    return Container(
+      margin: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("Pay using UPI", style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildUpiIcon(context, ref, checkout, 'GPay', 'https://upload.wikimedia.org/wikipedia/commons/b/b5/Google_Pay_%28GPay%29_Logo.svg'),
+              _buildUpiIcon(context, ref, checkout, 'PhonePe', 'https://upload.wikimedia.org/wikipedia/commons/7/71/PhonePe_Logo.svg'),
+              _buildUpiIcon(context, ref, checkout, 'Paytm', 'https://upload.wikimedia.org/wikipedia/commons/2/24/Paytm_Logo_%28standalone%29.svg'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUpiIcon(BuildContext context, WidgetRef ref, CheckoutState checkout, String label, String url) {
+    return InkWell(
+      onTap: checkout.isProcessing ? null : () => ref.read(checkoutProvider.notifier).placeOrder(),
+      child: Column(
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey[200]!),
+            ),
+            child: Center(
+              child: SvgPicture.network(url, width: 32, height: 32, 
+                placeholderBuilder: (ctx) => const Icon(Icons.payment, size: 24, color: Colors.grey)),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(label, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600)),
         ],
       ),
     );
@@ -255,8 +487,6 @@ class CheckoutScreen extends ConsumerWidget {
           ...cart.items.map((item) => _buildCartItem(item)),
           const SizedBox(height: 24),
           _buildAddMoreButton(context, vendor),
-          const SizedBox(height: 24),
-          _buildActionButtons(context, ref, checkout),
         ],
       ),
     );
@@ -594,29 +824,7 @@ class CheckoutScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildActionButtons(BuildContext context, WidgetRef ref, CheckoutState state) {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildSmallActionButton(
-            icon: Icons.description_outlined,
-            label: state.orderNote.isEmpty ? 'Add a note' : 'Note: ${state.orderNote}',
-            onTap: () => _showNoteBottomSheet(context, ref, state.orderNote),
-            isActive: state.orderNote.isNotEmpty,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildSmallActionButton(
-            icon: Icons.flatware_outlined,
-            label: state.dontAddCutlery ? "Don't add cutlery" : "Don't add...",
-            onTap: () => ref.read(checkoutProvider.notifier).toggleCutlery(),
-            isActive: state.dontAddCutlery,
-          ),
-        ),
-      ],
-    );
-  }
+  // Action buttons removed for MVP simplification
 
   Widget _buildSmallActionButton({
     required IconData icon, 
@@ -1169,10 +1377,6 @@ class _BillingSummaryState extends State<_BillingSummary> {
             ),
           ),
 
-          if (widget.donationAmount > 0) ...[
-            const SizedBox(height: 8),
-            _buildBillRow('Feeding India Donation', widget.donationAmount),
-          ],
         ],
       ],
     );

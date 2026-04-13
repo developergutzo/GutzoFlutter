@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_core/models/vendor.dart';
 import 'package:shared_core/theme/app_colors.dart';
 import 'package:shared_core/utils/responsive.dart';
 import '../features/vendor/vendor_detail_screen.dart';
+import 'package:shared_core/services/cart_service.dart';
+import '../features/checkout/checkout_notifier.dart';
+import '../features/checkout/checkout_screen.dart';
 
-class VendorCard extends StatefulWidget {
+class VendorCard extends ConsumerStatefulWidget {
   final Map<String, dynamic>? rawVendor;
   final String imageUrl;
   final String title;
@@ -29,13 +33,14 @@ class VendorCard extends StatefulWidget {
   });
 
   @override
-  State<VendorCard> createState() => _VendorCardState();
+  ConsumerState<VendorCard> createState() => _VendorCardState();
 }
 
-class _VendorCardState extends State<VendorCard> {
+class _VendorCardState extends ConsumerState<VendorCard> {
   bool _isHovered = false;
 
   void _showHabitDrawer(BuildContext context) {
+    String? currentGoal = "Muscle Gain"; // Default for MVP, will be dynamic later
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -107,7 +112,23 @@ class _VendorCardState extends State<VendorCard> {
               width: double.infinity,
               height: 56,
               child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () {
+                  // 🎯 Set Habit Subscription Intent in Checkout State
+                  ref.read(checkoutProvider.notifier).setHabitSubscription(true, goal: currentGoal);
+                  
+                  // 🛒 Add Item to Cart (Defaulting to the first product of the vendor for MVP)
+                  if (widget.vendorModel != null && widget.vendorModel!.products!.isNotEmpty) {
+                    ref.read(cartProvider.notifier).addItem(widget.vendorModel!.products!.first, widget.vendorModel!, 1);
+                  }
+                  
+                  Navigator.pop(context);
+                  
+                  // 🚀 Navigate to checkout immediately (High Velocity)
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const CheckoutScreen()),
+                  );
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.brandGreen,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

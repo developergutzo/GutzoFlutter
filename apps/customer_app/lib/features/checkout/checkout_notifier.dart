@@ -24,6 +24,9 @@ class CheckoutState {
   final bool isDonationChecked;
   final double donationAmount;
 
+  final bool isHabitSubscription;
+  final String? selectedGoal;
+
   CheckoutState({
     this.isCheckingServiceability = false,
     this.deliveryFee = 0,
@@ -40,6 +43,8 @@ class CheckoutState {
     this.dontAddCutlery = false,
     this.isDonationChecked = false,
     this.donationAmount = 3.0,
+    this.isHabitSubscription = false,
+    this.selectedGoal,
   });
 
   CheckoutState copyWith({
@@ -58,6 +63,8 @@ class CheckoutState {
     bool? dontAddCutlery,
     bool? isDonationChecked,
     double? donationAmount,
+    bool? isHabitSubscription,
+    String? selectedGoal,
   }) {
     return CheckoutState(
       isCheckingServiceability: isCheckingServiceability ?? this.isCheckingServiceability,
@@ -75,6 +82,8 @@ class CheckoutState {
       dontAddCutlery: dontAddCutlery ?? this.dontAddCutlery,
       isDonationChecked: isDonationChecked ?? this.isDonationChecked,
       donationAmount: donationAmount ?? this.donationAmount,
+      isHabitSubscription: isHabitSubscription ?? this.isHabitSubscription,
+      selectedGoal: selectedGoal ?? this.selectedGoal,
     );
   }
 }
@@ -239,6 +248,11 @@ class CheckoutNotifier extends AutoDisposeNotifier<CheckoutState> {
     state = state.copyWith(isDonationChecked: !state.isDonationChecked);
   }
 
+  void setHabitSubscription(bool value, {String? goal}) {
+    state = state.copyWith(isHabitSubscription: value, selectedGoal: goal);
+    updateTaxes();
+  }
+
   Future<String?> placeOrder() async {
     final user = ref.read(currentUserProvider);
     final cart = ref.read(cartProvider);
@@ -307,8 +321,9 @@ class CheckoutNotifier extends AutoDisposeNotifier<CheckoutState> {
         "mock_shadowfax": useMockShadowfax,
         "delivery_fee": currentState.useFreeFees ? 0 : currentState.deliveryFee,
         "platform_fee": currentState.useFreeFees ? 0 : currentState.platformFee,
-        "taxes": currentState.gst.toStringAsFixed(2),
         "tip_amount": currentState.isDonationChecked ? currentState.donationAmount : 0,
+        "is_habit_pack": currentState.isHabitSubscription,
+        "selected_goal": currentState.selectedGoal,
         "order_source": "app",
       };
 

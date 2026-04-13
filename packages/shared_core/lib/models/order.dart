@@ -19,6 +19,8 @@ class Order {
   final Vendor? vendor;
   final String? deliveryAddress;
   final String? riderId;
+  final bool isHabitPack;
+  final String? selectedGoal;
 
   Order({
     required this.id,
@@ -38,6 +40,8 @@ class Order {
     this.vendor,
     this.deliveryAddress,
     this.riderId,
+    this.isHabitPack = false,
+    this.selectedGoal,
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
@@ -61,6 +65,8 @@ class Order {
       vendor: json['vendor'] != null ? Vendor.fromJson(json['vendor']) : null,
       deliveryAddress: json['delivery_address'],
       riderId: json['rider_id'],
+      isHabitPack: json['is_habit_pack'] ?? false,
+      selectedGoal: json['selected_goal'],
     );
   }
 }

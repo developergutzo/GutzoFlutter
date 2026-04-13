@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_core/services/auth_service.dart';
 import 'package:shared_core/services/vendor_service.dart';
@@ -26,6 +27,7 @@ import '../../providers/location_sync_provider.dart';
 import '../../providers/health_filters_provider.dart';
 
 import 'dart:ui' as ui; // For backdrop filter
+import '../habits/habit_dashboard_screen.dart';
 
 final homeFilterProvider = NotifierProvider<HomeFilterNotifier, String>(() {
   return HomeFilterNotifier();
@@ -72,6 +74,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       body: const Stack(
         children: [
           Positioned.fill(child: _MarketplaceBody()),
+          Positioned(
+            right: 16,
+            bottom: 140, // Positioned above the cart strip
+            child: const _ActiveHabitPill(),
+          ),
           Positioned(
             left: 0,
             right: 0,
@@ -977,6 +984,57 @@ class _WebFilterRow extends ConsumerWidget {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _ActiveHabitPill extends ConsumerWidget {
+  const _ActiveHabitPill();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // In a real app, we'd check if there's an active habit subscription
+    // For this demo, we'll show it if the user is logged in
+    final currentUser = ref.watch(currentUserProvider);
+    if (currentUser == null) return const SizedBox.shrink();
+
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        CupertinoPageRoute(builder: (_) => const HabitDashboardScreen()),
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.brandGreen,
+          borderRadius: BorderRadius.circular(100),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.brandGreen.withValues(alpha: 0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.auto_awesome, color: Colors.white, size: 18),
+            const SizedBox(width: 10),
+            Text(
+              'DAY 2 / 5',
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w900,
+                fontSize: 13,
+                color: Colors.white,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(Icons.chevron_right, color: Colors.white, size: 16),
+          ],
+        ),
       ),
     );
   }

@@ -493,6 +493,27 @@ class _OrderCard extends ConsumerWidget {
                     _StatusBadge(status: order.status),
                   ],
                 ),
+                if (order.isHabitPack) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.brandGreen.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.auto_awesome, color: AppColors.brandGreen, size: 14),
+                        const SizedBox(width: 4),
+                        Text(
+                          "5-DAY ${order.selectedGoal?.toUpperCase() ?? 'HABIT'} PACK",
+                          style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w900, color: AppColors.brandGreen),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 10),
                 Row(
                   children: [
@@ -654,6 +675,37 @@ class _OrderDetailsSheet extends StatelessWidget {
             'ORDER DETAILS',
             style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w900, letterSpacing: 1, color: AppColors.textMain),
           ),
+          if (order.isHabitPack) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.brandGreen.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.auto_awesome, color: AppColors.brandGreen),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "5-Day ${order.selectedGoal ?? 'Health'} Commitment",
+                          style: GoogleFonts.inter(fontWeight: FontWeight.w900, fontSize: 14, color: AppColors.brandGreen),
+                        ),
+                        Text(
+                          "Day 1 / 5 • Deliver by 1:00 PM",
+                          style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12, color: AppColors.brandGreen.withValues(alpha: 0.7)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 24),
           ...order.items.map((item) => Padding(
             padding: const EdgeInsets.only(bottom: 16),

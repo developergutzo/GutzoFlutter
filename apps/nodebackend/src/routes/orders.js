@@ -169,7 +169,9 @@ router.post('/', validate(schemas.createOrder), asyncHandler(async (req, res) =>
       packaging_fee,
       taxes,
       discount_amount,
-      mock_shadowfax // New field
+      mock_shadowfax,
+      is_habit_pack,
+      selected_goal
     } = req.body;
 
     // console.log('📦 Creating Order:', { vendor_id, itemCount: items.length });
@@ -237,7 +239,9 @@ router.post('/', validate(schemas.createOrder), asyncHandler(async (req, res) =>
         special_instructions,
         order_source,
         coupon_code,
-        mock_shadowfax // Added for Dev/Mock handling
+        mock_shadowfax,
+        is_habit_pack: is_habit_pack || false,
+        selected_goal
       })
       .select()
       .single();
