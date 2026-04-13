@@ -4,6 +4,8 @@ import 'package:shared_core/models/product.dart';
 import 'package:shared_core/models/vendor.dart';
 import 'package:shared_core/services/cart_service.dart';
 import 'package:shared_core/theme/app_colors.dart';
+import '../../../widgets/habit_selection_drawer.dart';
+import '../../home/home_screen.dart';
 
 class ProductDetailsSheet extends ConsumerStatefulWidget {
   final Product product;
@@ -113,55 +115,37 @@ class _ProductDetailsSheetState extends ConsumerState<ProductDetailsSheet> {
                 
                 const SizedBox(height: 24),
                 
-                // Quantity & Add to Cart
-                Row(
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: AppColors.border),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          IconButton(
-                            onPressed: _quantity > 1 ? () => setState(() => _quantity--) : null,
-                            icon: const Icon(Icons.remove, size: 20),
-                          ),
-                          Text(
-                            '$_quantity',
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
-                          IconButton(
-                            onPressed: () => setState(() => _quantity++),
-                            icon: const Icon(Icons.add, size: 20),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          ref.read(cartProvider.notifier).addItem(
-                            widget.product,
-                            widget.vendor,
-                            _quantity,
-                          );
-                          Navigator.pop(context);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.brandGreen,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: Text(
-                          'Add to Cart • ₹${widget.product.price * _quantity}',
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
+                // High-Conversion ADD Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 56, // BIG SIZE for primary revenue intent
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context); // Close details
+                      final currentFilter = ref.read(homeFilterProvider);
+                      // Mandate intent choice via the HabitSelectionDrawer
+                      HabitSelectionDrawer.show(
+                        context, 
+                        widget.vendor, 
+                        widget.product, 
+                        currentFilter
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.brandGreenLight, // Secondary Green Bg
+                      foregroundColor: AppColors.brandGreen, // Primary Green Text
+                      elevation: 0,
+                      shadowColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(color: AppColors.brandGreen.withValues(alpha: 0.5), width: 1.2), // Sharper border for better CTA
                       ),
                     ),
-                  ],
+                    child: Text(
+                      'ADD • ₹${widget.product.price}',
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+                    ),
+                  ),
                 ),
               ],
             ),

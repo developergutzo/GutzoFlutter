@@ -12,6 +12,7 @@ import '../features/vendor/vendor_detail_screen.dart';
 import '../features/home/home_screen.dart';
 import 'habit_selection_drawer.dart';
 import 'quantity_selector.dart';
+import '../features/vendor/widgets/product_details_sheet.dart';
 
 class VendorCard extends ConsumerStatefulWidget {
   final Map<String, dynamic>? rawVendor;
@@ -86,15 +87,25 @@ class _VendorCardState extends ConsumerState<VendorCard> {
         child: InkWell(
           onTap: () {
             if (widget.vendorModel != null) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => VendorDetailScreen(
-                    vendor: widget.vendorModel!,
-                    searchQuery: widget.searchQuery,
+              // 🎯 Dish-First Context: If we have a specific product, show its immersive details
+              if (widget.displayProduct != null) {
+                ProductDetailsSheet.show(
+                  context, 
+                  widget.displayProduct!, 
+                  widget.vendorModel!
+                );
+              } else {
+                // Otherwise navigate to kitchen as before
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => VendorDetailScreen(
+                      vendor: widget.vendorModel!,
+                      searchQuery: widget.searchQuery,
+                    ),
                   ),
-                ),
-              );
+                );
+              }
             }
           },
           borderRadius: BorderRadius.circular(20),
@@ -220,30 +231,26 @@ class _VendorCardState extends ConsumerState<VendorCard> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            "₹${featuredPrice.toStringAsFixed(0)}",
-                            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
-                          ),
-                          if (widget.vendorModel != null && widget.displayProduct != null)
-                            QuantitySelector(
-                              product: widget.displayProduct!,
-                              vendor: widget.vendorModel!,
-                            )
-                          else
-                            InkWell(
-                              onTap: () => _showHabitDrawer(context),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: AppColors.brandGreen,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: const Text(
-                                  '+ ADD',
-                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11),
-                                ),
+                          SizedBox(
+                            width: 45, // Fixed width for price to keep button width uniform
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                "₹${featuredPrice.toStringAsFixed(0)}",
+                                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
                               ),
                             ),
+                          ),
+                          // 🎯 Hybrid Revenue UX: Big ADD button that transforms into a selector when added
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: QuantitySelector(
+                              product: widget.displayProduct!,
+                              vendor: widget.vendorModel!,
+                              isFullWidth: true,
+                            ),
+                          ),
                         ],
                       ),
                     ],

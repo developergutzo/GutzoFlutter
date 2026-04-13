@@ -87,23 +87,36 @@ router.post('/sync', asyncHandler(async (req, res) => {
     return successResponse(res, { items: [] }, 'Cart cleared');
   }
 
-  // 2. Prepare new items
-  // We need to fetch products to get vendor_id if not provided, but
-  // usually the frontend sends vendor_id.
-  // We'll rely on the input items having product_id, vendor_id, quantity.
+  // 2. Deduplicate and Prepare new items
+  // Unique identification is (user_phone, product_id, is_habit)
+  const itemMap = new Map();
+  
+  items.forEach(item => {
+    const pId = item.productId || item.product_id;
+    const isHabit = item.isHabit || item.is_habit || false;
+    const key = `${pId}-${isHabit}`;
+    
+    if (itemMap.has(key)) {
+      // If duplicate, sum the quantities
+      const existing = itemMap.get(key);
+      existing.quantity += (item.quantity || 1);
+    } else {
+      itemMap.set(key, {
+        user_phone: req.user.phone,
+        product_id: pId,
+        vendor_id: item.vendorId || item.vendor_id,
+        quantity: item.quantity || 1,
+        variant_id: item.variantId || item.variant_id || null,
+        addons: item.addons ? JSON.stringify(item.addons) : null,
+        special_instructions: item.specialInstructions || item.special_instructions || null,
+        metadata: item.metadata || null,
+        is_habit: isHabit,
+        created_at: new Date().toISOString()
+      });
+    }
+  });
 
-  const formattedItems = items.map(item => ({
-    user_phone: req.user.phone,
-    product_id: item.productId || item.product_id,
-    vendor_id: item.vendorId || item.vendor_id,
-    quantity: item.quantity,
-    variant_id: item.variantId || item.variant_id || null,
-    addons: item.addons ? JSON.stringify(item.addons) : null,
-    special_instructions: item.specialInstructions || item.special_instructions || null,
-    metadata: item.metadata || null,
-    is_habit: item.isHabit || item.is_habit || false,
-    created_at: new Date().toISOString()
-  }));
+  const formattedItems = Array.from(itemMap.values());
 
   // 3. Bulk insert
   // 3. Bulk insert with fallback for bad data

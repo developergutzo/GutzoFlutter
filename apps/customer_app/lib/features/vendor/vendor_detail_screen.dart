@@ -6,9 +6,11 @@ import 'package:shared_core/models/vendor.dart';
 import 'package:shared_core/models/product.dart';
 import 'package:shared_core/theme/app_colors.dart';
 import 'package:shared_core/services/node_api_service.dart';
-import '../../widgets/cart_strip.dart';
-import '../../widgets/quantity_selector.dart';
-import 'widgets/product_details_sheet.dart';
+import 'package:customer_app/widgets/cart_strip.dart';
+import 'package:customer_app/widgets/quantity_selector.dart';
+import 'package:customer_app/widgets/habit_selection_drawer.dart';
+import 'package:customer_app/features/home/home_screen.dart';
+import 'package:customer_app/features/vendor/widgets/product_details_sheet.dart';
 import 'package:shared_core/utils/responsive.dart';
 import 'package:shared_core/widgets/max_width_container.dart';
 import '../checkout/checkout_notifier.dart';
@@ -680,7 +682,13 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
                 ),
                 Positioned(
                   bottom: -15,
-                  child: QuantitySelector(product: product, vendor: widget.vendor),
+                  left: 10,
+                  right: 10,
+                  child: QuantitySelector(
+                    product: product,
+                    vendor: widget.vendor,
+                    isFullWidth: true,
+                  ),
                 ),
               ],
             ),

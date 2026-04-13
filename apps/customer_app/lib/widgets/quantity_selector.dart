@@ -13,11 +13,13 @@ import '../features/checkout/checkout_notifier.dart';
 class QuantitySelector extends ConsumerWidget {
   final Product product;
   final Vendor vendor;
+  final bool isFullWidth; // 🎯 NEW: Allow component to expand in grid layouts
 
   const QuantitySelector({
     super.key,
     required this.product,
     required this.vendor,
+    this.isFullWidth = false,
   });
 
   @override
@@ -49,7 +51,7 @@ class QuantitySelector extends ConsumerWidget {
   Widget _buildAddButton(BuildContext context, WidgetRef ref, CartState cart, bool isServiceable) {
     return SizedBox(
       key: const ValueKey('add_button'),
-      width: 100,
+      width: isFullWidth ? double.infinity : 100, // 🎯 Scale to layout
       height: 40,
       child: ElevatedButton(
         onPressed: isServiceable ? () {
@@ -72,12 +74,12 @@ class QuantitySelector extends ConsumerWidget {
           }
         } : null,
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white,
+          backgroundColor: isServiceable ? AppColors.brandGreenLight : Colors.white,
           foregroundColor: isServiceable ? AppColors.brandGreen : Colors.grey,
-          elevation: isServiceable ? 2 : 0,
+          elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
-            side: BorderSide(color: isServiceable ? AppColors.brandGreen : Colors.grey[300]!, width: 1.2),
+            side: BorderSide(color: isServiceable ? AppColors.brandGreen.withValues(alpha: 0.5) : Colors.grey[300]!, width: 1.2),
           ),
         ),
         child: Text(
@@ -134,18 +136,18 @@ class QuantitySelector extends ConsumerWidget {
           ),
         Container(
           key: const ValueKey('quantity_selector'),
-          width: 100,
+          width: isFullWidth ? double.infinity : 100, // 🎯 Scale to layout
           height: 40,
           decoration: BoxDecoration(
-            color: secondaryColor,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: isServiceable ? primaryColor : Colors.grey[300]!, width: 1.5),
+            color: AppColors.brandGreenLight, // Sync with ADD button bg
+            borderRadius: BorderRadius.circular(12), // Match ADD button radius
+            border: Border.all(color: isServiceable ? AppColors.brandGreen.withValues(alpha: 0.5) : Colors.grey[300]!, width: 1.2), // Sharper border
             boxShadow: [
               if (isServiceable)
                 BoxShadow(
-                  color: primaryColor.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 8,
-                  offset: const Offset(0, 2),
+                  offset: const Offset(0, 4),
                 ),
             ],
           ),
