@@ -6,6 +6,8 @@ import 'package:shared_core/models/vendor.dart';
 import 'package:shared_core/services/cart_service.dart';
 import 'package:shared_core/theme/app_colors.dart';
 import 'replace_cart_dialog.dart';
+import 'habit_selection_drawer.dart';
+import '../features/home/home_screen.dart';
 
 class QuantitySelector extends ConsumerWidget {
   final Product product;
@@ -65,7 +67,13 @@ class QuantitySelector extends ConsumerWidget {
               ),
             );
           } else {
-            ref.read(cartProvider.notifier).addItem(product, vendor, 1);
+            // 🎯 NEW: If cart is empty, trigger the Habit Drawer
+            if (cart.items.isEmpty) {
+              final currentGoal = ref.read(homeFilterProvider);
+              HabitSelectionDrawer.show(context, vendor, product, currentGoal);
+            } else {
+              ref.read(cartProvider.notifier).addItem(product, vendor, 1);
+            }
           }
         } : null,
         style: ElevatedButton.styleFrom(
