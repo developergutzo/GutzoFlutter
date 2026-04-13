@@ -5,10 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_core/models/vendor.dart';
 import 'package:shared_core/theme/app_colors.dart';
 import 'package:shared_core/utils/responsive.dart';
-import '../features/vendor/vendor_detail_screen.dart';
+import 'package:shared_core/services/auth_service.dart';
 import 'package:shared_core/services/cart_service.dart';
 import '../features/checkout/checkout_notifier.dart';
 import '../features/checkout/checkout_screen.dart';
+import '../features/home/home_screen.dart';
 
 class VendorCard extends ConsumerStatefulWidget {
   final Map<String, dynamic>? rawVendor;
@@ -40,174 +41,15 @@ class _VendorCardState extends ConsumerState<VendorCard> {
   bool _isHovered = false;
 
   void _showHabitDrawer(BuildContext context) {
-    String? currentGoal = "Muscle Gain"; // Default for MVP, will be dynamic later
+    final currentGoal = ref.read(homeFilterProvider);
+    
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.55,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              "Commit to the Result",
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w900,
-                color: AppColors.textMain,
-                letterSpacing: -1,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.brandGreen.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                "Most people choosing Muscle Gain pick the 5-Day Pack.",
-                style: TextStyle(
-                  color: AppColors.brandGreen,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            const SizedBox(height: 32),
-            _buildOption(
-              title: "Just Today",
-              subtitle: "One-time healthy fuel",
-              price: "₹299",
-              isSelected: false,
-              onTap: () => Navigator.pop(context),
-            ),
-            const SizedBox(height: 16),
-            _buildOption(
-              title: "5-Day Habit Pack",
-              subtitle: "Lock in your progress & Save ₹150",
-              price: "₹1199",
-              isSelected: true,
-              onTap: () => Navigator.pop(context),
-            ),
-            const Spacer(),
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: () {
-                  // 🎯 Set Habit Subscription Intent in Checkout State
-                  ref.read(checkoutProvider.notifier).setHabitSubscription(true, goal: currentGoal);
-                  
-                  // 🛒 Add Item to Cart (Defaulting to the first product of the vendor for MVP)
-                  if (widget.vendorModel != null && widget.vendorModel!.products!.isNotEmpty) {
-                    ref.read(cartProvider.notifier).addItem(widget.vendorModel!.products!.first, widget.vendorModel!, 1);
-                  }
-                  
-                  Navigator.pop(context);
-                  
-                  // 🚀 Navigate to checkout immediately (High Velocity)
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const CheckoutScreen()),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.brandGreen,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  elevation: 0,
-                ),
-                child: const Text(
-                  "CONFIRM CHOICE",
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildOption({
-    required String title,
-    required String subtitle,
-    required String price,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: isSelected ? AppColors.brandGreen : Colors.grey[200]!,
-            width: isSelected ? 2 : 1,
-          ),
-          borderRadius: BorderRadius.circular(16),
-          color: isSelected ? AppColors.brandGreen.withValues(alpha: 0.02) : Colors.white,
-        ),
-        child: Row(
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
-                const SizedBox(height: 2),
-                Text(subtitle, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-              ],
-            ),
-            const Spacer(),
-            Text(price, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildImage(String url, BuildContext context) {
-    final height = context.isMobile ? 140.0 : 180.0;
-    final trimmedUrl = url.trim();
-    if (trimmedUrl.toLowerCase().endsWith('.svg')) {
-      return SvgPicture.network(
-        trimmedUrl,
-        height: height,
-        width: double.infinity,
-        fit: BoxFit.cover,
-        placeholderBuilder: (context) => Container(
-          height: height,
-          color: AppColors.shimmerBase,
-          child: const Center(child: CircularProgressIndicator(color: AppColors.brandGreen, strokeWidth: 2)),
-        ),
-      );
-    }
-    return Image.network(
-      trimmedUrl,
-      height: height,
-      width: double.infinity,
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) => Container(
-        height: height,
-        color: AppColors.shimmerBase,
-        child: const Center(child: Icon(Icons.restaurant_outlined, color: AppColors.textDisabled, size: 32)),
+      builder: (context) => _HabitSelectionDrawer(
+        vendorModel: widget.vendorModel,
+        currentGoal: currentGoal,
       ),
     );
   }
@@ -228,19 +70,7 @@ class _VendorCardState extends ConsumerState<VendorCard> {
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOutCubic,
         child: InkWell(
-          onTap: () {
-            if (widget.vendorModel != null) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => VendorDetailScreen(
-                    vendor: widget.vendorModel!,
-                    searchQuery: widget.searchQuery,
-                  ),
-                ),
-              );
-            }
-          },
+          onTap: () => _showHabitDrawer(context),
           borderRadius: BorderRadius.circular(20),
           child: Container(
             decoration: BoxDecoration(
@@ -270,7 +100,6 @@ class _VendorCardState extends ConsumerState<VendorCard> {
                           : (widget.imageUrl.isNotEmpty ? widget.imageUrl : 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg'),
                           context),
                     ),
-                    // Trust Pill: Top Right
                     Positioned(
                       top: 10,
                       right: 10,
@@ -280,7 +109,7 @@ class _VendorCardState extends ConsumerState<VendorCard> {
                           color: Colors.white.withValues(alpha: 0.95),
                           borderRadius: BorderRadius.circular(8),
                           boxShadow: [
-                            BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))
+                            BoxShadow(color: Colors.black12, blurRadius: 4, offset: const Offset(0, 2))
                           ],
                         ),
                         child: Row(
@@ -358,18 +187,15 @@ class _VendorCardState extends ConsumerState<VendorCard> {
                             "₹299",
                             style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
                           ),
-                          InkWell(
-                            onTap: () => _showHabitDrawer(context),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: AppColors.brandGreen,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: const Text(
-                                '+ ADD',
-                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11),
-                              ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: AppColors.brandGreen,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Text(
+                              '+ ADD',
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11),
                             ),
                           ),
                         ],
@@ -381,6 +207,240 @@ class _VendorCardState extends ConsumerState<VendorCard> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildImage(String url, BuildContext context) {
+    final height = context.isMobile ? 140.0 : 180.0;
+    final trimmedUrl = url.trim();
+    if (trimmedUrl.toLowerCase().endsWith('.svg')) {
+      return SvgPicture.network(
+        trimmedUrl,
+        height: height,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        placeholderBuilder: (context) => Container(
+          height: height,
+          color: AppColors.shimmerBase,
+          child: const Center(child: CircularProgressIndicator(color: AppColors.brandGreen, strokeWidth: 2)),
+        ),
+      );
+    }
+    return Image.network(
+      trimmedUrl,
+      height: height,
+      width: double.infinity,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) => Container(
+        height: height,
+        color: AppColors.shimmerBase,
+        child: const Center(child: Icon(Icons.restaurant_outlined, color: AppColors.textDisabled, size: 32)),
+      ),
+    );
+  }
+}
+
+class _HabitSelectionDrawer extends ConsumerStatefulWidget {
+  final Vendor? vendorModel;
+  final String currentGoal;
+
+  const _HabitSelectionDrawer({
+    required this.vendorModel,
+    required this.currentGoal,
+  });
+
+  @override
+  ConsumerState<_HabitSelectionDrawer> createState() => _HabitSelectionDrawerState();
+}
+
+class _HabitSelectionDrawerState extends ConsumerState<_HabitSelectionDrawer> {
+  bool isHabitSelected = true;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.55,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            "Commit to the Result",
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w900,
+              color: AppColors.textMain,
+              letterSpacing: -1,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.brandGreen.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              "Most people choosing ${widget.currentGoal} pick the 5-Day Pack.",
+              style: const TextStyle(
+                color: AppColors.brandGreen,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(height: 32),
+          _buildOption(
+            title: "Just Today",
+            subtitle: "One-time healthy fuel",
+            price: "₹299",
+            isSelected: !isHabitSelected,
+            onTap: () => setState(() => isHabitSelected = false),
+          ),
+          const SizedBox(height: 16),
+          _buildOption(
+            title: "5-Day Habit Pack",
+            subtitle: "Lock in your progress & Save ₹150",
+            price: "₹1199",
+            isSelected: isHabitSelected,
+            onTap: () => setState(() => isHabitSelected = true),
+          ),
+          const Spacer(),
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: ElevatedButton(
+              onPressed: () {
+                final user = ref.read(currentUserProvider);
+                
+                // 🛡️ Edge Case: Guest Login
+                if (user == null) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please login to start your habit mission!'))
+                  );
+                  return;
+                }
+
+                // 🛡️ Edge Case: Multi-Vendor
+                final cart = ref.read(cartProvider);
+                if (cart.vendorId != null && cart.vendorId != widget.vendorModel?.id && cart.items.isNotEmpty) {
+                  _showReplaceCartDialog(context, ref);
+                  return;
+                }
+
+                // 🎯 Set Action Intent
+                ref.read(checkoutProvider.notifier).setHabitSubscription(isHabitSelected, goal: widget.currentGoal);
+                
+                if (widget.vendorModel != null && widget.vendorModel!.products!.isNotEmpty) {
+                  ref.read(cartProvider.notifier).addItem(widget.vendorModel!.products!.first, widget.vendorModel!, 1);
+                }
+                
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CheckoutScreen()),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.brandGreen,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 0,
+              ),
+              child: const Text(
+                "CONFIRM CHOICE",
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOption({
+    required String title,
+    required String subtitle,
+    required String price,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: isSelected ? AppColors.brandGreen : Colors.grey[200]!,
+            width: isSelected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          color: isSelected ? AppColors.brandGreen.withValues(alpha: 0.02) : Colors.white,
+        ),
+        child: Row(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+                const SizedBox(height: 2),
+                Text(subtitle, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+              ],
+            ),
+            const Spacer(),
+            Text(price, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showReplaceCartDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Clear Cart?'),
+        content: const Text('You can only subscribe to one kitchen at a time. Do you want to clear your current selection?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('CANCEL'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              ref.read(cartProvider.notifier).clear();
+              Navigator.pop(context);
+              // Re-Confirm after clearing
+              ref.read(checkoutProvider.notifier).setHabitSubscription(isHabitSelected, goal: widget.currentGoal);
+              if (widget.vendorModel != null && widget.vendorModel!.products!.isNotEmpty) {
+                ref.read(cartProvider.notifier).addItem(widget.vendorModel!.products!.first, widget.vendorModel!, 1);
+              }
+              Navigator.pop(context); // Close the drawer too
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const CheckoutScreen()),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.brandGreen),
+            child: const Text('CLEAR & ADD'),
+          ),
+        ],
       ),
     );
   }

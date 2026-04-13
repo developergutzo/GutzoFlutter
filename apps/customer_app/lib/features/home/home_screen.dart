@@ -312,6 +312,24 @@ class _MarketplaceBody extends ConsumerWidget {
 
     final currentUser = ref.watch(currentUserProvider);
     final vendorsAsync = ref.watch(vendorProvider);
+    final selectedFilter = ref.watch(homeFilterProvider);
+    final backendFilter = _FilterChipsRow.goalMapping[selectedFilter] ?? 'All';
+
+    // 🎯 MVP Filtering: If a goal is selected, we filter the vendors locally for instant speed
+    final filteredVendorsAsync = vendorsAsync.whenData((vendors) {
+      if (backendFilter == 'All') return vendors;
+      
+      return vendors.where((v) {
+        // Match by cuisine type or check if any product matches the target keyword
+        final matchesCuisine = v.cuisineType.toLowerCase().contains(backendFilter.toLowerCase());
+        final hasMatchingProduct = v.products?.any((p) => 
+          p.name.toLowerCase().contains(backendFilter.toLowerCase()) || 
+          p.description.toLowerCase().contains(backendFilter.toLowerCase())
+        ) ?? false;
+        
+        return matchesCuisine || hasMatchingProduct;
+      }).toList();
+    });
     final bannersAsync = ref.watch(bannersProvider);
 
     // 📍 Auto-listen for LOCATION_OFF and prompt turn on
@@ -326,8 +344,8 @@ class _MarketplaceBody extends ConsumerWidget {
     });
 
     return Responsive(
-      mobile: _buildMobileBase(context, ref, bannersAsync, vendorsAsync, currentUser),
-      desktop: _buildWebBase(context, ref, bannersAsync, vendorsAsync, currentUser),
+      mobile: _buildMobileBase(context, ref, bannersAsync, filteredVendorsAsync, currentUser),
+      desktop: _buildWebBase(context, ref, bannersAsync, filteredVendorsAsync, currentUser),
     );
   }
 

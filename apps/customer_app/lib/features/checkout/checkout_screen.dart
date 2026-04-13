@@ -507,6 +507,7 @@ class CheckoutScreen extends ConsumerWidget {
             donationAmount: checkout.isDonationChecked ? checkout.donationAmount : 0,
             isCalculatingFee: checkout.isCheckingServiceability,
             hasAddress: location.location != null,
+            isHabitSubscription: checkout.isHabitSubscription,
           ),
         ],
       ),
@@ -598,6 +599,7 @@ class CheckoutScreen extends ConsumerWidget {
             isInitiallyExpanded: true,
             isCalculatingFee: checkout.isCheckingServiceability,
             hasAddress: location.location != null,
+            isHabitSubscription: checkout.isHabitSubscription,
           ),
           const SizedBox(height: 24),
           if (!checkout.isServiceable) _buildServiceabilityWarning(),
@@ -1214,6 +1216,7 @@ class _BillingSummary extends StatefulWidget {
   final bool isInitiallyExpanded;
   final bool isCalculatingFee;
   final bool hasAddress;
+  final bool isHabitSubscription;
 
   const _BillingSummary({
     required this.subtotal,
@@ -1226,6 +1229,7 @@ class _BillingSummary extends StatefulWidget {
     this.isInitiallyExpanded = false,
     this.isCalculatingFee = false,
     this.hasAddress = true,
+    this.isHabitSubscription = false,
   });
 
   @override
@@ -1243,8 +1247,9 @@ class _BillingSummaryState extends State<_BillingSummary> {
 
   @override
   Widget build(BuildContext context) {
-    final savings = widget.originalSubtotal - widget.subtotal;
-    final total = widget.subtotal + 
+    final displaySubtotal = widget.isHabitSubscription ? 1199.0 : widget.subtotal;
+    final savings = widget.isHabitSubscription ? 296.0 : (widget.originalSubtotal - widget.subtotal);
+    final total = displaySubtotal + 
                   widget.deliveryFee + 
                   widget.platformFee + 
                   widget.packagingFee +
@@ -1339,7 +1344,7 @@ class _BillingSummaryState extends State<_BillingSummary> {
         ),
         if (_isExpanded) ...[
           const SizedBox(height: 16),
-          _buildBillRow('Item Total', widget.subtotal),
+        _buildBillRow(widget.isHabitSubscription ? '5-Day Habit Pack' : 'Item Total', displaySubtotal),
           if (savings > 0)
             _buildBillRow('Gutzo Savings', -savings, isDiscount: true),
           if (widget.isCalculatingFee)
