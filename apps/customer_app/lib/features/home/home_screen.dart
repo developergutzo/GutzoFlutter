@@ -260,15 +260,42 @@ class _MarketplaceBody extends ConsumerWidget {
     final locationState = ref.watch(locationProvider);
     final bool isOff = locationState.error == 'LOCATION_OFF';
     final areaName = isOff ? 'Location Off' : (locationState.location?.tag ?? locationState.location?.areaName ?? 'Detecting...');
+    final fullAddress = isOff ? '' : locationState.location?.displayString;
     
     return InkWell(
       onTap: () => isOff ? LocationService.openLocationSettings() : LocationSheet.show(context),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(isOff ? Icons.location_off_outlined : Icons.location_on_outlined, color: isOff ? AppColors.errorRed : AppColors.brandGreen, size: 20),
-          const SizedBox(width: 8),
-          Expanded(child: Text(areaName, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis)),
-          const Icon(Icons.keyboard_arrow_down, color: AppColors.textDisabled, size: 18),
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(isOff ? Icons.location_off_outlined : Icons.location_on_outlined, color: isOff ? AppColors.errorRed : AppColors.brandGreen, size: 20),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Text(areaName, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: AppColors.textMain)),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.keyboard_arrow_down, color: AppColors.textDisabled, size: 18),
+                  ],
+                ),
+                if (!isOff && fullAddress != null && fullAddress.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    fullAddress, 
+                    style: TextStyle(fontWeight: FontWeight.w500, fontSize: 11, color: AppColors.textSub.withValues(alpha: 0.8)),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
+            ),
+          ),
         ],
       ),
     );
