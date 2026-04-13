@@ -10,6 +10,7 @@ import 'package:shared_core/services/cart_service.dart';
 import '../features/vendor/vendor_detail_screen.dart';
 import '../features/home/home_screen.dart';
 import 'habit_selection_drawer.dart';
+import 'quantity_selector.dart';
 
 class VendorCard extends ConsumerStatefulWidget {
   final Map<String, dynamic>? rawVendor;
@@ -209,20 +210,26 @@ class _VendorCardState extends ConsumerState<VendorCard> {
                             "₹${featuredPrice.toStringAsFixed(0)}",
                             style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
                           ),
-                          InkWell(
-                            onTap: () => _showHabitDrawer(context),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: AppColors.brandGreen,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: const Text(
-                                '+ ADD',
-                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11),
+                          if (widget.vendorModel != null && widget.displayProduct != null)
+                            QuantitySelector(
+                              product: widget.displayProduct!,
+                              vendor: widget.vendorModel!,
+                            )
+                          else
+                            InkWell(
+                              onTap: () => _showHabitDrawer(context),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: AppColors.brandGreen,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Text(
+                                  '+ ADD',
+                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11),
+                                ),
                               ),
                             ),
-                          ),
                         ],
                       ),
                     ],

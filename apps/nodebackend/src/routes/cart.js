@@ -101,6 +101,7 @@ router.post('/sync', asyncHandler(async (req, res) => {
     addons: item.addons ? JSON.stringify(item.addons) : null,
     special_instructions: item.specialInstructions || item.special_instructions || null,
     metadata: item.metadata || null,
+    is_habit: item.isHabit || item.is_habit || false,
     created_at: new Date().toISOString()
   }));
 
@@ -151,7 +152,7 @@ router.post('/sync', asyncHandler(async (req, res) => {
 // POST /api/cart
 // ============================================
 router.post('/', validate(schemas.addToCart), asyncHandler(async (req, res) => {
-  const { product_id, vendor_id, quantity, variant_id, addons, special_instructions, metadata } = req.body;
+  const { product_id, vendor_id, quantity, variant_id, addons, special_instructions, metadata, is_habit } = req.body;
 
   // Verify product exists and is available
   const { data: product, error: productError } = await supabaseAdmin
@@ -164,12 +165,13 @@ router.post('/', validate(schemas.addToCart), asyncHandler(async (req, res) => {
   if (!product.is_available) throw new ApiError(400, 'Product is not available');
   if (!product.vendor?.is_open) throw new ApiError(400, 'Vendor is currently closed');
 
-  // Check if item already exists in cart
+  // Check if item already exists in cart (now habit-aware)
   const { data: existingItem } = await supabaseAdmin
     .from('cart')
     .select('*')
     .eq('user_phone', req.user.phone)
     .eq('product_id', product_id)
+    .eq('is_habit', is_habit || false)
     .single();
 
   if (existingItem) {
@@ -207,7 +209,8 @@ router.post('/', validate(schemas.addToCart), asyncHandler(async (req, res) => {
       variant_id,
       addons: addons ? JSON.stringify(addons) : null,
       special_instructions,
-      metadata: metadata || null
+      metadata: metadata || null,
+      is_habit: is_habit || false
     })
     .select()
     .single();

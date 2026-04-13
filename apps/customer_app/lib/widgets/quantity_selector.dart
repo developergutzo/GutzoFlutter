@@ -23,7 +23,13 @@ class QuantitySelector extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cart = ref.watch(cartProvider);
-    final quantity = cart.items.where((item) => item.product.id == product.id).fold<int>(0, (sum, item) => sum + item.quantity);
+    final habitItems = cart.items.where((item) => item.product.id == product.id && item.isHabit).toList();
+    final todayItems = cart.items.where((item) => item.product.id == product.id && !item.isHabit).toList();
+    
+    final habitQuantity = habitItems.fold<int>(0, (sum, item) => sum + item.quantity);
+    final todayQuantity = todayItems.fold<int>(0, (sum, item) => sum + item.quantity);
+    final totalQuantity = habitQuantity + todayQuantity;
+    
     final isServiceable = vendor.isServiceable ?? true;
 
     return IgnorePointer(
@@ -32,15 +38,9 @@ class QuantitySelector extends ConsumerWidget {
         opacity: isServiceable ? 1.0 : 0.6,
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
-          transitionBuilder: (Widget child, Animation<double> animation) {
-            return FadeTransition(
-              opacity: animation,
-              child: ScaleTransition(scale: animation, child: child),
-            );
-          },
-          child: quantity == 0
+          child: totalQuantity == 0
               ? _buildAddButton(context, ref, cart, isServiceable)
-              : _buildSelector(ref, quantity, isServiceable),
+              : _buildSelector(ref, habitQuantity, todayQuantity, isServiceable),
         ),
       ),
     );
@@ -75,8 +75,6 @@ class QuantitySelector extends ConsumerWidget {
           backgroundColor: Colors.white,
           foregroundColor: isServiceable ? AppColors.brandGreen : Colors.grey,
           elevation: isServiceable ? 2 : 0,
-          shadowColor: Colors.black.withOpacity(0.1),
-          padding: EdgeInsets.zero,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
             side: BorderSide(color: isServiceable ? AppColors.brandGreen : Colors.grey[300]!, width: 1.2),
@@ -84,28 +82,48 @@ class QuantitySelector extends ConsumerWidget {
         ),
         child: Text(
           isServiceable ? 'ADD' : 'UNAVAILABLE',
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w700,
-            fontSize: isServiceable ? 13 : 10,
-            letterSpacing: 0.8,
-          ),
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 13, letterSpacing: 0.8),
         ),
       ),
     );
   }
 
-  Widget _buildSelector(WidgetRef ref, int quantity, bool isServiceable) {
-    final checkout = ref.watch(checkoutProvider);
-    final isHabit = checkout.isHabitSubscription;
+  Widget _buildSelector(WidgetRef ref, int habitQty, int todayQty, bool isServiceable) {
+    final totalQty = habitQty + todayQty;
+    final isMixed = habitQty > 0 && todayQty > 0;
+    
+    // Use Teal for habits, Green for today
+    final primaryColor = (habitQty > 0) ? const Color(0xFF008080) : AppColors.brandGreen;
+    final secondaryColor = (habitQty > 0) ? const Color(0xFFE0F2F1) : AppColors.brandGreen.withOpacity(0.05);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (isHabit && quantity > 0)
+        if (habitQty > 0)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: primaryColor,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                "MISSION 5-DAY",
+                style: GoogleFonts.poppins(
+                  fontSize: 7,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+          )
+        else if (todayQty > 0)
           Padding(
             padding: const EdgeInsets.only(bottom: 4),
             child: Text(
-              "TODAY ONLY",
+              "JUST TODAY",
               style: GoogleFonts.poppins(
                 fontSize: 8,
                 fontWeight: FontWeight.w900,
@@ -119,14 +137,14 @@ class QuantitySelector extends ConsumerWidget {
           width: 100,
           height: 40,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: secondaryColor,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: isServiceable ? AppColors.brandGreen : Colors.grey[300]!, width: 1.2),
+            border: Border.all(color: isServiceable ? primaryColor : Colors.grey[300]!, width: 1.5),
             boxShadow: [
               if (isServiceable)
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 4,
+                  color: primaryColor.withOpacity(0.1),
+                  blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
             ],
@@ -136,21 +154,46 @@ class QuantitySelector extends ConsumerWidget {
             children: [
               _buildActionButton(
                 icon: Icons.remove,
-                color: isServiceable ? AppColors.brandGreen : Colors.grey,
-                onTap: isServiceable ? () => ref.read(cartProvider.notifier).updateQuantity(product.id, quantity - 1) : null,
+                color: isServiceable ? primaryColor : Colors.grey,
+                onTap: isServiceable ? () {
+                  // Decrement logic: Priorities today first, then habit
+                  if (todayQty > 0) {
+                    ref.read(cartProvider.notifier).updateQuantity(product.id, todayQty - 1, isHabit: false);
+                  } else {
+                    ref.read(cartProvider.notifier).updateQuantity(product.id, habitQty - 1, isHabit: true);
+                  }
+                } : null,
               ),
-              Text(
-                '$quantity',
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14,
-                  color: isServiceable ? AppColors.brandGreen : Colors.grey,
-                ),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    '$totalQty',
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                      color: isServiceable ? primaryColor : Colors.grey,
+                      height: 1,
+                    ),
+                  ),
+                  if (isMixed)
+                    Text(
+                      '(${habitQty}H+${todayQty}T)',
+                      style: TextStyle(fontSize: 6, fontWeight: FontWeight.w900, color: primaryColor.withOpacity(0.8)),
+                    ),
+                ],
               ),
               _buildActionButton(
                 icon: Icons.add,
-                color: isServiceable ? AppColors.brandGreen : Colors.grey,
-                onTap: isServiceable ? () => ref.read(cartProvider.notifier).updateQuantity(product.id, quantity + 1) : null,
+                color: isServiceable ? primaryColor : Colors.grey,
+                onTap: isServiceable ? () {
+                  // Increment logic: Priorities habit if in habit mode
+                  if (habitQty > 0) {
+                    ref.read(cartProvider.notifier).updateQuantity(product.id, habitQty + 1, isHabit: true);
+                  } else {
+                    ref.read(cartProvider.notifier).updateQuantity(product.id, todayQty + 1, isHabit: false);
+                  }
+                } : null,
               ),
             ],
           ),
@@ -160,16 +203,20 @@ class QuantitySelector extends ConsumerWidget {
   }
 
   Widget _buildActionButton({required IconData icon, required Color color, VoidCallback? onTap}) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: SizedBox(
-        width: 32,
-        height: 40,
-        child: Icon(
-          icon,
-          size: 18,
-          color: color,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          width: 38,
+          height: 40,
+          alignment: Alignment.center,
+          child: Icon(
+            icon,
+            size: 20,
+            color: color,
+          ),
         ),
       ),
     );
