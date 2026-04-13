@@ -805,23 +805,29 @@ class _MarketplaceBody extends ConsumerWidget {
           return matches;
         }).toList();
 
-        return SliverList(
-          delegate: SliverChildBuilderDelegate(
-            (context, index) {
-              final vendor = filteredVendors[index];
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: VendorCard(
+        return SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          sliver: SliverGrid(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 0.65,
+            ),
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                final vendor = filteredVendors[index];
+                return VendorCard(
                   imageUrl: vendor.image,
                   title: vendor.name,
                   cuisine: vendor.cuisineType,
                   deliveryTime: vendor.deliveryTime,
                   rating: vendor.rating,
                   vendorModel: vendor,
-                ),
-              );
-            },
-            childCount: filteredVendors.length,
+                );
+              },
+              childCount: filteredVendors.length,
+            ),
           ),
         );
       },
