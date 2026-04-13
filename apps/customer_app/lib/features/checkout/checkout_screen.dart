@@ -291,6 +291,7 @@ class CheckoutScreen extends ConsumerWidget {
 
   Widget _buildHabitSummaryCard(CheckoutState checkout, WidgetRef ref) {
     final isHabit = checkout.isHabitSubscription;
+    if (!isHabit) return const SizedBox.shrink(); // 🎯 Removed as requested to streamline checkout
     
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
