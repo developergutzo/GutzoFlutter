@@ -85,7 +85,7 @@ class _AddAddressDetailViewState extends ConsumerState<AddAddressDetailView> {
 
   String _selectedCategory = 'home';
   bool _isSaving = false;
-  bool _initialTypeSet = false;
+  bool _userManuallySetType = false;
 
   @override
   void initState() {
@@ -99,7 +99,7 @@ class _AddAddressDetailViewState extends ConsumerState<AddAddressDetailView> {
       _phoneController.text = addr.alternativePhone ?? '';
       _customLabelController.text = addr.customLabel ?? '';
       _selectedCategory = addr.type;
-      _initialTypeSet = true;
+      // Initial category selection is now handled reactively in build()
     } else {
       final house = widget.address.houseNumber ?? widget.address.streetNumber ?? '';
       final flat = widget.address.flatNumber ?? '';
@@ -160,13 +160,45 @@ class _AddAddressDetailViewState extends ConsumerState<AddAddressDetailView> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final user = ref.read(currentUserProvider);
+    var user = ref.read(currentUserProvider);
     if (user == null) {
       if (mounted) {
-        Navigator.of(context).push(
+        await Navigator.of(context).push(
           CupertinoPageRoute(builder: (_) => const AuthScreen()),
         );
+        user = ref.read(currentUserProvider);
       }
+      if (user == null) return;
+    }
+
+    // Removing automatic _isSaving = true here to avoid "phantom" loading button after login.
+    // It will only be set to true if the final duplicate check passes.
+
+    // Step 4: Synchronized Verification Delay
+    try {
+      debugPrint('Step 4: Synchronizing address list before final save...');
+      await ref.read(savedAddressesProvider.notifier).refresh();
+    } catch (e) {
+      debugPrint('Step 4 Error: Failed to sync addresses: $e');
+    }
+
+    // Final duplicate check before calling API
+    final addresses = ref.read(savedAddressesProvider).value ?? [];
+    final lowerTarget = _selectedCategory == 'home' 
+        ? 'home' 
+        : _selectedCategory == 'work' 
+            ? 'work' 
+            : _customLabelController.text.trim().toLowerCase();
+    
+    final isDuplicate = addresses.any((a) {
+      if (widget.existingAddress != null && a.id == widget.existingAddress!.id) return false;
+      final existingLabel = (a.label ?? '').trim().toLowerCase();
+      final existingType = (a.type ?? '').trim().toLowerCase();
+      return (lowerTarget == 'home' && (existingLabel == 'home' || existingType == 'home')) ||
+             (lowerTarget == 'work' && (existingLabel == 'work' || existingType == 'work'));
+    });
+
+    if (isDuplicate) {
       return;
     }
 
@@ -217,12 +249,10 @@ class _AddAddressDetailViewState extends ConsumerState<AddAddressDetailView> {
         }
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Address saved successfully!')),
-          );
+          _showSubtleSnackBar('Address saved successfully!');
         }
 
-        ref.invalidate(savedAddressesProvider);
+        ref.read(savedAddressesProvider.notifier).refresh();
         if (widget.isEmbedded && widget.onSaved != null) {
           widget.onSaved!();
         } else {
@@ -232,11 +262,7 @@ class _AddAddressDetailViewState extends ConsumerState<AddAddressDetailView> {
         }
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save address: $e')),
-        );
-      }
+      debugPrint('🚨 Save Address Error: $e');
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -248,23 +274,53 @@ class _AddAddressDetailViewState extends ConsumerState<AddAddressDetailView> {
     final addresses = addressesAsync.value ?? [];
     
     final hasHome = addresses.any((a) {
+      if (widget.existingAddress != null && a.id == widget.existingAddress!.id) return false;
       final label = (a.label ?? '').trim().toLowerCase();
-      return label == 'home' || a.type == 'home';
-    });
-    final hasWork = addresses.any((a) {
-      final label = (a.label ?? '').trim().toLowerCase();
-      return label == 'work' || a.type == 'work';
+      final type = (a.type ?? '').trim().toLowerCase();
+      final isHome = label == 'home' || type == 'home';
+      if (isHome) debugPrint('Duplicate Detection: Found existing Home address with ID: ${a.id}');
+      return isHome;
     });
 
-    if (!_initialTypeSet && addressesAsync.hasValue) {
-      if (!hasHome) {
-        _selectedCategory = 'home';
-      } else if (!hasWork) {
-        _selectedCategory = 'work';
+    final hasWork = addresses.any((a) {
+      if (widget.existingAddress != null && a.id == widget.existingAddress!.id) return false;
+      final label = (a.label ?? '').trim().toLowerCase();
+      final type = (a.type ?? '').trim().toLowerCase();
+      final isWork = label == 'work' || type == 'work';
+      if (isWork) debugPrint('Duplicate Detection: Found existing Work address with ID: ${a.id}');
+      return isWork;
+    });
+
+    final bool isLoading = addressesAsync.isLoading;
+    debugPrint('Duplicate Status: hasHome=$hasHome, hasWork=$hasWork, isLoading=$isLoading, TotalAddresses=${addresses.length}');
+
+    // Sanity Check: If the selected category is ALREADY taken (e.g. user chose Home as guest but already has Home),
+    // we MUST pivot away from it to prevent duplicates, even if _userManuallySetType is true.
+    if (_selectedCategory == 'home' && hasHome) {
+      _selectedCategory = hasWork ? 'other' : 'work';
+      _userManuallySetType = false; // Reset to allow subsequent auto-switching if needed
+    } else if (_selectedCategory == 'work' && hasWork) {
+      _selectedCategory = 'other';
+      _userManuallySetType = false;
+    }
+
+    // Default selection logic (Initial set)
+    if (!_userManuallySetType && addressesAsync.hasValue) {
+      if (widget.existingAddress != null) {
+        _selectedCategory = widget.existingAddress!.type ?? 'other';
+        if (_selectedCategory == 'other' && widget.existingAddress!.label != null) {
+          _customLabelController.text = widget.existingAddress!.label!;
+        }
       } else {
-        _selectedCategory = 'other';
+        // Find first available slot
+        if (!hasHome) {
+          _selectedCategory = 'home';
+        } else if (!hasWork) {
+          _selectedCategory = 'work';
+        } else {
+          _selectedCategory = 'other';
+        }
       }
-      _initialTypeSet = true;
     }
 
     final houseVal = _houseController.text.trim();
@@ -275,8 +331,24 @@ class _AddAddressDetailViewState extends ConsumerState<AddAddressDetailView> {
                        pincodeVal.length == 6 && 
                        RegExp(r'^\d{6}$').hasMatch(pincodeVal);
     
-    if (_selectedCategory == 'other' && customVal.isEmpty) {
+    // Step 3: Absolute Block - Disable save button if duplicate active
+    if (_selectedCategory == 'home' && hasHome) {
       isFormValid = false;
+      debugPrint('Step 3: Disabling Save - Home already taken.');
+    } else if (_selectedCategory == 'work' && hasWork) {
+      isFormValid = false;
+      debugPrint('Step 3: Disabling Save - Work already taken.');
+    }
+    
+    // Also block if they type "home"/"work" in "other" field
+    final lowerCustom = customVal.toLowerCase();
+    if (_selectedCategory == 'other') {
+      if (lowerCustom.isEmpty) {
+        isFormValid = false;
+      } else if ((lowerCustom == 'home' && hasHome) || (lowerCustom == 'work' && hasWork)) {
+        isFormValid = false;
+        debugPrint('Step 3: Disabling Save - Custom label is a taken primary type ($lowerCustom).');
+      }
     }
 
     return SingleChildScrollView(
@@ -362,11 +434,11 @@ class _AddAddressDetailViewState extends ConsumerState<AddAddressDetailView> {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  _buildCategoryPill('home', Icons.home_outlined, 'Home', hasHome),
+                  _buildCategoryPill('home', Icons.home_outlined, 'Home', hasHome, isLoading),
                   const SizedBox(width: 12),
-                  _buildCategoryPill('work', Icons.work_outline, 'Work', hasWork),
+                  _buildCategoryPill('work', Icons.work_outline, 'Work', hasWork, isLoading),
                   const SizedBox(width: 12),
-                  _buildCategoryPill('other', Icons.place_outlined, 'Other', false),
+                  _buildCategoryPill('other', Icons.place_outlined, 'Other', false, isLoading),
                 ],
               ),
 
@@ -455,59 +527,70 @@ class _AddAddressDetailViewState extends ConsumerState<AddAddressDetailView> {
     );
   }
 
-  Widget _buildCategoryPill(String id, IconData icon, String label, bool isTaken) {
+  Widget _buildCategoryPill(String id, IconData icon, String label, bool isTaken, bool isLoading) {
     bool isSelected = _selectedCategory == id;
     return Expanded(
-      child: InkWell(
-        onTap: () {
-          if (isTaken) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'You already have a $label address. Please choose a different label or use \'Other\' for a unique name.',
-                  style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500),
-                ),
-                backgroundColor: AppColors.textMain,
-                behavior: SnackBarBehavior.floating,
-                margin: const EdgeInsets.all(20),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Opacity(
+        opacity: (isTaken || isLoading) ? 0.6 : 1.0,
+        child: InkWell(
+          onTap: () {
+            if (isLoading) return; // Prevent interaction while loading server data
+            if (isTaken) return;
+            setState(() {
+              _selectedCategory = id;
+              _userManuallySetType = true;
+            });
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+              color: isSelected ? AppColors.brandGreen : (isTaken ? Colors.grey.shade100 : Colors.white),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isSelected ? AppColors.brandGreen : (isTaken ? Colors.grey.shade300 : AppColors.border),
               ),
-            );
-            return;
-          }
-          setState(() => _selectedCategory = id);
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected ? AppColors.brandGreen : (isTaken ? Colors.grey.shade50 : Colors.white),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected ? AppColors.brandGreen : (isTaken ? Colors.grey.shade200 : AppColors.border),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon, 
+                  color: isSelected ? Colors.white : (isTaken ? Colors.grey.shade400 : AppColors.textSub), 
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: GoogleFonts.poppins(
+                    color: isSelected ? Colors.white : (isTaken ? Colors.grey.shade400 : AppColors.textSub),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
             ),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon, 
-                color: isSelected ? Colors.white : (isTaken ? Colors.grey.shade300 : AppColors.textSub), 
-                size: 18,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: GoogleFonts.poppins(
-                  color: isSelected ? Colors.white : (isTaken ? Colors.grey.shade300 : AppColors.textSub),
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                ),
-              ),
-            ],
-          ),
         ),
+      ),
+    );
+  }
+
+  void _showSubtleSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.white),
+        ),
+        backgroundColor: const Color(0xFF2C2C2C), // True neutral charcoal, zero red
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+        margin: const EdgeInsets.all(20),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }

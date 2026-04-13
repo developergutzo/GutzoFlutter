@@ -89,13 +89,17 @@ class NodeApiService {
     print('✅ NodeAPI Response: ${response.statusCode}');
     
     dynamic responseData;
-    try {
-      responseData = jsonDecode(response.body);
-    } catch (e) {
-      if (response.statusCode >= 400) {
-        throw Exception("Server Error (HTTP ${response.statusCode}): ${response.reasonPhrase}");
+    if (response.body.isEmpty) {
+      responseData = {"success": response.statusCode < 400};
+    } else {
+      try {
+        responseData = jsonDecode(response.body);
+      } catch (e) {
+        if (response.statusCode >= 400) {
+          throw Exception("Server Error (HTTP ${response.statusCode}): ${response.reasonPhrase}");
+        }
+        throw Exception("Invalid server response format");
       }
-      throw Exception("Invalid server response format");
     }
 
     if (response.statusCode >= 400) {

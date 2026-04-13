@@ -62,8 +62,16 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
   List<AutocompletePrediction> _predictions = [];
   bool _isSearching = false;
   Timer? _debounce;
-  bool _isFetchingDetails = false;
-  String? _selectedAddressId; // Still useful for immediate tap feedback
+  String? _selectedAddressId; 
+  bool _isSwitchingLocation = false;
+  int _loadingMessageIndex = 0;
+  Timer? _messageTimer;
+
+  final List<String> _loadingMessages = [
+    "Setting your location...",
+    "Checking kitchens nearby...",
+    "Getting menus ready..."
+  ];
 
 
   @override
@@ -94,7 +102,7 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
   }
 
   Future<void> _onPredictionSelected(AutocompletePrediction p) async {
-    setState(() => _isFetchingDetails = true);
+    setState(() => _isSwitchingLocation = true);
     try {
       final details = await LocationService.fetchPlaceDetails(p.placeId);
       if (details != null && mounted) {
@@ -123,31 +131,63 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
       }
     } finally {
       if (mounted) {
-        setState(() => _isFetchingDetails = false);
+        setState(() => _isSwitchingLocation = false);
       }
     }
   }
 
-  void _selectAddress(UserAddress address) {
-    setState(() => _selectedAddressId = address.id);
-    if (address.latitude != null && address.longitude != null) {
-      ref.read(locationProvider.notifier).overrideLocation(
-        LocationData(
-          city: address.city,
-          state: address.state,
-          country: address.country,
-          formattedAddress: address.fullAddress,
-          latitude: address.latitude!,
-          longitude: address.longitude!,
-          timestamp: DateTime.now(),
-          tag: address.customLabel ?? address.label ?? 'Other',
-        ),
-      );
-    }
-    if (widget.isEmbedded && widget.onLocationSelected != null) {
-      widget.onLocationSelected!();
-    } else {
-      Navigator.of(context).pop();
+  Future<void> _selectAddress(UserAddress address) async {
+    final user = ref.read(auth.currentUserProvider);
+    
+    setState(() {
+      _selectedAddressId = address.id;
+      _isSwitchingLocation = true;
+      _loadingMessageIndex = 0;
+    });
+
+    _messageTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() => _loadingMessageIndex = (timer.tick) % _loadingMessages.length);
+      }
+    });
+
+    try {
+      if (user != null) {
+        // As per webapp, select == set as default for persistence
+        await ref.read(api.nodeApiServiceProvider).setDefaultAddress(user.phone, address.id);
+        await ref.read(savedAddressesProvider.notifier).refresh();
+      }
+
+      if (address.latitude != null && address.longitude != null) {
+        ref.read(locationProvider.notifier).overrideLocation(
+          LocationData(
+            city: address.city,
+            state: address.state,
+            country: address.country,
+            formattedAddress: address.fullAddress,
+            latitude: address.latitude!,
+            longitude: address.longitude!,
+            timestamp: DateTime.now(),
+            tag: address.customLabel ?? address.label ?? 'Other',
+          ),
+        );
+      }
+      
+      if (mounted) {
+        if (widget.isEmbedded && widget.onLocationSelected != null) {
+          widget.onLocationSelected!();
+        } else {
+          Navigator.of(context).pop();
+        }
+      }
+    } catch (e) {
+      debugPrint('Selection Error: $e');
+      if (mounted) _showSubtleSnackBar('Failed to update location preference.');
+    } finally {
+      if (mounted) {
+        _messageTimer?.cancel();
+        setState(() => _isSwitchingLocation = false);
+      }
     }
   }
 
@@ -201,41 +241,58 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
               Row(
                 children: [
                   Expanded(
-                    child: TextButton(
-                      style: TextButton.styleFrom(
-                        backgroundColor: const Color(0xFFE8F6F1),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      onPressed: () => Navigator.pop(ctx),
-                      child: Text(
-                        'No',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.brandGreen,
+                    child: InkWell(
+                      onTap: () => Navigator.pop(ctx),
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE8F6F1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          'NO',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.1,
+                            color: const Color(0xFF1BA672),
+                          ),
                         ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: TextButton(
-                      style: TextButton.styleFrom(
-                        backgroundColor: AppColors.brandGreen,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      onPressed: () {
+                    child: InkWell(
+                      onTap: () {
                         Navigator.pop(ctx);
                         _deleteAddress(address);
                       },
-                      child: Text(
-                        'Yes',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1BA672),
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF1BA672).withValues(alpha: 0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          'YES',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.1,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
@@ -293,24 +350,29 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
                     Row(
                       children: [
                         Text(displayLabel,
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textMain)),
+                            style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textMain)),
                         const SizedBox(width: 8),
                         if (isSelected)
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              border: Border.all(color: AppColors.brandGreen),
+                              color: const Color(0xFFE8F6F1),
+                              border: Border.all(color: const Color(0xFF1BA672), width: 0.5),
                               borderRadius: BorderRadius.circular(20),
                             ),
-                            child: const Text('Selected',
-                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.brandGreen)),
+                            child: Text('Selected',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 10, 
+                                  fontWeight: FontWeight.w700, 
+                                  color: const Color(0xFF1BA672)
+                                )),
                           ),
                       ],
                     ),
                     const SizedBox(height: 4),
                     Text(
                       address.fullAddress,
-                      style: const TextStyle(fontSize: 13, color: AppColors.textSub, height: 1.4),
+                      style: GoogleFonts.poppins(fontSize: 13, color: AppColors.textSub, height: 1.4),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -385,12 +447,12 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
 
     try {
       await ref.read(api.nodeApiServiceProvider).deleteAddress(user.phone, address.id);
+      if (mounted) _showSubtleSnackBar('Address removed successfully');
       ref.invalidate(savedAddressesProvider);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to delete address: ${e.toString().replaceAll('Exception: ', '')}')),
-        );
+        _showSubtleSnackBar('Unable to remove address. Please try again.');
+        debugPrint('Delete Error: $e');
       }
     }
   }
@@ -401,12 +463,12 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
 
     try {
       await ref.read(api.nodeApiServiceProvider).setDefaultAddress(user.phone, address.id);
+      if (mounted) _showSubtleSnackBar('Home location updated');
       ref.invalidate(savedAddressesProvider);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to set default address: ${e.toString().replaceAll('Exception: ', '')}')),
-        );
+        _showSubtleSnackBar('Unable to update default address.');
+        debugPrint('Set Default Error: $e');
       }
     }
   }
@@ -447,6 +509,42 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
   }
 
   Widget _buildBody(BuildContext context, double paddingBottom, AsyncValue<List<UserAddress>> addressesAsync, bool isDetecting) {
+    return Stack(
+      children: [
+        _buildContentScroll(context, addressesAsync, isDetecting),
+        if (_isSwitchingLocation) _buildSwitchingOverlay(),
+      ],
+    );
+  }
+
+  Widget _buildSwitchingOverlay() {
+    return Container(
+      color: Colors.white.withValues(alpha: 0.9),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(
+              width: 40,
+              height: 40,
+              child: CircularProgressIndicator(color: AppColors.brandGreen, strokeWidth: 3),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              _loadingMessages[_loadingMessageIndex],
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textMain,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContentScroll(BuildContext context, AsyncValue<List<UserAddress>> addressesAsync, bool isDetecting) {
     return Padding(
       padding: const EdgeInsets.only(top: 8, left: 20, right: 20),
       child: Column(
@@ -456,28 +554,85 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
             _buildSearchField(),
             const SizedBox(height: 16),
             
-            // Quick Actions: Current Location & Add Address
-            Row(
-              children: [
-                Expanded(child: _buildActionButton(
-                  icon: Icons.my_location,
-                  label: 'Current Location',
-                  isLoading: isDetecting,
-                  onTap: () => Navigator.of(context).push(
-                    CupertinoPageRoute(builder: (_) => const LocationPickScreen(isAddingAddress: false)),
-                  ),
-                )),
-                const SizedBox(width: 12),
-                Expanded(child: _buildActionButton(
-                  icon: Icons.add_location_alt_outlined,
-                  label: 'Add Address',
-                  onTap: () {
-                    Navigator.of(context).push(
-                      CupertinoPageRoute(builder: (_) => const LocationPickScreen(isAddingAddress: true)),
-                    );
-                  },
-                )),
-              ],
+            // Premium Detect Location Bar
+            InkWell(
+              onTap: isDetecting ? null : () => Navigator.of(context).push(
+                CupertinoPageRoute(builder: (_) => const LocationPickScreen(isAddingAddress: false)),
+              ),
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFF0F0F0)),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4)),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppColors.brandGreen.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: isDetecting 
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brandGreen))
+                        : const Icon(Icons.gps_fixed, color: AppColors.brandGreen, size: 20),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Use current location',
+                            style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.brandGreen),
+                          ),
+                          Text(
+                            'Using GPS',
+                            style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[500]),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+            
+            // Add Address Button
+            InkWell(
+              onTap: () => Navigator.of(context).push(
+                CupertinoPageRoute(builder: (_) => const LocationPickScreen(isAddingAddress: true)),
+              ),
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(
+                  color: AppColors.brandGreen,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(color: AppColors.brandGreen.withValues(alpha: 0.2), blurRadius: 12, offset: const Offset(0, 6)),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.add, color: Colors.white, size: 22),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Add/Manage Addresses',
+                      style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
             ),
             
             const SizedBox(height: 24),
@@ -520,7 +675,7 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
               ),
               const SizedBox(height: 16),
               Expanded(
-                child: _isFetchingDetails 
+              child: _isSwitchingLocation 
                   ? _buildShimmerList()
                   : ListView.builder(
                       itemCount: _predictions.length,
@@ -567,45 +722,6 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
     );
   }
 
-  Widget _buildActionButton({
-    required IconData icon, 
-    required String label, 
-    required VoidCallback onTap,
-    bool isLoading = false,
-  }) {
-    return InkWell(
-      onTap: isLoading ? null : onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE8E8E8)),
-        ),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppColors.brandGreen.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: isLoading 
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brandGreen))
-                : Icon(icon, color: AppColors.brandGreen, size: 20),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              label,
-              style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.brandGreen),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildShimmerList() {
     return ListView.builder(
@@ -625,7 +741,7 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
         width: double.infinity,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
         ),
       ),
     );
@@ -636,19 +752,44 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
        child: Column(
          mainAxisAlignment: MainAxisAlignment.center,
          children: [
-           Icon(Icons.location_off_outlined, size: 70, color: Colors.grey[200]),
-           const SizedBox(height: 20),
+           Container(
+             padding: const EdgeInsets.all(24),
+             decoration: BoxDecoration(
+               color: Colors.grey[50]!,
+               shape: BoxShape.circle,
+             ),
+             child: Icon(Icons.location_off_rounded, size: 48, color: Colors.grey[300]),
+           ),
+           const SizedBox(height: 24),
            Text(
-             'No Addresses Found',
-             style: GoogleFonts.poppins(fontSize: 16, color: Colors.grey[600], fontWeight: FontWeight.w600),
+             'No Saved Addresses',
+             style: GoogleFonts.poppins(fontSize: 18, color: AppColors.textMain, fontWeight: FontWeight.w700),
            ),
            const SizedBox(height: 8),
            Text(
-             'Add a new coordinate to see it here',
-             style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[400]),
+             'Add your home or work address for\na faster checkout experience.',
+             textAlign: TextAlign.center,
+             style: GoogleFonts.poppins(fontSize: 14, color: AppColors.textSub, height: 1.5),
            ),
          ],
        ),
      );
+  }
+  void _showSubtleSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.white),
+        ),
+        backgroundColor: const Color(0xFF2C2C2C),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+        margin: const EdgeInsets.all(20),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
   }
 }
