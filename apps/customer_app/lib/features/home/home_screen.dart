@@ -64,8 +64,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final locationState = ref.watch(locationProvider);
-    final selectedGoal = ref.watch(selectedGoalProvider);
-    final user = ref.watch(currentUserProvider);
     final hasOrder = ref.watch(orderPlacedProvider);
     final isBottomVisible = ref.watch(bottomBarVisibleProvider);
 
@@ -104,11 +102,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              selectedGoal == 'Muscle Gain' 
-                                ? '34 people in Coimbatore fueled their workout with this today.'
-                                : selectedGoal == 'Skin Glow'
-                                  ? '12 people in your area started their radiance habit today.'
-                                  : 'Ordering for office? Get it by 1:15 PM if you order in 10 mins.',
+                              'Ordering for office? Get it by 1:15 PM if you order in 10 mins.',
                               style: GoogleFonts.inter(
                                 color: kGutzoOrange,
                                 fontSize: 12,
@@ -159,23 +153,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 GestureDetector(
                   onTap: () => _openProfile(context),
                   child: Container(
-                    width: 40,
-                    height: 40,
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: Colors.grey.shade100,
                       shape: BoxShape.circle,
                     ),
-                    alignment: Alignment.center,
-                    child: user != null 
-                      ? Text(
-                          _getInitials(user.name),
-                          style: GoogleFonts.inter(
-                            color: kDeepText,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
-                          ),
-                        )
-                      : const Icon(Icons.person_outline_rounded, color: kDeepText, size: 22),
+                    child: const Icon(Icons.person_outline_rounded, color: kDeepText, size: 22),
                   ),
                 ),
               ],
@@ -234,15 +217,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       ),
     );
-  }
-
-  String _getInitials(String name) {
-    if (name.trim().isEmpty) return "";
-    final words = name.trim().split(RegExp(r'\s+'));
-    if (words.length == 1) {
-      return words[0][0].toUpperCase();
-    }
-    return (words[0][0] + words[1][0]).toUpperCase();
   }
 
   void _openProfile(BuildContext context) {
@@ -308,144 +282,56 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
 class _StickyGoalDelegate extends SliverPersistentHeaderDelegate {
   @override
-  double get minExtent => 140;
+  double get minExtent => 70;
   @override
-  double get maxExtent => 140;
+  double get maxExtent => 70;
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Consumer(
       builder: (context, ref, _) {
         final selected = ref.watch(selectedGoalProvider);
-        final goals = [
-          {
-            'id': 'Muscle Gain',
-            'label': 'Muscle Gain',
-            'sub': 'High Protein',
-            'icon': Icons.fitness_center_rounded,
-            'color': const Color(0xFF006D44), // Deep Emerald
-            'bg': const Color(0xFFE8F6F1),
-          },
-          {
-            'id': 'Skin Glow',
-            'label': 'Skin Glow',
-            'sub': 'Antioxidant Rich',
-            'icon': Icons.auto_awesome_rounded,
-            'color': const Color(0xFFD48166), // Soft Peach
-            'bg': const Color(0xFFFFF4F1),
-          },
-          {
-            'id': 'Flat Tummy',
-            'label': 'Flat Tummy',
-            'sub': 'Low Carb',
-            'icon': Icons.spa_rounded,
-            'color': const Color(0xFF1BA672), // Teal
-            'bg': const Color(0xFFE8F6F1),
-          },
-          {
-            'id': 'Sugar Control',
-            'label': 'Sugar Control',
-            'sub': 'Low GI',
-            'icon': Icons.monitor_heart_rounded,
-            'color': const Color(0xFF3B4CC0), // Royal Blue
-            'bg': const Color(0xFFF0F2FF),
-          },
-        ];
+        final goals = ['Muscle Gain', 'Skin Glow', 'Flat Tummy', 'Sugar Control'];
 
         return Container(
           color: Colors.white,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                child: Row(
-                  children: [
-                    Icon(Icons.insights_rounded, size: 14, color: Colors.grey.shade400),
-                    const SizedBox(width: 6),
-                    Text(
-                      selected == 'Muscle Gain' 
-                        ? '3/5 meals this week to hit your protein target'
-                        : 'Fuel your transformation with precise nutrition',
-                      style: GoogleFonts.inter(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.grey.shade500,
-                        letterSpacing: 0.2,
-                      ),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: goals.length,
+            itemBuilder: (context, index) {
+              final isSelected = selected == goals[index];
+              return Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: FilterChip(
+                  label: Text(goals[index].toUpperCase()),
+                  selected: isSelected,
+                  onSelected: (val) => ref.read(selectedGoalProvider.notifier).state = goals[index],
+                  backgroundColor: Colors.white,
+                  selectedColor: kGutzoGreen.withOpacity(0.08),
+                  checkmarkColor: kGutzoGreen,
+                  labelStyle: GoogleFonts.inter(
+                    fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+                    fontSize: 11,
+                    letterSpacing: 0.5,
+                    color: isSelected ? kGutzoGreen : Colors.grey.shade600,
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(
+                      color: isSelected ? kGutzoGreen : Colors.grey.shade200,
+                      width: isSelected ? 1.5 : 1,
                     ),
-                  ],
+                  ),
                 ),
-              ),
-              Expanded(
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  itemCount: goals.length,
-                  itemBuilder: (context, index) {
-                    final goal = goals[index];
-                    final isSelected = selected == goal['id'];
-                    final color = goal['color'] as Color;
-                    final bg = goal['bg'] as Color;
-
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 12),
-                      child: GestureDetector(
-                        onTap: () => ref.read(selectedGoalProvider.notifier).state = goal['id'] as String,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeOutBack,
-                          width: 140,
-                          transform: isSelected ? (Matrix4.identity()..scale(1.05)) : Matrix4.identity(),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: isSelected ? bg : Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: isSelected ? color : Colors.grey.shade200,
-                              width: isSelected ? 1.5 : 1,
-                            ),
-                            boxShadow: isSelected ? [
-                              BoxShadow(color: color.withOpacity(0.08), blurRadius: 10, offset: const Offset(0, 4)),
-                            ] : null,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(goal['icon'] as IconData, color: isSelected ? color : Colors.grey.shade400, size: 20),
-                              const Spacer(),
-                              Text(
-                                (goal['label'] as String).toUpperCase(),
-                                style: GoogleFonts.inter(
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 11,
-                                  color: isSelected ? color : kDeepText,
-                                ),
-                              ),
-                              Text(
-                                goal['sub'] as String,
-                                style: GoogleFonts.inter(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 9,
-                                  color: isSelected ? color.withOpacity(0.7) : Colors.grey.shade500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
+              );
+            },
           ),
         );
       },
     );
-  }
-
   }
 
   @override
@@ -459,38 +345,34 @@ class _MarketplaceFeed extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final goal = ref.watch(selectedGoalProvider);
 
-    // Dynamic Marketplace Logic: Reordering items based on Goal Match (AOV/Revenue optimization)
     final meals = [
+      if (goal == 'Muscle Gain') ...[
+        {
+          'title': 'The Titan Bowl',
+          'vendor': 'Gutzo Kitchen • Saibaba Colony',
+          'benefit': '45g PROTEIN',
+          'price': 299,
+          'image': 'assets/images/bright_titan_bowl_1775986868119.png',
+          'rating': '4.8',
+          'time': '20 min',
+          'social': '34 people in RS Puram ordered this today',
+          'isVerified': true,
+        },
+      ],
+      if (goal == 'Skin Glow') ...[
+        {
+          'title': 'Wellness Glow Salad',
+          'vendor': 'Gutzo Kitchen • Peelamedu',
+          'benefit': 'HYDRATION BOOST',
+          'price': 249,
+          'image': 'assets/images/bright_glow_salad_1775986883063.png',
+          'rating': '4.9',
+          'time': '25 min',
+          'social': '12 women in Coimbatore started this habit today',
+          'isVerified': true,
+        },
+      ],
       {
-        'id': 'titan',
-        'title': 'The Titan Bowl',
-        'vendor': 'Gutzo Kitchen • Saibaba Colony',
-        'benefit': '45g PROTEIN',
-        'price': 299,
-        'image': 'assets/images/bright_titan_bowl_1775986868119.png',
-        'rating': '4.8',
-        'time': '20 min',
-        'social': '34 people in Coimbatore fueled their workout with this today',
-        'isVerified': true,
-        'match': 'Muscle Gain',
-        'color': const Color(0xFF006D44),
-      },
-      {
-        'id': 'glow',
-        'title': 'Wellness Glow Salad',
-        'vendor': 'Gutzo Kitchen • Peelamedu',
-        'benefit': 'HYDRATION BOOST',
-        'price': 249,
-        'image': 'assets/images/bright_glow_salad_1775986883063.png',
-        'rating': '4.9',
-        'time': '25 min',
-        'social': '12 celebrities in Coimbatore started this habit today',
-        'isVerified': true,
-        'match': 'Skin Glow',
-        'color': const Color(0xFFD48166),
-      },
-      {
-        'id': 'light',
         'title': 'The Light Plate',
         'vendor': 'Gutzo Kitchen • RS Puram',
         'benefit': 'ZERO BLOAT',
@@ -498,26 +380,14 @@ class _MarketplaceFeed extends ConsumerWidget {
         'image': 'assets/images/flat_tummy_goal_card_1775986104132.png',
         'rating': '4.7',
         'time': '22 min',
-        'social': 'Perfect for a post-office energy reboot',
+        'social': 'Highly recommended for evening meals',
         'isVerified': false,
-        'match': 'Flat Tummy',
-        'color': const Color(0xFF1BA672),
       },
     ];
 
-    // SORTING ALGORITHM: Top Goal matches first for revenue conversion
-    meals.sort((a, b) {
-      if (a['match'] == goal) return -1;
-      if (b['match'] == goal) return 1;
-      return 0;
-    });
-
     return SliverList(
       delegate: SliverChildBuilderDelegate(
-        (context, index) => _HighVibrancyProductCard(
-          meal: meals[index],
-          isActiveGoal: meals[index]['match'] == goal,
-        ),
+        (context, index) => _HighVibrancyProductCard(meal: meals[index]),
         childCount: meals.length,
       ),
     );
@@ -526,28 +396,18 @@ class _MarketplaceFeed extends ConsumerWidget {
 
 class _HighVibrancyProductCard extends StatelessWidget {
   final Map<String, dynamic> meal;
-  final bool isActiveGoal;
-  const _HighVibrancyProductCard({required this.meal, this.isActiveGoal = false});
+  const _HighVibrancyProductCard({required this.meal});
 
   @override
   Widget build(BuildContext context) {
-    final themeColor = meal['color'] as Color;
-
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: isActiveGoal ? themeColor.withOpacity(0.5) : Colors.grey.shade100,
-          width: isActiveGoal ? 1.5 : 1,
-        ),
+        border: Border.all(color: Colors.grey.shade100),
         boxShadow: [
-          BoxShadow(
-            color: isActiveGoal ? themeColor.withOpacity(0.1) : Colors.black.withOpacity(0.02), 
-            blurRadius: 20, 
-            offset: const Offset(0, 10),
-          ),
+          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 20, offset: const Offset(0, 10)),
         ],
       ),
       child: Column(
