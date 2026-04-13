@@ -84,180 +84,186 @@ class _VendorCardState extends ConsumerState<VendorCard> {
         scale: _isHovered && isWeb ? 1.02 : 1.0,
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOutCubic,
-        child: InkWell(
-          onTap: () {
-            if (widget.vendorModel != null) {
-              // 🎯 Dish-First Context: If we have a specific product, show its immersive details
-              if (widget.displayProduct != null) {
-                ProductDetailsSheet.show(
-                  context, 
-                  widget.displayProduct!, 
-                  widget.vendorModel!
-                );
-              } else {
-                // Otherwise navigate to kitchen as before
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => VendorDetailScreen(
-                      vendor: widget.vendorModel!,
-                      searchQuery: widget.searchQuery,
-                    ),
-                  ),
-                );
-              }
-            }
-          },
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: _isHovered && isWeb ? AppColors.brandGreen : AppColors.border.withValues(alpha: 0.3),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                )
-              ],
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: _isHovered && isWeb ? AppColors.brandGreen : AppColors.border.withValues(alpha: 0.3),
+              width: 1,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Stack(
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              )
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 🎯 Discovery Zone: Image and Basic Info navigate to the Kitchen Page
+              InkWell(
+                onTap: () {
+                  if (widget.vendorModel != null) {
+                    if (widget.displayProduct != null) {
+                      ProductDetailsSheet.show(
+                        context, 
+                        widget.displayProduct!, 
+                        widget.vendorModel!
+                      );
+                    } else {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => VendorDetailScreen(
+                            vendor: widget.vendorModel!,
+                            searchQuery: widget.searchQuery,
+                          ),
+                        ),
+                      );
+                    }
+                  }
+                },
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ClipRRect(
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                      child: _buildImage(featuredImage.isNotEmpty ? featuredImage : 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg',
-                          context),
-                    ),
-                    Positioned(
-                      top: 12,
-                      right: 12,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.95),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            )
-                          ],
+                    Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                          child: _buildImage(featuredImage.isNotEmpty ? featuredImage : 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg',
+                              context),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.star_rounded, color: Colors.amber, size: 16),
-                            const SizedBox(width: 4),
-                            Text(
-                              (widget.rating == 0.0 ? 4.5 : widget.rating).toStringAsFixed(1),
-                              style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.black),
+                        Positioned(
+                          top: 12,
+                          right: 12,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.95),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                )
+                              ],
                             ),
-                            Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 6),
-                              width: 1,
-                              height: 10,
-                              color: Colors.black.withValues(alpha: 0.1),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.star_rounded, color: Colors.amber, size: 16),
+                                const SizedBox(width: 4),
+                                Text(
+                                  (widget.rating == 0.0 ? 4.5 : widget.rating).toStringAsFixed(1),
+                                  style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.black),
+                                ),
+                                Container(
+                                  margin: const EdgeInsets.symmetric(horizontal: 6),
+                                  width: 1,
+                                  height: 10,
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                ),
+                                Text(
+                                  widget.deliveryTime.isNotEmpty ? widget.deliveryTime.split(' ').first : '25',
+                                  style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.black),
+                                ),
+                                Text(
+                                  ' MINS',
+                                  style: GoogleFonts.poppins(fontSize: 8, fontWeight: FontWeight.w700, color: Colors.black.withValues(alpha: 0.5)),
+                                ),
+                              ],
                             ),
-                            Text(
-                              widget.deliveryTime.isNotEmpty ? widget.deliveryTime.split(' ').first : '25',
-                              style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.black),
-                            ),
-                            Text(
-                              ' MINS',
-                              style: GoogleFonts.poppins(fontSize: 8, fontWeight: FontWeight.w700, color: Colors.black.withValues(alpha: 0.5)),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    if (widget.vendorModel?.isServiceable == false)
-                      Positioned.fill(
-                        child: Container(
-                          decoration: const BoxDecoration(
-                            color: Colors.black54,
-                            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                           ),
-                          child: const Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(8.0),
-                              child: Text(
-                                'UNSERVICEABLE',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12),
+                        ),
+                        if (widget.vendorModel?.isServiceable == false)
+                          Positioned.fill(
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                color: Colors.black54,
+                                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                              ),
+                              child: const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(8.0),
+                                  child: Text(
+                                    'UNSERVICEABLE',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12),
+                                  ),
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ),
-                  ],
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        featuredName,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textMain,
-                          letterSpacing: -0.4,
-                          height: 1.1,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'by ${widget.title}',
-                        style: const TextStyle(
-                          color: AppColors.textSub,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w400,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      ],
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          SizedBox(
-                            width: 45, // Fixed width for price to keep button width uniform
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                "₹${featuredPrice.toStringAsFixed(0)}",
-                                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
-                              ),
+                          Text(
+                            featuredName,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textMain,
+                              letterSpacing: -0.4,
+                              height: 1.1,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          // 🎯 Hybrid Revenue UX: Big ADD button that transforms into a selector when added
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: QuantitySelector(
-                              product: widget.displayProduct!,
-                              vendor: widget.vendorModel!,
-                              isFullWidth: true,
+                          const SizedBox(height: 4),
+                          Text(
+                            'by ${widget.title}',
+                            style: const TextStyle(
+                              color: AppColors.textSub,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w400,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              // 🎯 Revenue Zone: Price and ADD button remain on the Home Screen for discovery
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    SizedBox(
+                      width: 45,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          "₹${featuredPrice.toStringAsFixed(0)}",
+                          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: QuantitySelector(
+                        product: widget.displayProduct!,
+                        vendor: widget.vendorModel!,
+                        isFullWidth: true,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),

@@ -13,15 +13,17 @@ class HabitSelectionDrawer extends ConsumerStatefulWidget {
   final Vendor vendor;
   final Product product;
   final String currentGoal;
+  final bool navigateToVendor; // 🎯 NEW: Control whether to push the kitchen screen
 
   const HabitSelectionDrawer({
     super.key,
     required this.vendor,
     required this.product,
     required this.currentGoal,
+    this.navigateToVendor = true, // Default to true for Discovery flows
   });
 
-  static void show(BuildContext context, Vendor vendor, Product product, String currentGoal) {
+  static void show(BuildContext context, Vendor vendor, Product product, String currentGoal, {bool navigateToVendor = true}) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -30,6 +32,7 @@ class HabitSelectionDrawer extends ConsumerStatefulWidget {
         vendor: vendor,
         product: product,
         currentGoal: currentGoal,
+        navigateToVendor: navigateToVendor,
       ),
     );
   }
@@ -146,13 +149,15 @@ class _HabitSelectionDrawerState extends ConsumerState<HabitSelectionDrawer> {
     
     Navigator.pop(context); // Close Drawer
     
-    // 🚀 Seamless Navigation to Kitchen Menu (High Revenue Flow)
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => VendorDetailScreen(vendor: widget.vendor),
-      ),
-    );
+    // 🚀 High Revenue Flow: Only push kitchen if we aren't already there
+    if (widget.navigateToVendor) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => VendorDetailScreen(vendor: widget.vendor),
+        ),
+      );
+    }
   }
 
   Widget _buildOptionCard({

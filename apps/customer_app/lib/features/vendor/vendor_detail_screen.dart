@@ -688,6 +688,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
                     product: product,
                     vendor: widget.vendor,
                     isFullWidth: true,
+                    navigateToVendor: false, // 🎯 Don't push kitchen again!
                   ),
                 ),
               ],

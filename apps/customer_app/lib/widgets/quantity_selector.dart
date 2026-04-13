@@ -13,13 +13,15 @@ import '../features/checkout/checkout_notifier.dart';
 class QuantitySelector extends ConsumerWidget {
   final Product product;
   final Vendor vendor;
-  final bool isFullWidth; // 🎯 NEW: Allow component to expand in grid layouts
+  final bool isFullWidth;
+  final bool navigateToVendor; // 🎯 NEW: Control navigation after habit selection
 
   const QuantitySelector({
     super.key,
     required this.product,
     required this.vendor,
     this.isFullWidth = false,
+    this.navigateToVendor = true, // Default to true for Discovery
   });
 
   @override
@@ -70,7 +72,13 @@ class QuantitySelector extends ConsumerWidget {
             );
           } else {
             final currentGoal = ref.read(homeFilterProvider);
-            HabitSelectionDrawer.show(context, vendor, product, currentGoal);
+            HabitSelectionDrawer.show(
+              context, 
+              vendor, 
+              product, 
+              currentGoal, 
+              navigateToVendor: navigateToVendor // 🎯 Pass the directive
+            );
           }
         } : null,
         style: ElevatedButton.styleFrom(
