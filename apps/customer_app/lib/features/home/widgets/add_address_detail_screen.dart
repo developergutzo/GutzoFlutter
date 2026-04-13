@@ -9,7 +9,6 @@ import 'package:shared_core/services/node_api_service.dart';
 import 'package:shared_core/theme/app_colors.dart';
 import 'package:shared_core/models/address.dart';
 import '../../../providers/address_provider.dart';
-import '../../auth/auth_screen.dart';
 
 class AddAddressDetailScreen extends StatelessWidget {
   final LatLng position;
@@ -161,14 +160,7 @@ class _AddAddressDetailViewState extends ConsumerState<AddAddressDetailView> {
     if (!_formKey.currentState!.validate()) return;
 
     final user = ref.read(currentUserProvider);
-    if (user == null) {
-      if (mounted) {
-        Navigator.of(context).push(
-          CupertinoPageRoute(builder: (_) => const AuthScreen()),
-        );
-      }
-      return;
-    }
+    if (user == null) return;
 
     setState(() => _isSaving = true);
 
@@ -180,7 +172,6 @@ class _AddAddressDetailViewState extends ConsumerState<AddAddressDetailView> {
             : 'Other';
 
       final Map<String, dynamic> addressData = {
-        'type': _selectedCategory, // Explicitly send the category type
         'label': label,
         'street': _houseController.text.trim(),
         'area': _areaController.text.trim().isEmpty ? _houseController.text.trim() : _areaController.text.trim(),
@@ -188,45 +179,22 @@ class _AddAddressDetailViewState extends ConsumerState<AddAddressDetailView> {
         'zipcode': _pincodeController.text.trim(),
         'latitude': widget.position.latitude,
         'longitude': widget.position.longitude,
-        'city': widget.address.city ?? '',
-        'state': widget.address.state ?? '',
-        'country': widget.address.country ?? '',
         'is_default': false,
         if (_selectedCategory == 'other') 'custom_label': _customLabelController.text.trim(),
         if (_phoneController.text.isNotEmpty) 'alternative_phone': _phoneController.text.trim(),
       };
 
-      dynamic response;
       if (widget.existingAddress != null) {
-        response = await ref.read(nodeApiServiceProvider).updateAddress(user.phone, widget.existingAddress!.id, addressData);
+        await ref.read(nodeApiServiceProvider).updateAddress(user.phone, widget.existingAddress!.id, addressData);
       } else {
-        response = await ref.read(nodeApiServiceProvider).createAddress(user.phone, addressData);
+        await ref.read(nodeApiServiceProvider).createAddress(user.phone, addressData);
       }
       
       if (mounted) {
-        // Extract the saved address object (usually response['data'] or response)
-        final savedJson = response['data'] ?? response;
-        if (savedJson != null && savedJson is Map) {
-          final savedAddress = UserAddress.fromJson(Map<String, dynamic>.from(savedJson));
-          debugPrint('📍 Address saved successfully! Overriding global location: ${savedAddress.fullAddress}');
-          
-          // Proactively set this as the active location so Homepage shows it immediately
-          ref.read(locationProvider.notifier).overrideLocation(
-            LocationData.fromUserAddress(savedAddress),
-          );
-        }
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Address saved successfully!')),
-          );
-        }
-
         ref.invalidate(savedAddressesProvider);
         if (widget.isEmbedded && widget.onSaved != null) {
           widget.onSaved!();
         } else {
-          // Double pop to go back to Home
           Navigator.of(context).pop();
           Navigator.of(context).pop();
         }
@@ -275,7 +243,7 @@ class _AddAddressDetailViewState extends ConsumerState<AddAddressDetailView> {
                        pincodeVal.length == 6 && 
                        RegExp(r'^\d{6}$').hasMatch(pincodeVal);
     
-    if (_selectedCategory == 'other' && customVal.isEmpty) {
+    if (widget.isEmbedded && customVal.isEmpty && _selectedCategory == 'other') {
       isFormValid = false;
     }
 
