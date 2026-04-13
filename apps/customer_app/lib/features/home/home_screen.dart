@@ -75,6 +75,9 @@ class _MarketplaceBody extends ConsumerWidget {
       final filter = backendFilter.toLowerCase();
       
       for (final v in vendors) {
+        // 🛡️ UI/UX Optimization: Hide unserviceable vendors from Home Screen
+        if (v.isServiceable == false) continue;
+        
         if (v.products == null) continue;
         for (final p in v.products!) {
           final nameMatch = p.name.toLowerCase().contains(filter);

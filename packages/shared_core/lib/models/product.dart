@@ -135,6 +135,8 @@ class Product {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
+      'vendor_id': vendorId,
       'name': name,
       'description': description,
       'price': price,
@@ -144,8 +146,7 @@ class Product {
       'image_url': imageUrl ?? image,
       'is_available': isAvailable,
       'is_veg': isVeg,
-      // Removed diet_tags because it's not a DB column (stored in description)
-      // Removed metadata like id, vendor_id, created_at to avoid Supabase update errors
+      'created_at': createdAt.toIso8601String(),
     };
   }
 }

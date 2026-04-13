@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_core/models/vendor.dart';
 import 'package:shared_core/models/product.dart';
 import 'package:shared_core/theme/app_colors.dart';
 import 'package:shared_core/services/auth_service.dart';
 import 'package:shared_core/services/cart_service.dart';
 import '../features/checkout/checkout_notifier.dart';
-import '../features/checkout/checkout_screen.dart';
+import '../features/vendor/vendor_detail_screen.dart';
 
 class HabitSelectionDrawer extends ConsumerStatefulWidget {
   final Vendor vendor;
@@ -38,8 +39,6 @@ class HabitSelectionDrawer extends ConsumerStatefulWidget {
 }
 
 class _HabitSelectionDrawerState extends ConsumerState<HabitSelectionDrawer> {
-  bool isHabitSelected = true;
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -73,6 +72,20 @@ class _HabitSelectionDrawerState extends ConsumerState<HabitSelectionDrawer> {
             ),
           ),
           const SizedBox(height: 8),
+          
+          widget.currentGoal != 'All'
+            ? Text(
+                "OPTIMIZE FOR ${widget.currentGoal.toUpperCase()}",
+                style: GoogleFonts.poppins(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.brandGreen,
+                  letterSpacing: 2,
+                ),
+              )
+            : const SizedBox.shrink(),
+            
+          const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
@@ -88,101 +101,126 @@ class _HabitSelectionDrawerState extends ConsumerState<HabitSelectionDrawer> {
               ),
             ),
           ),
-          const SizedBox(height: 32),
-          _buildOption(
-            title: "Just Today",
-            subtitle: "One-time healthy fuel",
-            price: "₹299",
-            isSelected: !isHabitSelected,
-            onTap: () => setState(() => isHabitSelected = false),
+          const SizedBox(height: 24),
+          
+          // 📦 PACK OPTIONS (Instant Selection + Navigation)
+          _buildOptionCard(
+            title: "5-DAY HABIT PACK",
+            subtitle: "Commit to your health goal. Get a 5th meal FREE.",
+            price: "₹${(widget.product.price * 4).toStringAsFixed(0)}",
+            isHabit: true,
+            onTap: () => _handleSelection(context, true),
           ),
-          const SizedBox(height: 16),
-          _buildOption(
-            title: "5-Day Habit Pack",
-            subtitle: "Lock in your progress & Save ₹150",
-            price: "₹1199",
-            isSelected: isHabitSelected,
-            onTap: () => setState(() => isHabitSelected = true),
-          ),
-          const Spacer(),
-          SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: ElevatedButton(
-              onPressed: () {
-                final user = ref.read(currentUserProvider);
-                
-                // 🛡️ Edge Case: Guest Login
-                if (user == null) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please login to start your habit mission!'))
-                  );
-                  return;
-                }
-
-                // 🎯 Set Action Intent
-                ref.read(checkoutProvider.notifier).setHabitSubscription(isHabitSelected, goal: widget.currentGoal);
-                
-                // 🛒 Add Item to Cart
-                ref.read(cartProvider.notifier).addItem(widget.product, widget.vendor, 1);
-                
-                Navigator.pop(context); // Close Drawer
-                
-                // 🚀 Navigation strategy: If habit, go to checkout. If one-time, maybe stay? 
-                // Hormozi says: "Assume the Sale." Always go to checkout for higher velocity.
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const CheckoutScreen()),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.brandGreen,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                elevation: 0,
-              ),
-              child: const Text(
-                "CONFIRM CHOICE",
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16),
-              ),
-            ),
+          const SizedBox(height: 12),
+          _buildOptionCard(
+            title: "JUST TODAY",
+            subtitle: "A single nutrient-dense meal to fuel your day.",
+            price: "₹${widget.product.price.toStringAsFixed(0)}",
+            isHabit: false,
+            onTap: () => _handleSelection(context, false),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildOption({
+  void _handleSelection(BuildContext context, bool isHabitSelected) {
+    final user = ref.read(currentUserProvider);
+    
+    // 🛡️ Edge Case: Guest Login
+    if (user == null) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please login to start your habit mission!'))
+      );
+      return;
+    }
+
+    // 🎯 Set Action Intent
+    ref.read(checkoutProvider.notifier).setHabitSubscription(isHabitSelected, goal: widget.currentGoal);
+    
+    // 🛒 Add Item to Cart
+    ref.read(cartProvider.notifier).addItem(widget.product, widget.vendor, 1);
+    
+    Navigator.pop(context); // Close Drawer
+    
+    // 🚀 Seamless Navigation to Kitchen Menu (High Revenue Flow)
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => VendorDetailScreen(vendor: widget.vendor),
+      ),
+    );
+  }
+
+  Widget _buildOptionCard({
     required String title,
     required String subtitle,
     required String price,
-    required bool isSelected,
+    required bool isHabit,
     required VoidCallback onTap,
   }) {
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          border: Border.all(
-            color: isSelected ? AppColors.brandGreen : Colors.grey[200]!,
-            width: isSelected ? 2 : 1,
-          ),
+          color: isHabit ? const Color(0xFFF0FAF6) : Colors.white,
           borderRadius: BorderRadius.circular(16),
-          color: isSelected ? AppColors.brandGreen.withValues(alpha: 0.02) : Colors.white,
+          border: Border.all(
+            color: isHabit ? AppColors.brandGreen : Colors.grey[200]!,
+            width: isHabit ? 2 : 1,
+          ),
         ),
         child: Row(
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
-                const SizedBox(height: 2),
-                Text(subtitle, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-              ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                   if (isHabit)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      margin: const EdgeInsets.only(bottom: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.brandGreen,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        "SAVE UP TO 20%",
+                        style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+                      ),
+                    ),
+                  Text(
+                    title,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textMain,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.poppins(
+                      fontSize: 11,
+                      color: AppColors.textSub,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const Spacer(),
-            Text(price, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+            const SizedBox(width: 12),
+            Text(
+              price,
+              style: GoogleFonts.poppins(
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+                color: isHabit ? AppColors.brandGreen : AppColors.textMain,
+              ),
+            ),
           ],
         ),
       ),
