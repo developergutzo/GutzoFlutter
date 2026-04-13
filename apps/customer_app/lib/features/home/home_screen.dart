@@ -12,7 +12,6 @@ import '../auth/web_auth_panel.dart';
 import '../../widgets/vendor_card.dart';
 import '../../widgets/cart_strip.dart';
 import 'package:shared_core/services/category_service.dart';
-import 'package:shared_core/services/mood_category_service.dart';
 import 'package:shared_core/services/banner_service.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -307,7 +306,6 @@ class _MarketplaceBody extends ConsumerWidget {
     final currentUser = ref.watch(currentUserProvider);
     final vendorsAsync = ref.watch(vendorProvider);
     final bannersAsync = ref.watch(bannersProvider);
-    final moodCategoriesAsync = ref.watch(moodCategoriesProvider);
 
     // 📍 Auto-listen for LOCATION_OFF and prompt turn on
     ref.listen(locationProvider, (previous, next) async {
@@ -321,12 +319,12 @@ class _MarketplaceBody extends ConsumerWidget {
     });
 
     return Responsive(
-      mobile: _buildMobileBase(context, ref, bannersAsync, moodCategoriesAsync, vendorsAsync, currentUser),
-      desktop: _buildWebBase(context, ref, bannersAsync, moodCategoriesAsync, vendorsAsync, currentUser),
+      mobile: _buildMobileBase(context, ref, bannersAsync, vendorsAsync, currentUser),
+      desktop: _buildWebBase(context, ref, bannersAsync, vendorsAsync, currentUser),
     );
   }
 
-  Widget _buildMobileBase(BuildContext context, WidgetRef ref, AsyncValue bannersAsync, AsyncValue moodCategoriesAsync, AsyncValue vendorsAsync, dynamic currentUser) {
+  Widget _buildMobileBase(BuildContext context, WidgetRef ref, AsyncValue bannersAsync, AsyncValue vendorsAsync, dynamic currentUser) {
     return RefreshIndicator(
       onRefresh: () async {
         // Invalidate vendors to trigger a fresh Shadowfax check
@@ -341,8 +339,6 @@ class _MarketplaceBody extends ConsumerWidget {
         slivers: [
           _buildMobileHeader(context, ref, currentUser),
         _buildBannersSection(bannersAsync),
-        _buildMoodHeader(),
-        _buildMoodCategories(moodCategoriesAsync),
         const _FilterChipsRow(),
         _buildVendorsHeader(),
         _buildVendorsList(vendorsAsync, ref),
@@ -352,7 +348,7 @@ class _MarketplaceBody extends ConsumerWidget {
   );
 }
 
-  Widget _buildWebBase(BuildContext context, WidgetRef ref, AsyncValue bannersAsync, AsyncValue moodCategoriesAsync, AsyncValue vendorsAsync, dynamic currentUser) {
+  Widget _buildWebBase(BuildContext context, WidgetRef ref, AsyncValue bannersAsync, AsyncValue vendorsAsync, dynamic currentUser) {
     return SingleChildScrollView(
       child: Column(
         children: [
@@ -366,16 +362,6 @@ class _MarketplaceBody extends ConsumerWidget {
                 _buildWebBanners(bannersAsync),
                 const SizedBox(height: 56),
 
-                // Today's Mood (Animated Bento Carousel)
-                Row(
-                  children: [
-                    _buildMoodHeader(isWeb: true),
-                    const Spacer(),
-                    const Icon(Icons.arrow_forward_rounded, color: AppColors.brandGreen, size: 24),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                _buildMoodCarousel(moodCategoriesAsync),
                 const SizedBox(height: 72),
 
                 // Kitchens Section (The "Bento" Grid)
@@ -788,78 +774,6 @@ class _MarketplaceBody extends ConsumerWidget {
     );
   }
 
-  Widget _buildMoodHeader({bool isWeb = false}) {
-    final text = Text(
-      "Today's Mood",
-      style: TextStyle(
-        fontSize: isWeb ? 28 : 19,
-        fontWeight: FontWeight.w900,
-        color: AppColors.textMain,
-        letterSpacing: -1,
-      ),
-    );
-    if (!isWeb) {
-      return SliverPadding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 16, 12),
-        sliver: SliverToBoxAdapter(child: text),
-      );
-    }
-    return text;
-  }
-
-  Widget _buildMoodCategories(AsyncValue moodCategoriesAsync) {
-    return moodCategoriesAsync.when(
-      data: (moodCategories) => SliverToBoxAdapter(
-        child: SizedBox(
-          height: 140,
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            itemCount: moodCategories.length,
-            itemBuilder: (context, index) {
-              return _buildMoodItem(context, moodCategories[index]);
-            },
-          ),
-        ),
-      ),
-      loading: () => SliverToBoxAdapter(
-        child: SizedBox(
-          height: 140,
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            scrollDirection: Axis.horizontal,
-            itemCount: 5,
-            itemBuilder: (context, index) => Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: Shimmer.fromColors(
-                baseColor: AppColors.shimmerBase,
-                highlightColor: AppColors.shimmerHighlight,
-                child: Column(
-                  children: [
-                    Container(height: 75, width: 75, decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white)),
-                    const SizedBox(height: 10),
-                    Container(height: 12, width: 60, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-      error: (err, stack) => const SliverToBoxAdapter(child: SizedBox.shrink()),
-    );
-  }
-
-  Widget _buildMoodCarousel(AsyncValue moodCategoriesAsync) {
-    return moodCategoriesAsync.when(
-      data: (moodCategories) => _WebMoodCarousel(moodCategories: moodCategories),
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, __) => const SizedBox.shrink(),
-    );
-  }
-
-
   Widget _buildVendorsHeader({bool isWeb = false}) {
     final text = Text(
       'Kitchens Near You',
@@ -946,35 +860,6 @@ class _MarketplaceBody extends ConsumerWidget {
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (_, __) => const SizedBox.shrink(),
-    );
-  }
-
-  Widget _buildWebMoodItem(BuildContext context, dynamic mood) {
-    return _AnimatedBentoCard(mood: mood);
-  }
-
-  Widget _buildMoodItem(BuildContext context, dynamic mood) {
-    final String label = mood.name;
-    final String imageUrl = mood.imageUrl;
-    return InkWell(
-      onTap: () {},
-      child: Container(
-        width: 90,
-        margin: const EdgeInsets.only(right: 8),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              height: 75,
-              width: 75,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 10, offset: const Offset(0, 4))]),
-              child: ClipOval(child: Image.network(imageUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.restaurant, color: AppColors.brandGreen, size: 30))),
-            ),
-            const SizedBox(height: 10),
-            Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textMain), textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -1119,206 +1004,5 @@ class _FilterChipsRow extends ConsumerWidget {
   }
 }
 
-class _AnimatedBentoCard extends StatefulWidget {
-  final dynamic mood;
-  const _AnimatedBentoCard({required this.mood});
 
-  @override
-  State<_AnimatedBentoCard> createState() => _AnimatedBentoCardState();
-}
-
-class _AnimatedBentoCardState extends State<_AnimatedBentoCard> {
-  bool _isHovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      cursor: SystemMouseCursors.click,
-      child: AnimatedScale(
-        scale: _isHovered ? 1.05 : 1.0,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOutCubic,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOutCubic,
-          width: 220,
-          height: 260,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: _isHovered ? AppColors.brandGreen.withValues(alpha: 0.3) : AppColors.webGlassBorder,
-              width: 1.5,
-            ),
-            boxShadow: _isHovered 
-              ? [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 30, offset: const Offset(0, 15))]
-              : [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 15, offset: const Offset(0, 5))],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(24),
-            child: Stack(
-              children: [
-                Column(
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: Container(
-                        width: double.infinity,
-                        margin: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppColors.brandGreenLight.withValues(alpha: 0.3),
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(18),
-                          child: Image.network(
-                            widget.mood.imageUrl,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 1,
-                      child: Center(
-                        child: Text(
-                          widget.mood.name,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 16,
-                            color: _isHovered ? AppColors.brandGreen : AppColors.textMain,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                if (_isHovered)
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Colors.white.withValues(alpha: 0.1),
-                            Colors.transparent,
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _WebMoodCarousel extends StatefulWidget {
-  final List<dynamic> moodCategories;
-  const _WebMoodCarousel({required this.moodCategories});
-
-  @override
-  State<_WebMoodCarousel> createState() => _WebMoodCarouselState();
-}
-
-class _WebMoodCarouselState extends State<_WebMoodCarousel> {
-  final ScrollController _scrollController = ScrollController();
-  bool _showLeftArrow = false;
-  bool _showRightArrow = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(_updateArrows);
-  }
-
-  void _updateArrows() {
-    setState(() {
-      _showLeftArrow = _scrollController.position.pixels > 20;
-      _showRightArrow = _scrollController.position.pixels < _scrollController.position.maxScrollExtent - 20;
-    });
-  }
-
-  void _scroll(bool left) {
-    final double offset = left ? -600 : 600;
-    _scrollController.animateTo(
-      _scrollController.offset + offset,
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeInOutCubic,
-    );
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        SizedBox(
-          height: 280,
-          child: ListView.builder(
-            controller: _scrollController,
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            itemCount: widget.moodCategories.length,
-            itemBuilder: (context, index) => Padding(
-              padding: const EdgeInsets.only(right: 24),
-              child: _AnimatedBentoCard(mood: widget.moodCategories[index]),
-            ),
-          ),
-        ),
-        if (_showLeftArrow)
-          Positioned(
-            left: -20,
-            top: 0,
-            bottom: 0,
-            child: Center(
-              child: _CarouselNavButton(icon: Icons.chevron_left, onPressed: () => _scroll(true)),
-            ),
-          ),
-        if (_showRightArrow)
-          Positioned(
-            right: -20,
-            top: 0,
-            bottom: 0,
-            child: Center(
-              child: _CarouselNavButton(icon: Icons.chevron_right, onPressed: () => _scroll(false)),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _CarouselNavButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onPressed;
-  const _CarouselNavButton({required this.icon, required this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10)],
-      ),
-      child: IconButton(
-        icon: Icon(icon, color: AppColors.brandGreen),
-        onPressed: onPressed,
-      ),
-    );
-  }
-}
 
