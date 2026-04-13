@@ -81,8 +81,7 @@ class _MarketplaceBody extends ConsumerWidget {
       final filter = backendFilter.toLowerCase();
       
       for (final v in vendors) {
-        // 🛡️ UI/UX Optimization: Hide unserviceable vendors from Home Screen
-        if (v.isServiceable == false) continue;
+        // 🛡️ Discovery Logic: Show all kitchens (unserviceable ones will have a card overlay)
         
         if (v.products == null) continue;
         for (final p in v.products!) {
@@ -128,8 +127,44 @@ class _MarketplaceBody extends ConsumerWidget {
   Widget _buildDishGridMobile(AsyncValue<List<Map<String, dynamic>>> dishesAsync, WidgetRef ref) {
     return dishesAsync.when(
       data: (items) {
-        if (items.isEmpty) {
-          return const SliverToBoxAdapter(child: Center(child: Padding(padding: EdgeInsets.all(40), child: Text("No dishes match your goal yet."))));
+        final allUnavailable = items.isNotEmpty && items.every((item) => item['vendor'].isServiceable == false);
+        
+        if (items.isEmpty || allUnavailable) {
+          return SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(40),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start, // 🎯 Nudge up for better balance
+                  children: [
+                    const SizedBox(height: 100), // 🎯 Controlled top offset
+                    Icon(
+                      items.isEmpty ? Icons.search_off_rounded : Icons.nights_stay_rounded, 
+                      size: 64, 
+                      color: AppColors.brandGreen.withValues(alpha: 0.2)
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      items.isEmpty 
+                        ? "No dishes match your goal yet." 
+                        : "Our chefs are resting for tomorrow's mission.",
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textMain),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      items.isEmpty
+                        ? "Try exploring another health goal or check back soon!"
+                        : "We'll be back at dawn with fresh, healthy dishes to fuel your journey.",
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.textSub),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
         }
         return SliverPadding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
@@ -291,6 +326,41 @@ class _MarketplaceBody extends ConsumerWidget {
     return dishesAsync.when(
       data: (items) {
         final List<Map<String, dynamic>> list = items as List<Map<String, dynamic>>;
+        final allUnavailable = list.isNotEmpty && list.every((item) => item['vendor'].isServiceable == false);
+
+        if (list.isEmpty || allUnavailable) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 80),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start, // 🎯 Nudge up for better balance
+                children: [
+                  const SizedBox(height: 80), // 🎯 Controlled top offset
+                  Icon(
+                    list.isEmpty ? Icons.search_off_rounded : Icons.nights_stay_rounded, 
+                    size: 80, 
+                    color: AppColors.brandGreen.withValues(alpha: 0.2)
+                  ),
+                  const SizedBox(height: 32),
+                  Text(
+                    list.isEmpty 
+                      ? "No dishes match your goal yet." 
+                      : "Our chefs are resting for tomorrow's mission.",
+                    style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: AppColors.textMain),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    list.isEmpty
+                      ? "Try exploring another health goal or check back soon!"
+                      : "We'll be back at dawn with fresh, healthy dishes to fuel your journey.",
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: AppColors.textSub),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
         return GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),

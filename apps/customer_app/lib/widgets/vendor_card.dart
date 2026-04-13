@@ -139,7 +139,7 @@ class _VendorCardState extends ConsumerState<VendorCard> {
                         ),
                         Positioned(
                           top: 12,
-                          right: 12,
+                          left: 12, // 🎯 Standardized to Left for consistent grid symmetry
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
