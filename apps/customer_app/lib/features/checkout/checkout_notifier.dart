@@ -253,6 +253,12 @@ class CheckoutNotifier extends AutoDisposeNotifier<CheckoutState> {
     updateTaxes();
   }
 
+  void toggleHabitUpgrade() {
+    final newValue = !state.isHabitSubscription;
+    state = state.copyWith(isHabitSubscription: newValue);
+    updateTaxes();
+  }
+
   Future<String?> placeOrder() async {
     final user = ref.read(currentUserProvider);
     final cart = ref.read(cartProvider);

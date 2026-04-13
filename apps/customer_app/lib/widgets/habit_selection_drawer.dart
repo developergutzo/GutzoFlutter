@@ -136,11 +136,13 @@ class _HabitSelectionDrawerState extends ConsumerState<HabitSelectionDrawer> {
       return;
     }
 
-    // 🎯 Set Action Intent
-    ref.read(checkoutProvider.notifier).setHabitSubscription(isHabitSelected, goal: widget.currentGoal);
-    
-    // 🛒 Add Item to Cart
-    ref.read(cartProvider.notifier).addItem(widget.product, widget.vendor, 1);
+    // 🎯 Set Action Intent & Add Item to Cart
+    ref.read(cartProvider.notifier).addItem(
+      widget.product, 
+      widget.vendor, 
+      1, 
+      isHabit: isHabitSelected,
+    );
     
     Navigator.pop(context); // Close Drawer
     

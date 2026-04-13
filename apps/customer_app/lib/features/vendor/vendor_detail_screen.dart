@@ -11,6 +11,7 @@ import '../../widgets/quantity_selector.dart';
 import 'widgets/product_details_sheet.dart';
 import 'package:shared_core/utils/responsive.dart';
 import 'package:shared_core/widgets/max_width_container.dart';
+import '../checkout/checkout_notifier.dart';
 
 class VendorDetailScreen extends ConsumerStatefulWidget {
   final Vendor vendor;
@@ -110,11 +111,17 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
                   ? _buildWebLayout(context, products, filteredProducts)
                   : _buildMobileLayout(context, products, filteredProducts),
               ),
-              const Positioned(
+              Positioned(
                 left: 0,
                 right: 0,
                 bottom: 0,
-                child: CartStrip(isPremium: false),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    CartStrip(filterHabit: true),
+                    CartStrip(filterHabit: false),
+                  ],
+                ),
               ),
             ],
           ),
@@ -456,7 +463,62 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
             ],
           ),
         ),
+        const SizedBox(height: 16),
+        _buildMissionActiveBanner(),
       ],
+    );
+  }
+
+  Widget _buildMissionActiveBanner() {
+    final checkout = ref.watch(checkoutProvider);
+    final isHabit = checkout.isHabitSubscription;
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: isHabit ? AppColors.brandGreen.withValues(alpha: 0.08) : Colors.orange.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isHabit ? AppColors.brandGreen.withValues(alpha: 0.3) : Colors.orange.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isHabit ? Icons.verified_user_rounded : Icons.wb_sunny_outlined,
+            color: isHabit ? AppColors.brandGreen : Colors.orange[800],
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isHabit ? "5-DAY HABIT ACTIVE" : "ORDERING FOR JUST TODAY",
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    color: isHabit ? AppColors.brandGreen : Colors.orange[900],
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                Text(
+                  isHabit 
+                    ? "Subscribing you to results. Extras added below are for today." 
+                    : "Add a few more items to make this a healthy feast!",
+                  style: GoogleFonts.poppins(
+                    fontSize: 10,
+                    color: isHabit ? AppColors.brandGreen.withValues(alpha: 0.8) : Colors.orange[800],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

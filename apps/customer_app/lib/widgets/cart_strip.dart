@@ -12,21 +12,37 @@ import 'modern_dialog.dart';
 
 class CartStrip extends ConsumerWidget {
   final bool isPremium;
-  const CartStrip({super.key, this.isPremium = false});
+  final bool? filterHabit; // NEW: null=all, true=Habit only, false=Today only
+
+  const CartStrip({
+    super.key, 
+    this.isPremium = false,
+    this.filterHabit,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cart = ref.watch(cartProvider);
-    if (cart.items.isEmpty) return const SizedBox.shrink();
+    
+    // Filter items based on the requested mode
+    final filteredItems = cart.items.where((item) => filterHabit == null || item.isHabit == filterHabit).toList();
+    if (filteredItems.isEmpty) return const SizedBox.shrink();
+
+    // Compute localized stats
+    final totalItems = filteredItems.fold<int>(0, (sum, item) => sum + item.quantity);
+    final subtotal = filteredItems.fold<double>(0, (sum, item) => sum + item.totalPrice);
+    final vendor = filteredItems.first.vendor;
 
     return Responsive(
-      mobile: _buildMobileCart(context, ref, cart),
-      desktop: _buildWebCart(context, ref, cart),
+      mobile: _buildMobileCart(context, ref, vendor, totalItems, subtotal),
+      desktop: _buildWebCart(context, ref, vendor, totalItems, subtotal),
     );
   }
 
-  Widget _buildWebCart(BuildContext context, WidgetRef ref, dynamic cart) {
-    final vendor = cart.items.first.vendor;
+  Widget _buildWebCart(BuildContext context, WidgetRef ref, dynamic vendor, int totalItems, double subtotal) {
+    final bool isHabitStrip = filterHabit == true;
+    final Color primaryColor = isHabitStrip ? const Color(0xFF008080) : AppColors.brandGreen;
+
     return Align(
       alignment: Alignment.bottomCenter,
       child: Container(
@@ -34,12 +50,12 @@ class CartStrip extends ConsumerWidget {
         padding: const EdgeInsets.only(bottom: 40),
         child: Center(
           child: Container(
-            width: 700, // Substantial desktop presence
+            width: 700,
             height: 84,
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(42), // Pure pill shape
+              borderRadius: BorderRadius.circular(42),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.12),
@@ -47,7 +63,7 @@ class CartStrip extends ConsumerWidget {
                   offset: const Offset(0, 16),
                 )
               ],
-              border: Border.all(color: AppColors.brandGreen.withValues(alpha: 0.1), width: 1),
+              border: Border.all(color: primaryColor.withValues(alpha: 0.1), width: 1),
             ),
             child: Row(
               children: [
@@ -56,23 +72,27 @@ class CartStrip extends ConsumerWidget {
                   width: 60,
                   height: 60,
                   decoration: BoxDecoration(
-                    color: AppColors.brandGreen.withValues(alpha: 0.1),
+                    color: primaryColor.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Center(
                     child: Stack(
                       alignment: Alignment.topRight,
                       children: [
-                        const Icon(Icons.shopping_bag_outlined, color: AppColors.brandGreen, size: 28),
-                        if (cart.totalItems > 0)
+                        Icon(
+                          isHabitStrip ? Icons.auto_awesome : Icons.shopping_bag_outlined, 
+                          color: primaryColor, 
+                          size: 28
+                        ),
+                        if (totalItems > 0)
                           Container(
                             padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                              color: AppColors.brandGreen,
+                            decoration: BoxDecoration(
+                              color: primaryColor,
                               shape: BoxShape.circle,
                             ),
                             child: Text(
-                              cart.totalItems.toString(),
+                              totalItems.toString(),
                               style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
                             ),
                           ),
@@ -88,7 +108,7 @@ class CartStrip extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        vendor.name,
+                        isHabitStrip ? "Habit Plan: ${vendor.name}" : vendor.name,
                         style: GoogleFonts.poppins(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -98,7 +118,7 @@ class CartStrip extends ConsumerWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       Text(
-                        'Items from this kitchen are in your cart',
+                        isHabitStrip ? 'Adding to your result-focused mission' : 'One-time healthy additions',
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           color: AppColors.textSub,
@@ -119,9 +139,12 @@ class CartStrip extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    const Text('TOTAL PAYABLE', style: TextStyle(color: AppColors.textDisabled, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
                     Text(
-                      '₹${cart.subtotal.toStringAsFixed(0)}',
+                      isHabitStrip ? 'PLAN TOTAL' : 'TOTAL PAYABLE', 
+                      style: const TextStyle(color: AppColors.textDisabled, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5)
+                    ),
+                    Text(
+                      '₹${subtotal.toStringAsFixed(0)}',
                       style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.w900, color: AppColors.textMain, height: 1.1),
                     ),
                   ],
@@ -131,7 +154,7 @@ class CartStrip extends ConsumerWidget {
                 ElevatedButton(
                   onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CheckoutScreen())),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.brandGreen,
+                    backgroundColor: primaryColor,
                     padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 0),
                     minimumSize: const Size(180, 60),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
@@ -161,7 +184,7 @@ class CartStrip extends ConsumerWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 6), // End padding for pill shape closure
+                const SizedBox(width: 6),
               ],
             ),
           ),
@@ -170,9 +193,11 @@ class CartStrip extends ConsumerWidget {
     );
   }
 
-  Widget _buildMobileCart(BuildContext context, WidgetRef ref, dynamic cart) {
+  Widget _buildMobileCart(BuildContext context, WidgetRef ref, dynamic vendor, int totalItems, double subtotal) {
+    final bool isHabitStrip = filterHabit == true;
+    final Color primaryColor = isHabitStrip ? const Color(0xFF008080) : AppColors.brandGreen;
+
     if (isPremium) {
-      final vendor = cart.items.first.vendor;
       return Container(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         child: Container(
@@ -187,20 +212,19 @@ class CartStrip extends ConsumerWidget {
                 offset: const Offset(0, 8),
               )
             ],
+            border: Border.all(color: primaryColor.withValues(alpha: 0.2), width: 1.5),
           ),
           child: Row(
             children: [
-              // Vendor Image
+              // Image indicator or icon
               Container(
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
+                  color: primaryColor.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
-                  image: DecorationImage(
-                    image: NetworkImage(vendor.image.isNotEmpty ? vendor.image : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'),
-                    fit: BoxFit.cover,
-                  ),
                 ),
+                child: Icon(isHabitStrip ? Icons.auto_awesome : Icons.restaurant, color: primaryColor, size: 20),
               ),
               const SizedBox(width: 12),
               // Vendor Info
@@ -210,34 +234,25 @@ class CartStrip extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      vendor.name,
+                      isHabitStrip ? "Habit Mission" : "Just Today",
                       style: GoogleFonts.poppins(
                         fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textMain,
+                        fontWeight: FontWeight.w800,
+                        color: primaryColor,
                         letterSpacing: -0.3,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => VendorDetailScreen(vendor: vendor),
-                          ),
-                        );
-                      },
-                      child: Text(
-                        'View Full Menu',
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          color: AppColors.textSub,
-                          decoration: TextDecoration.underline,
-                          fontWeight: FontWeight.w500,
-                        ),
+                    Text(
+                      vendor.name,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: AppColors.textMain,
+                        fontWeight: FontWeight.w600,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
@@ -245,14 +260,9 @@ class CartStrip extends ConsumerWidget {
               const SizedBox(width: 8),
               // Checkout Button
               ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const CheckoutScreen()),
-                  );
-                },
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CheckoutScreen())),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.brandGreen,
+                  backgroundColor: primaryColor,
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   elevation: 0,
@@ -261,31 +271,19 @@ class CartStrip extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      '${cart.totalItems} item${cart.totalItems > 1 ? 's' : ''} | ₹${cart.subtotal.toStringAsFixed(0)}',
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      '$totalItems item${totalItems > 1 ? 's' : ''} | ₹${subtotal.toStringAsFixed(0)}',
+                      style: GoogleFonts.poppins(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w500),
                     ),
-                    const Text(
-                      'Checkout',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+                    const Text('View Cart', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
                   ],
                 ),
               ),
               const SizedBox(width: 8),
-              // Close Button
               GestureDetector(
                 onTap: () => _showClearCartDialog(context, ref, vendor.name),
                 child: Container(
-                  width: 28,
-                  height: 28,
+                  width: 32,
+                  height: 32,
                   decoration: const BoxDecoration(
                     color: Color(0xFFFFEFEB),
                     shape: BoxShape.circle,
@@ -304,16 +302,14 @@ class CartStrip extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: GestureDetector(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const CheckoutScreen()),
-          );
-        },
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CheckoutScreen())),
         child: Container(
-          height: 56,
+          height: 60,
           decoration: BoxDecoration(
-            color: AppColors.brandGreen,
+            gradient: isHabitStrip 
+              ? LinearGradient(colors: [primaryColor, primaryColor.withValues(alpha: 0.8)])
+              : null,
+            color: isHabitStrip ? null : primaryColor,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
@@ -323,37 +319,38 @@ class CartStrip extends ConsumerWidget {
               )
             ],
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                '${cart.totalItems} item${cart.totalItems > 1 ? 's' : ''} added',
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
+              Row(
+                children: [
+                  Icon(isHabitStrip ? Icons.auto_awesome : Icons.shopping_basket, color: Colors.white, size: 20),
+                  const SizedBox(width: 12),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isHabitStrip ? 'Habit Mission' : 'Just Today',
+                        style: GoogleFonts.poppins(color: Colors.white.withValues(alpha: 0.9), fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5),
+                      ),
+                      Text(
+                        '$totalItems item${totalItems > 1 ? 's' : ''} added',
+                        style: GoogleFonts.poppins(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700),
+                      ),
+                    ],
+                  ),
+                ],
               ),
               Row(
                 children: [
                   Text(
-                    'View Cart',
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
-                    ),
+                    '₹${subtotal.toStringAsFixed(0)}',
+                    style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16),
                   ),
-                  const SizedBox(width: 4),
-                  const Text(
-                    '>',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
-                  ),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 14),
                 ],
               ),
             ],

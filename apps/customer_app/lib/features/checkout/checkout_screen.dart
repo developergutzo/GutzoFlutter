@@ -202,7 +202,7 @@ class CheckoutScreen extends ConsumerWidget {
           if (user == null) _buildIdentityBlock(context, ref),
           
           // 2. Habit Summary (The Commitment Card)
-          if (checkout.isHabitSubscription) _buildHabitSummaryCard(checkout),
+          _buildHabitSummaryCard(checkout, ref),
 
           // 3. Delivery Section (Serviceability Sentinel)
           _buildDeliverySection(context, ref, checkout, location),
@@ -289,59 +289,141 @@ class CheckoutScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHabitSummaryCard(CheckoutState checkout) {
+  Widget _buildHabitSummaryCard(CheckoutState checkout, WidgetRef ref) {
+    final isHabit = checkout.isHabitSubscription;
+    
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppColors.brandGreen, AppColors.brandGreen.withValues(alpha: 0.8)],
+          colors: isHabit 
+            ? [AppColors.brandGreen, const Color(0xFF004D40)] 
+            : [const Color(0xFFFFF8E1), Colors.white],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
+        border: isHabit ? null : Border.all(color: Colors.amber.withValues(alpha: 0.3), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: (isHabit ? AppColors.brandGreen : Colors.amber).withValues(alpha: 0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Icon(Icons.auto_awesome, color: Colors.white, size: 24),
-              const SizedBox(width: 8),
-              Text(
-                "YOU'RE COMMITTING",
-                style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 1),
+              Row(
+                children: [
+                  Icon(
+                    isHabit ? Icons.auto_awesome : Icons.bolt_rounded, 
+                    color: isHabit ? Colors.white : Colors.amber[800], 
+                    size: 20
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    isHabit ? "YOU'RE COMMITTING" : "LIMITED UPGRADE",
+                    style: GoogleFonts.poppins(
+                      fontSize: 10, 
+                      fontWeight: FontWeight.w900, 
+                      color: isHabit ? Colors.white : Colors.amber[900], 
+                      letterSpacing: 1
+                    ),
+                  ),
+                ],
               ),
+              if (!isHabit)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.amber[800],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    "SAVE 25%",
+                    style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: 16),
           Text(
-            "5-Day ${checkout.selectedGoal ?? 'Health'} Reset",
-            style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white),
+            isHabit 
+              ? "5-Day ${checkout.selectedGoal ?? 'Health'} Reset" 
+              : "Upgrade to 5-Day Mission",
+            style: GoogleFonts.poppins(
+              fontSize: 20, 
+              fontWeight: FontWeight.w900, 
+              color: isHabit ? Colors.white : AppColors.textMain
+            ),
           ),
           const SizedBox(height: 8),
           Text(
-            "Day 1 starts tomorrow at 1:00 PM. No scrolling, no decisions, just results.",
-            style: GoogleFonts.poppins(fontSize: 14, color: Colors.white.withValues(alpha: 0.9)),
+            isHabit 
+              ? "Day 1 starts tomorrow at 1:00 PM. No scrolling, no decisions, just results." 
+              : "Get 5 days of nutrient-dense meals for the price of 4. Commit to your ${checkout.selectedGoal ?? 'health'} goal now.",
+            style: GoogleFonts.poppins(
+              fontSize: 13, 
+              color: isHabit ? Colors.white.withValues(alpha: 0.9) : AppColors.textSub,
+              height: 1.4,
+            ),
           ),
           const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.verified, color: Colors.white, size: 16),
-                const SizedBox(width: 8),
-                Text(
-                  "15% Habit Discount Applied",
-                  style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
+          if (!isHabit)
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => ref.read(checkoutProvider.notifier).toggleHabitUpgrade(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.brandGreen,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  elevation: 0,
                 ),
-              ],
+                child: const Text(
+                  "UPGRADE WHOLE ORDER",
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
+                ),
+              ),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.verified, color: Colors.white, size: 16),
+                      const SizedBox(width: 8),
+                      Text(
+                        "15% Habit Discount Applied",
+                        style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                  TextButton(
+                    onPressed: () => ref.read(checkoutProvider.notifier).toggleHabitUpgrade(),
+                    style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero),
+                    child: Text(
+                      "UNDO",
+                      style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.white70),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -583,6 +665,8 @@ class CheckoutScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _buildHabitSummaryCard(checkout, ref),
+          const SizedBox(height: 32),
           Text(
             'Order Summary',
             style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.w800),

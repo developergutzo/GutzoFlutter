@@ -1,12 +1,22 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class NodeApiService {
-  //final String baseUrl = kIsWeb ? "http://localhost:5000" : "http://10.0.2.2:5000";
-  final String baseUrl = "http://192.168.1.37:5000";
+  String get baseUrl {
+    if (kIsWeb) return "http://localhost:5000";
+    // Android emulator special alias for host loopback
+    try {
+      if (Platform.isAndroid) return "http://10.0.2.2:5000";
+    } catch (_) {
+      // Platform check might fail on web if not careful, but kIsWeb handles it
+    }
+    return "http://localhost:5000";
+  }
+
   final SupabaseClient _supabase;
 
   NodeApiService(this._supabase);

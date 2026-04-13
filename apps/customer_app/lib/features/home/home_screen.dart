@@ -42,7 +42,13 @@ class HomeScreen extends ConsumerWidget {
             left: 0,
             right: 0,
             bottom: 0,
-            child: CartStrip(isPremium: true),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CartStrip(filterHabit: true, isPremium: true),
+                CartStrip(filterHabit: false, isPremium: true),
+              ],
+            ),
           ),
         ],
       ),

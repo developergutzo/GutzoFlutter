@@ -8,6 +8,7 @@ import 'package:shared_core/theme/app_colors.dart';
 import 'replace_cart_dialog.dart';
 import 'habit_selection_drawer.dart';
 import '../features/home/home_screen.dart';
+import '../features/checkout/checkout_notifier.dart';
 
 class QuantitySelector extends ConsumerWidget {
   final Product product;
@@ -22,9 +23,8 @@ class QuantitySelector extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cart = ref.watch(cartProvider);
-    final cartItem = cart.items.where((item) => item.product.id == product.id).firstOrNull;
+    final quantity = cart.items.where((item) => item.product.id == product.id).fold<int>(0, (sum, item) => sum + item.quantity);
     final isServiceable = vendor.isServiceable ?? true;
-    final quantity = cartItem?.quantity ?? 0;
 
     return IgnorePointer(
       ignoring: !isServiceable,
@@ -67,13 +67,8 @@ class QuantitySelector extends ConsumerWidget {
               ),
             );
           } else {
-            // 🎯 NEW: If cart is empty, trigger the Habit Drawer
-            if (cart.items.isEmpty) {
-              final currentGoal = ref.read(homeFilterProvider);
-              HabitSelectionDrawer.show(context, vendor, product, currentGoal);
-            } else {
-              ref.read(cartProvider.notifier).addItem(product, vendor, 1);
-            }
+            final currentGoal = ref.read(homeFilterProvider);
+            HabitSelectionDrawer.show(context, vendor, product, currentGoal);
           }
         } : null,
         style: ElevatedButton.styleFrom(
@@ -100,46 +95,67 @@ class QuantitySelector extends ConsumerWidget {
   }
 
   Widget _buildSelector(WidgetRef ref, int quantity, bool isServiceable) {
-    return Container(
-      key: const ValueKey('quantity_selector'),
-      width: 100,
-      height: 40,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: isServiceable ? AppColors.brandGreen : Colors.grey[300]!, width: 1.2),
-        boxShadow: [
-          if (isServiceable)
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          _buildActionButton(
-            icon: Icons.remove,
-            color: isServiceable ? AppColors.brandGreen : Colors.grey,
-            onTap: isServiceable ? () => ref.read(cartProvider.notifier).updateQuantity(product.id, quantity - 1) : null,
-          ),
-          Text(
-            '$quantity',
-            style: GoogleFonts.poppins(
-              fontWeight: FontWeight.w700,
-              fontSize: 14,
-              color: isServiceable ? AppColors.brandGreen : Colors.grey,
+    final checkout = ref.watch(checkoutProvider);
+    final isHabit = checkout.isHabitSubscription;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (isHabit && quantity > 0)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Text(
+              "TODAY ONLY",
+              style: GoogleFonts.poppins(
+                fontSize: 8,
+                fontWeight: FontWeight.w900,
+                color: AppColors.brandGreen,
+                letterSpacing: 0.5,
+              ),
             ),
           ),
-          _buildActionButton(
-            icon: Icons.add,
-            color: isServiceable ? AppColors.brandGreen : Colors.grey,
-            onTap: isServiceable ? () => ref.read(cartProvider.notifier).updateQuantity(product.id, quantity + 1) : null,
+        Container(
+          key: const ValueKey('quantity_selector'),
+          width: 100,
+          height: 40,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: isServiceable ? AppColors.brandGreen : Colors.grey[300]!, width: 1.2),
+            boxShadow: [
+              if (isServiceable)
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+            ],
           ),
-        ],
-      ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildActionButton(
+                icon: Icons.remove,
+                color: isServiceable ? AppColors.brandGreen : Colors.grey,
+                onTap: isServiceable ? () => ref.read(cartProvider.notifier).updateQuantity(product.id, quantity - 1) : null,
+              ),
+              Text(
+                '$quantity',
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                  color: isServiceable ? AppColors.brandGreen : Colors.grey,
+                ),
+              ),
+              _buildActionButton(
+                icon: Icons.add,
+                color: isServiceable ? AppColors.brandGreen : Colors.grey,
+                onTap: isServiceable ? () => ref.read(cartProvider.notifier).updateQuantity(product.id, quantity + 1) : null,
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

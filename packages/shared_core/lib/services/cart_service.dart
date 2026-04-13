@@ -11,20 +11,23 @@ class CartItem {
   final Product product;
   final Vendor vendor;
   final int quantity;
+  final bool isHabit; // NEW: Item-level habit flag
   final String? id; // Backend cart item ID
 
   CartItem({
     required this.product,
     required this.vendor,
     this.quantity = 1,
+    this.isHabit = false,
     this.id,
   });
 
-  CartItem copyWith({int? quantity, String? id}) {
+  CartItem copyWith({int? quantity, bool? isHabit, String? id}) {
     return CartItem(
       product: product,
       vendor: vendor,
       quantity: quantity ?? this.quantity,
+      isHabit: isHabit ?? this.isHabit,
       id: id ?? this.id,
     );
   }
@@ -92,6 +95,7 @@ class CartNotifier extends Notifier<CartState> {
           product: Product.fromJson(item['product']),
           vendor: Vendor.fromJson(item['vendor']),
           quantity: item['quantity'],
+          isHabit: item['isHabit'] ?? false,
         )).toList();
         state = CartState(items: items, vendorId: data['vendorId'], isLoading: false);
       } catch (e) {
@@ -121,6 +125,7 @@ class CartNotifier extends Notifier<CartState> {
           product: Product.fromJson(item['product']),
           vendor: Vendor.fromJson(item['vendor']),
           quantity: item['quantity'],
+          isHabit: item['isHabit'] ?? false,
         )).toList();
 
         // Simple merge logic: Local takes precedence for quantity if already in backend
@@ -172,6 +177,7 @@ class CartNotifier extends Notifier<CartState> {
           product: Product.fromJson(productJson),
           vendor: Vendor.fromJson(vendorJson),
           quantity: item['quantity'] ?? 1,
+          isHabit: item['is_habit'] ?? item['metadata']?['is_habit'] ?? false,
         );
       }).toList();
     } catch (e) {
@@ -181,14 +187,15 @@ class CartNotifier extends Notifier<CartState> {
   }
 
   List<CartItem> _mergeCarts(List<CartItem> backend, List<CartItem> local) {
-    final Map<String, CartItem> merged = {for (var item in backend) item.product.id: item};
+    // Unique key: productId + isHabit
+    final Map<String, CartItem> merged = {for (var item in backend) "${item.product.id}_${item.isHabit}": item};
     for (var item in local) {
-      if (merged.containsKey(item.product.id)) {
-        // If exists, sum quantities
-        final existing = merged[item.product.id]!;
-        merged[item.product.id] = existing.copyWith(quantity: existing.quantity + item.quantity);
+      final key = "${item.product.id}_${item.isHabit}";
+      if (merged.containsKey(key)) {
+        final existing = merged[key]!;
+        merged[key] = existing.copyWith(quantity: existing.quantity + item.quantity);
       } else {
-        merged[item.product.id] = item;
+        merged[key] = item;
       }
     }
     return merged.values.toList();
@@ -199,6 +206,7 @@ class CartNotifier extends Notifier<CartState> {
       'product_id': item.product.id,
       'vendor_id': item.vendor.id,
       'quantity': item.quantity,
+      'is_habit': item.isHabit,
     }).toList();
   }
 
@@ -213,6 +221,7 @@ class CartNotifier extends Notifier<CartState> {
         'product': item.product.toJson(),
         'vendor': item.vendor.toJson(),
         'quantity': item.quantity,
+        'isHabit': item.isHabit,
       }).toList(),
     };
     await prefs.setString(_key, json.encode(data));
@@ -228,21 +237,22 @@ class CartNotifier extends Notifier<CartState> {
     }
   }
 
-  void addItem(Product product, Vendor vendor, int quantity, {bool forceClear = false}) {
+  String? get activeVendorName => state.items.isNotEmpty ? state.items.first.vendor.name : null;
+
+  void addItem(Product product, Vendor vendor, int quantity, {bool forceClear = false, bool isHabit = false}) {
     // Cross-vendor check
     if (state.vendorId != null && state.vendorId != vendor.id && state.items.isNotEmpty) {
       if (forceClear) {
         state = state.copyWith(
-          items: [CartItem(product: product, vendor: vendor, quantity: quantity)],
+          items: [CartItem(product: product, vendor: vendor, quantity: quantity, isHabit: isHabit)],
           vendorId: vendor.id,
         );
         _saveCart();
       }
-      // If not forceClear, we do nothing and let the UI handle the "Replace Cart" flow
       return;
     }
 
-    final existingIndex = state.items.indexWhere((item) => item.product.id == product.id);
+    final existingIndex = state.items.indexWhere((item) => item.product.id == product.id && item.isHabit == isHabit);
     
     if (existingIndex != -1) {
       final updatedItems = List<CartItem>.from(state.items);
@@ -252,23 +262,21 @@ class CartNotifier extends Notifier<CartState> {
       state = state.copyWith(items: updatedItems);
     } else {
       state = state.copyWith(
-        items: [...state.items, CartItem(product: product, vendor: vendor, quantity: quantity)],
+        items: [...state.items, CartItem(product: product, vendor: vendor, quantity: quantity, isHabit: isHabit)],
         vendorId: vendor.id,
       );
     }
     _saveCart();
   }
 
-  String? get activeVendorName => state.items.isNotEmpty ? state.items.first.vendor.name : null;
-
-  void updateQuantity(String productId, int quantity) {
+  void updateQuantity(String productId, int quantity, {bool isHabit = false}) {
     if (quantity <= 0) {
-      removeItem(productId);
+      removeItem(productId, isHabit: isHabit);
       return;
     }
 
     final updatedItems = state.items.map((item) {
-      if (item.product.id == productId) {
+      if (item.product.id == productId && item.isHabit == isHabit) {
         return item.copyWith(quantity: quantity);
       }
       return item;
@@ -278,8 +286,8 @@ class CartNotifier extends Notifier<CartState> {
     _saveCart();
   }
 
-  void removeItem(String productId) {
-    final updatedItems = state.items.where((item) => item.product.id != productId).toList();
+  void removeItem(String productId, {bool isHabit = false}) {
+    final updatedItems = state.items.where((item) => !(item.product.id == productId && item.isHabit == isHabit)).toList();
     state = state.copyWith(
       items: updatedItems,
       vendorId: updatedItems.isEmpty ? null : state.vendorId,
