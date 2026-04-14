@@ -676,8 +676,8 @@ class _MenuItemCard extends ConsumerWidget {
                           activeColor: AppColors.brandGreen,
                         ),
                         Text(
-                          product.isAvailable ? 'LIVE' : 'OFF',
-                          style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w900, color: product.isAvailable ? AppColors.brandGreen : AppColors.textDisabled, letterSpacing: 0.5),
+                          product.isAvailable ? 'IN STOCK' : 'OUT OF STOCK',
+                          style: GoogleFonts.inter(fontSize: 8, fontWeight: FontWeight.w900, color: product.isAvailable ? AppColors.brandGreen : AppColors.textDisabled, letterSpacing: 0.5),
                         ),
                       ],
                     ),

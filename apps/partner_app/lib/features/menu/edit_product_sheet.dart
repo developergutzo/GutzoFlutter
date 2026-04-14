@@ -196,6 +196,27 @@ class _EditProductSheetState extends ConsumerState<EditProductSheet> {
               widget.product == null ? 'ADD PRODUCT' : 'EDIT PRODUCT',
               style: GoogleFonts.inter(fontWeight: FontWeight.w800, fontSize: 13, letterSpacing: 0.5),
             ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'IN STOCK',
+                  style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w900, color: AppColors.textSub),
+                ),
+                const SizedBox(width: 4),
+                Transform.scale(
+                  scale: 0.7,
+                  child: CupertinoSwitch(
+                    value: _isAvailable,
+                    activeColor: AppColors.brandGreen,
+                    onChanged: (val) {
+                      _markDirty();
+                      setState(() => _isAvailable = val);
+                    },
+                  ),
+                ),
+              ],
+            ),
           ) as PreferredSizeWidget
         : AppBar(
             leading: IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.pop(context)),
@@ -203,6 +224,29 @@ class _EditProductSheetState extends ConsumerState<EditProductSheet> {
               widget.product == null ? 'ADD PRODUCT' : 'EDIT PRODUCT',
               style: GoogleFonts.inter(fontWeight: FontWeight.w900, fontSize: 14, letterSpacing: 1.2),
             ),
+            actions: [
+              Row(
+                children: [
+                  Text(
+                    'IN STOCK',
+                    style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w900, color: AppColors.textSub),
+                  ),
+                  const SizedBox(width: 4),
+                  Transform.scale(
+                    scale: 0.8,
+                    child: Switch.adaptive(
+                      value: _isAvailable,
+                      activeColor: AppColors.brandGreen,
+                      onChanged: (val) {
+                        _markDirty();
+                        setState(() => _isAvailable = val);
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                ],
+              ),
+            ],
           ),
       body: AdaptiveWrapper(
         child: Column(
@@ -417,16 +461,6 @@ class _EditProductSheetState extends ConsumerState<EditProductSheet> {
                           },
                           icon: isIOS ? CupertinoIcons.leaf_arrow_circlepath : Icons.eco_rounded,
                           activeColor: Colors.green,
-                        ),
-                        _buildSwitchRow(
-                          label: 'Active & In Stock',
-                          value: _isAvailable,
-                          onChanged: (val) {
-                            _markDirty();
-                            setState(() => _isAvailable = val);
-                          },
-                          icon: isIOS ? CupertinoIcons.checkmark_circle_fill : Icons.check_circle_rounded,
-                          activeColor: AppColors.brandGreen,
                         ),
                       ],
                     ),
