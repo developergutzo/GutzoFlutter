@@ -73,7 +73,8 @@ class _MarketplaceBody extends ConsumerWidget {
       for (final v in vendors) {
         if (v.products == null) continue;
         for (final p in v.products!) {
-          if (selectedFilter == 'All' || p.healthGoals.contains(selectedFilter)) {
+          final mappedValue = GoalConstants.goalMapping[selectedFilter] ?? selectedFilter;
+          if (selectedFilter == 'All' || p.healthGoals.contains(mappedValue)) {
             items.add({'product': p, 'vendor': v});
           }
         }
@@ -84,12 +85,12 @@ class _MarketplaceBody extends ConsumerWidget {
     final bannersAsync = ref.watch(bannersProvider);
 
     return Responsive(
-      mobile: _buildMobileBase(context, ref, bannersAsync, filteredDishesAsync, currentUser),
-      desktop: _buildWebBase(context, ref, bannersAsync, filteredDishesAsync, currentUser),
+      mobile: _buildMobileBase(context, ref, bannersAsync, filteredDishesAsync, currentUser, selectedFilter),
+      desktop: _buildWebBase(context, ref, bannersAsync, filteredDishesAsync, currentUser, selectedFilter),
     );
   }
 
-  Widget _buildMobileBase(BuildContext context, WidgetRef ref, AsyncValue bannersAsync, AsyncValue<List<Map<String, dynamic>>> filteredDishesAsync, dynamic currentUser) {
+  Widget _buildMobileBase(BuildContext context, WidgetRef ref, AsyncValue bannersAsync, AsyncValue<List<Map<String, dynamic>>> filteredDishesAsync, dynamic currentUser, String selectedFilter) {
     return Column(
       children: [
         Expanded(
@@ -99,7 +100,7 @@ class _MarketplaceBody extends ConsumerWidget {
               _buildMobileHeader(context, ref, currentUser),
               const _FilterChipsRow(),
               _buildBannersSection(bannersAsync),
-              _buildDishGridMobile(filteredDishesAsync, ref),
+              _buildDishGridMobile(filteredDishesAsync, ref, selectedFilter),
             ],
           ),
         ),
@@ -107,7 +108,7 @@ class _MarketplaceBody extends ConsumerWidget {
     );
   }
 
-  Widget _buildDishGridMobile(AsyncValue<List<Map<String, dynamic>>> dishesAsync, WidgetRef ref) {
+  Widget _buildDishGridMobile(AsyncValue<List<Map<String, dynamic>>> dishesAsync, WidgetRef ref, String selectedFilter) {
     return dishesAsync.when(
       data: (items) {
         final allUnavailable = items.isNotEmpty && items.every((item) => item['vendor'].isServiceable == false);
@@ -169,6 +170,7 @@ class _MarketplaceBody extends ConsumerWidget {
                   rating: item['vendor'].rating,
                   vendorModel: item['vendor'],
                   displayProduct: item['product'],
+                  selectedGoal: selectedFilter,
                 );
               },
               childCount: items.length,
@@ -315,7 +317,7 @@ class _MarketplaceBody extends ConsumerWidget {
     );
   }
 
-  Widget _buildWebBase(BuildContext context, WidgetRef ref, AsyncValue bannersAsync, AsyncValue filteredDishesAsync, dynamic currentUser) {
+  Widget _buildWebBase(BuildContext context, WidgetRef ref, AsyncValue bannersAsync, AsyncValue filteredDishesAsync, dynamic currentUser, String selectedFilter) {
     return SingleChildScrollView(
       child: MaxWidthContainer(
         child: Column(
@@ -324,7 +326,7 @@ class _MarketplaceBody extends ConsumerWidget {
             _buildBannersSection(bannersAsync),
             Padding(
               padding: const EdgeInsets.all(32),
-              child: _buildDishGridWeb(filteredDishesAsync, ref),
+              child: _buildDishGridWeb(filteredDishesAsync, ref, selectedFilter),
             ),
           ],
         ),
@@ -332,7 +334,7 @@ class _MarketplaceBody extends ConsumerWidget {
     );
   }
 
-  Widget _buildDishGridWeb(AsyncValue dishesAsync, WidgetRef ref) {
+  Widget _buildDishGridWeb(AsyncValue dishesAsync, WidgetRef ref, String selectedFilter) {
     return dishesAsync.when(
       data: (items) {
         final List<Map<String, dynamic>> list = items as List<Map<String, dynamic>>;
@@ -386,6 +388,7 @@ class _MarketplaceBody extends ConsumerWidget {
               rating: item['vendor'].rating,
               vendorModel: item['vendor'],
               displayProduct: item['product'],
+              selectedGoal: selectedFilter,
             );
           },
         );
@@ -396,20 +399,23 @@ class _MarketplaceBody extends ConsumerWidget {
   }
 }
 
-class _FilterChipsRow extends ConsumerWidget {
-  const _FilterChipsRow();
+class GoalConstants {
   static const Map<String, String> goalMapping = {
     'All': 'All',
     'Flat Tummy': 'Low Calorie',
     'Muscle Gain': 'High Protein',
     'Skin Glow': 'High Fiber',
-    'Clinical/Sugar': 'Sugar Free',
+    'Sugar Free': 'Sugar Free',
   };
+}
+
+class _FilterChipsRow extends ConsumerWidget {
+  const _FilterChipsRow();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedGoal = ref.watch(homeFilterProvider);
-    final goals = goalMapping.keys.toList();
+    final goals = GoalConstants.goalMapping.keys.toList();
 
     return SliverPadding(
       padding: const EdgeInsets.symmetric(vertical: 8),

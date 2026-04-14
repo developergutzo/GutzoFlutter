@@ -24,6 +24,7 @@ class VendorCard extends ConsumerStatefulWidget {
   final Vendor? vendorModel;
   final Product? displayProduct; // 🎯 NEW: Specific product to feature
   final String? searchQuery;
+  final String? selectedGoal;
 
   const VendorCard({
     super.key,
@@ -36,6 +37,7 @@ class VendorCard extends ConsumerStatefulWidget {
     this.displayProduct,
     this.rawVendor,
     this.searchQuery,
+    this.selectedGoal,
   });
 
   @override
@@ -198,7 +200,22 @@ class _VendorCardState extends ConsumerState<VendorCard> {
                                 ],
                               ),
                               child: Text(
-                                widget.displayProduct!.healthGoals.first.toUpperCase(),
+                                () {
+                                  // 🎯 Priority 1: Use Selected Goal if it matches
+                                  if (widget.selectedGoal != null && widget.selectedGoal != 'All') {
+                                    final mappedValue = GoalConstants.goalMapping[widget.selectedGoal] ?? widget.selectedGoal!;
+                                    if (widget.displayProduct!.healthGoals.contains(mappedValue)) {
+                                      return widget.selectedGoal!.toUpperCase();
+                                    }
+                                  }
+                                  
+                                  // 🎯 Priority 2: Fallback to mapping the first goal back to UI name
+                                  final firstGoal = widget.displayProduct!.healthGoals.first;
+                                  final reverseMapping = GoalConstants.goalMapping.entries
+                                      .firstWhere((e) => e.value == firstGoal, orElse: () => MapEntry(firstGoal, firstGoal))
+                                      .key;
+                                  return reverseMapping.toUpperCase();
+                                }(),
                                 style: GoogleFonts.poppins(
                                   fontSize: 7, 
                                   fontWeight: FontWeight.w900, 
