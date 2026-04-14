@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:shared_core/models/vendor.dart';
-import 'package:shared_core/models/product.dart';
-import 'package:shared_core/theme/app_colors.dart';
-import 'package:shared_core/services/node_api_service.dart';
+import 'package:shared_core/shared_core.dart';
 import 'package:customer_app/widgets/cart_strip.dart';
 import 'package:customer_app/widgets/quantity_selector.dart';
 import 'package:customer_app/widgets/habit_selection_drawer.dart';
@@ -556,7 +553,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.circle, color: product.isVeg ? AppColors.brandGreen : Colors.red, size: 12),
+                DietaryBadge(dietaryType: product.dietaryType, size: 14),
                 const SizedBox(height: 8),
                 _highlightedText(
                   product.name, 
@@ -810,18 +807,7 @@ class _WebProductCardState extends State<_WebProductCard> {
                       Container(
                         width: 12,
                         height: 12,
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: widget.product.isVeg ? AppColors.brandGreen : AppColors.errorRed, width: 1),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: widget.product.isVeg ? AppColors.brandGreen : AppColors.errorRed,
-                          ),
-                        ),
-                      ),
+                      DietaryBadge(dietaryType: widget.product.dietaryType, size: 16),
                     ],
                   ),
                   const SizedBox(height: 16),

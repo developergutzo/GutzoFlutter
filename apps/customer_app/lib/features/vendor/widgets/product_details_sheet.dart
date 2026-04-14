@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_core/models/product.dart';
-import 'package:shared_core/models/vendor.dart';
+import 'package:shared_core/shared_core.dart';
 import 'package:shared_core/services/cart_service.dart';
-import 'package:shared_core/theme/app_colors.dart';
 import '../../../widgets/habit_selection_drawer.dart';
 import '../../home/home_screen.dart';
 
@@ -83,7 +81,7 @@ class _ProductDetailsSheetState extends ConsumerState<ProductDetailsSheet> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.circle, color: widget.product.isVeg ? AppColors.brandGreen : Colors.red, size: 14),
+                          DietaryBadge(dietaryType: widget.product.dietaryType, size: 14),
                           const SizedBox(height: 4),
                           Text(
                             widget.product.name,

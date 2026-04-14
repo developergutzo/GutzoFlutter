@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_core/models/product.dart';
-import 'package:shared_core/theme/app_colors.dart';
+import 'package:shared_core/shared_core.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../auth/vendor_provider.dart';
 import '../../common/widgets/loading_overlay.dart';
@@ -661,7 +660,7 @@ class _MenuItemCard extends ConsumerWidget {
                                 : Icon(Icons.restaurant_rounded, color: Colors.grey[300], size: 28),
                           ),
                         ),
-                        Positioned(top: 6, left: 6, child: _VegNonVegIndicator(isVeg: product.isVeg)),
+                        Positioned(top: 6, left: 6, child: DietaryBadge(dietaryType: product.dietaryType, size: 14)),
                       ],
                     ),
                     const Spacer(),
@@ -734,27 +733,3 @@ class _MenuItemCard extends ConsumerWidget {
   }
 }
 
-class _VegNonVegIndicator extends StatelessWidget {
-  final bool isVeg;
-  const _VegNonVegIndicator({required this.isVeg});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: isVeg ? Colors.green : Colors.red, width: 1.5),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Container(
-        width: 6,
-        height: 6,
-        decoration: BoxDecoration(
-          color: isVeg ? Colors.green : Colors.red,
-          shape: BoxShape.circle,
-        ),
-      ),
-    );
-  }
-}

@@ -153,17 +153,12 @@ router.get('/:id/products', asyncHandler(async (req, res) => {
 // ============================================
 router.post('/:id/products', asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { name, description, price, image, image_url, category, is_veg, is_available, addon_ids, parent_product_ids, nutrition } = req.body;
+  const { name, description, price, image, image_url, category, is_veg, dietary_type, is_available, addon_ids, parent_product_ids, nutrition } = req.body;
 
   const { data: product, error } = await supabaseAdmin
     .from('products')
     .insert({
       id: req.body.id, // Use explicit ID if provided (for folder consistency)
-      vendor_id: id,
-      // Wait, the route is defined as POST /api/vendor-auth/:id/products
-      // :id is the VENDOR ID based on usage "router.post('/:id/products'..."
-      // So line 147 used 'id' as vendor_id. Correct.
-      // We just need to add 'id: req.body.id' to the insert object if it exists.
       vendor_id: id,
       name,
       description,
@@ -171,6 +166,7 @@ router.post('/:id/products', asyncHandler(async (req, res) => {
       image_url: image_url || image,
       category,
       is_veg: is_veg ?? true,
+      dietary_type: dietary_type || (is_veg === false ? 'non-veg' : 'veg'),
       is_available: is_available ?? true,
       nutritional_info: nutrition || null,
       rating: 0,

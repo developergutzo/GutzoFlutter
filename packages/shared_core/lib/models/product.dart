@@ -11,6 +11,7 @@ class Product {
   final String? imageUrl;
   final bool isAvailable;
   final bool isVeg;
+  final String dietaryType; // 'veg', 'non-veg', 'egg', 'vegan'
   final DateTime createdAt;
   final DateTime? updatedAt;
   final double? rating;
@@ -35,6 +36,7 @@ class Product {
     this.imageUrl,
     required this.isAvailable,
     required this.isVeg,
+    this.dietaryType = 'veg',
     required this.createdAt,
     this.updatedAt,
     this.rating,
@@ -76,6 +78,7 @@ class Product {
       imageUrl: (json['imageUrl'] ?? json['image_url']) as String?,
       isAvailable: json['isAvailable'] ?? json['is_available'] ?? json['available'] as bool? ?? true,
       isVeg: json['isVeg'] ?? json['is_veg'] as bool? ?? false,
+      dietaryType: (json['dietary_type'] ?? json['dietaryType'])?.toString() ?? (json['is_veg'] == false ? 'non-veg' : 'veg'),
       createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : DateTime.now(),
       updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
       rating: (json['rating'] as num?)?.toDouble(),
@@ -151,6 +154,7 @@ class Product {
     String? imageUrl,
     bool? isAvailable,
     bool? isVeg,
+    String? dietaryType,
     DateTime? createdAt,
     DateTime? updatedAt,
     double? rating,
@@ -175,6 +179,7 @@ class Product {
       imageUrl: imageUrl ?? this.imageUrl,
       isAvailable: isAvailable ?? this.isAvailable,
       isVeg: isVeg ?? this.isVeg,
+      dietaryType: dietaryType ?? this.dietaryType,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rating: rating ?? this.rating,
@@ -201,6 +206,7 @@ class Product {
       'image_url': imageUrl ?? image,
       'is_available': isAvailable,
       'is_veg': isVeg,
+      'dietary_type': dietaryType,
       'diet_tags': dietTags,
       'tags': tags,
       'variants': variants,

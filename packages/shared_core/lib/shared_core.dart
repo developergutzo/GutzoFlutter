@@ -1,5 +1,8 @@
-/// A Calculator.
-class Calculator {
-  /// Returns [value] plus 1.
-  int addOne(int value) => value + 1;
-}
+library shared_core;
+
+export 'models/product.dart';
+export 'models/vendor.dart';
+export 'models/order.dart';
+export 'theme/app_colors.dart';
+export 'widgets/dietary_badge.dart';
+export 'utils/responsive.dart';

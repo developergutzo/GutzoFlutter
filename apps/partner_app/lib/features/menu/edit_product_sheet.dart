@@ -27,6 +27,7 @@ class _EditProductSheetState extends ConsumerState<EditProductSheet> {
   late TextEditingController _discountController;
   late String _category;
   late bool _isVeg;
+  late String _dietaryType; // 'veg', 'non-veg', 'egg', 'vegan'
   late bool _isAvailable;
   late String _serviceType;
   late TextEditingController _calController;
@@ -68,6 +69,7 @@ class _EditProductSheetState extends ConsumerState<EditProductSheet> {
       ..addListener(_markDirty);
     _category = widget.product?.category ?? _categories[0];
     _isVeg = widget.product?.isVeg ?? true;
+    _dietaryType = widget.product?.dietaryType ?? 'veg';
     _isAvailable = widget.product?.isAvailable ?? true;
     
     final existingTags = widget.product?.dietTags ?? [];
@@ -136,7 +138,8 @@ class _EditProductSheetState extends ConsumerState<EditProductSheet> {
       originalPrice: double.tryParse(_originalPriceController.text),
       discountPct: double.tryParse(_discountController.text),
       category: _category,
-      isVeg: _isVeg,
+      isVeg: _dietaryType != 'non-veg',
+      dietaryType: _dietaryType,
       isAvailable: _isAvailable,
       dietTags: allTags,
       nutritionalInfo: {
@@ -156,7 +159,8 @@ class _EditProductSheetState extends ConsumerState<EditProductSheet> {
       originalPrice: double.tryParse(_originalPriceController.text),
       discountPct: double.tryParse(_discountController.text),
       category: _category,
-      isVeg: _isVeg,
+      isVeg: _dietaryType != 'non-veg',
+      dietaryType: _dietaryType,
       isAvailable: _isAvailable,
       image: '',
       createdAt: DateTime.now(),
@@ -452,16 +456,8 @@ class _EditProductSheetState extends ConsumerState<EditProductSheet> {
                       children: [
                         _buildServiceSelector(),
                         const SizedBox(height: 20),
-                        _buildSwitchRow(
-                          label: 'Vegetarian Dish',
-                          value: _isVeg,
-                          onChanged: (val) {
-                            _markDirty();
-                            setState(() => _isVeg = val);
-                          },
-                          icon: isIOS ? CupertinoIcons.leaf_arrow_circlepath : Icons.eco_rounded,
-                          activeColor: Colors.green,
-                        ),
+                        _buildSectionHeader('DIETARY PREFERENCE', topPadding: 0),
+                        _buildDietarySelector(isIOS),
                       ],
                     ),
                     const SizedBox(height: 40),
@@ -476,9 +472,9 @@ class _EditProductSheetState extends ConsumerState<EditProductSheet> {
     );
   }
 
-  Widget _buildSectionHeader(String label) {
+  Widget _buildSectionHeader(String label, {double? topPadding}) {
     return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 12),
+      padding: EdgeInsets.only(left: 4, bottom: 12, top: topPadding ?? 24),
       child: Text(
         label,
         style: GoogleFonts.inter(
@@ -990,6 +986,102 @@ class _EditProductSheetState extends ConsumerState<EditProductSheet> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
         side: BorderSide(color: isSelected ? AppColors.brandGreen : Colors.grey[200]!),
+      ),
+    );
+  }
+
+  Widget _buildDietarySelector(bool isIOS) {
+    final options = {
+      'veg': {'label': 'VEG', 'icon': isIOS ? CupertinoIcons.leaf_arrow_circlepath : Icons.eco_rounded, 'color': Colors.green},
+      'egg': {'label': 'EGG', 'icon': isIOS ? CupertinoIcons.circle_fill : Icons.egg_rounded, 'color': Colors.amber[700]},
+      'non-veg': {'label': 'NON-VEG', 'icon': isIOS ? CupertinoIcons.bolt_fill : Icons.restaurant_rounded, 'color': Colors.red},
+      'vegan': {'label': 'VEGAN', 'icon': isIOS ? CupertinoIcons.sparkles : Icons.spa_rounded, 'color': Colors.teal},
+    };
+
+    if (isIOS) {
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        width: double.infinity,
+        child: CupertinoSlidingSegmentedControl<String>(
+          groupValue: _dietaryType,
+          backgroundColor: const Color(0xFFF1F5F9),
+          thumbColor: Colors.white,
+          children: options.map((key, val) => MapEntry(
+            key,
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(val['icon'] as IconData, size: 12, color: _dietaryType == key ? val['color'] as Color : AppColors.textSub),
+                  const SizedBox(width: 4),
+                  Text(
+                    val['label'] as String,
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      color: _dietaryType == key ? AppColors.textMain : AppColors.textSub,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )),
+          onValueChanged: (val) {
+            if (val != null) {
+              _markDirty();
+              setState(() => _dietaryType = val);
+            }
+          },
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: options.entries.map((entry) {
+          final isSelected = _dietaryType == entry.key;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () {
+                _markDirty();
+                setState(() => _dietaryType = entry.key);
+              },
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: isSelected ? (entry.value['color'] as Color).withOpacity(0.1) : const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isSelected ? entry.value['color'] as Color : Colors.transparent,
+                    width: 2,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Icon(entry.value['icon'] as IconData, 
+                      size: 20, 
+                      color: isSelected ? entry.value['color'] as Color : AppColors.textSub
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      entry.value['label'] as String,
+                      style: GoogleFonts.inter(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        color: isSelected ? AppColors.textMain : AppColors.textSub,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }
