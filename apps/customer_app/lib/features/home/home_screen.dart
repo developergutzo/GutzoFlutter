@@ -559,6 +559,13 @@ class GoalConstants {
     'Skin Glow': 'Skin Glow',
     'Sugar Free': 'Clinical/Sugar',
   };
+  static const Map<String, IconData> goalIcons = {
+    'All': Icons.restaurant_rounded,
+    'Flat Tummy': Icons.spa_rounded,
+    'Muscle Gain': Icons.fitness_center_rounded,
+    'Skin Glow': Icons.face_retouching_natural_rounded,
+    'Sugar Free': Icons.eco_rounded,
+  };
 }
 
 class _FilterChipsRow extends ConsumerWidget {
@@ -568,33 +575,65 @@ class _FilterChipsRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedGoal = ref.watch(homeFilterProvider);
     final goals = GoalConstants.goalMapping.keys.toList();
-
     return SliverPadding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.only(top: 16, bottom: 8),
       sliver: SliverToBoxAdapter(
         child: SizedBox(
-          height: 50,
+          height: 72, // Taller to fit Icon + Text vertically
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             itemCount: goals.length,
+            physics: const BouncingScrollPhysics(),
             itemBuilder: (context, index) {
               final goal = goals[index];
               final isSelected = selectedGoal == goal;
+              final icon = GoalConstants.goalIcons[goal] ?? Icons.fastfood_rounded;
+
               return Padding(
-                padding: const EdgeInsets.only(right: 12),
-                child: Center(
-                  child: InkWell(
-                    onTap: () => ref.read(homeFilterProvider.notifier).state = goal,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: isSelected ? AppColors.brandGreen : Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: isSelected ? AppColors.brandGreen : AppColors.border, width: 1.5),
-                      ),
-                      child: Text(goal, style: TextStyle(color: isSelected ? Colors.white : AppColors.textMain, fontSize: 13, fontWeight: FontWeight.w800)),
+                padding: const EdgeInsets.only(right: 24), // More spacing between items
+                child: GestureDetector(
+                  onTap: () => ref.read(homeFilterProvider.notifier).state = goal,
+                  behavior: HitTestBehavior.opaque,
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 200),
+                    opacity: isSelected ? 1.0 : 0.5, // Unselected items are faded out
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        goal == 'Flat Tummy'
+                          ? FlatTummyIcon(
+                              size: 28,
+                              color: isSelected ? AppColors.brandGreen : AppColors.textMain,
+                            )
+                          : Icon(
+                              icon,
+                              size: 28,
+                              color: isSelected ? AppColors.brandGreen : AppColors.textMain,
+                            ),
+                        const SizedBox(height: 6),
+                        Text(
+                          goal,
+                          style: TextStyle(
+                            color: isSelected ? AppColors.brandGreen : AppColors.textMain,
+                            fontSize: 13,
+                            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        // Active Indicator underline
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          height: 3,
+                          width: isSelected ? 24 : 0,
+                          decoration: BoxDecoration(
+                            color: AppColors.brandGreen,
+                            borderRadius: BorderRadius.circular(100),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -605,4 +644,79 @@ class _FilterChipsRow extends ConsumerWidget {
       ),
     );
   }
+}
+
+class FlatTummyIcon extends StatelessWidget {
+  final Color color;
+  final double size;
+  const FlatTummyIcon({super.key, required this.color, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: CustomPaint(
+        painter: _FlatTummyPainter(color),
+      ),
+    );
+  }
+}
+
+class _FlatTummyPainter extends CustomPainter {
+  final Color color;
+  _FlatTummyPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final strokePaint = Paint()
+      ..color = color
+      ..strokeWidth = 2.0
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    final w = size.width;
+    final h = size.height;
+
+    // Ultra-minimal left body contour (open curve)
+    final leftBody = Path()
+      ..moveTo(w * 0.3, h * 0.15)
+      ..quadraticBezierTo(w * 0.45, h * 0.5, w * 0.3, h * 0.85);
+
+    // Ultra-minimal right body contour (open curve)
+    final rightBody = Path()
+      ..moveTo(w * 0.7, h * 0.15)
+      ..quadraticBezierTo(w * 0.55, h * 0.5, w * 0.7, h * 0.85);
+
+    // Draw the minimal lines (No fill, no top/bottom closures)
+    canvas.drawPath(leftBody, strokePaint);
+    canvas.drawPath(rightBody, strokePaint);
+
+    // Minimal subtle Navel to anchor it as a torso
+    canvas.drawCircle(Offset(w * 0.5, h * 0.6), w * 0.03, strokePaint);
+
+    // Minimal Left Arrow
+    // Minimal Left Arrow
+    final leftArrow = Path()
+      ..moveTo(w * 0.05, h * 0.5)
+      ..lineTo(w * 0.3, h * 0.5)
+      ..moveTo(w * 0.2, h * 0.4)
+      ..lineTo(w * 0.3, h * 0.5)
+      ..lineTo(w * 0.2, h * 0.6);
+
+    // Minimal Right Arrow (compressing inwards at waist)
+    final rightArrow = Path()
+      ..moveTo(w * 0.95, h * 0.5)
+      ..lineTo(w * 0.7, h * 0.5)
+      ..moveTo(w * 0.8, h * 0.4)
+      ..lineTo(w * 0.7, h * 0.5)
+      ..lineTo(w * 0.8, h * 0.6);
+
+    canvas.drawPath(leftArrow, strokePaint);
+    canvas.drawPath(rightArrow, strokePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
