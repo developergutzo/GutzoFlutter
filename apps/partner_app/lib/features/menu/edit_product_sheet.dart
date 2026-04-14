@@ -28,8 +28,13 @@ class _EditProductSheetState extends ConsumerState<EditProductSheet> {
   late String _category;
   late bool _isVeg;
   late bool _isAvailable;
-  late List<String> _selectedGoalTags;
   late String _serviceType;
+  late TextEditingController _calController;
+  late TextEditingController _proController;
+  late TextEditingController _carbController;
+  late TextEditingController _fatController;
+  late TextEditingController _fiberController;
+  late TextEditingController _sugarController;
   bool _isDirty = false;
 
   final List<String> _categories = [
@@ -45,8 +50,8 @@ class _EditProductSheetState extends ConsumerState<EditProductSheet> {
     'Desserts'
   ];
 
-  final List<String> _goalTagsList = [
-    'High Protein', 'Low Calorie', 'High Fibre', 'Gut Friendly', 'Detox', 'Post Workout'
+  final List<String> _serviceCategoryList = [
+    'Instant', 'Freshly Prepared', 'Pre-Order'
   ];
 
   @override
@@ -66,8 +71,21 @@ class _EditProductSheetState extends ConsumerState<EditProductSheet> {
     _isAvailable = widget.product?.isAvailable ?? true;
     
     final existingTags = widget.product?.dietTags ?? [];
-    _selectedGoalTags = existingTags.where((t) => !t.startsWith('Type:')).toList();
     _serviceType = existingTags.firstWhere((t) => t.startsWith('Type:'), orElse: () => 'Type:Instant');
+
+    final nutrition = widget.product?.nutritionalInfo;
+    _calController = TextEditingController(text: nutrition?['calories']?.toString() ?? '')
+      ..addListener(_markDirty);
+    _proController = TextEditingController(text: nutrition?['protein']?.toString() ?? '')
+      ..addListener(_markDirty);
+    _carbController = TextEditingController(text: nutrition?['carbs']?.toString() ?? '')
+      ..addListener(_markDirty);
+    _fatController = TextEditingController(text: nutrition?['fat']?.toString() ?? '')
+      ..addListener(_markDirty);
+    _fiberController = TextEditingController(text: nutrition?['fiber']?.toString() ?? '')
+      ..addListener(_markDirty);
+    _sugarController = TextEditingController(text: nutrition?['sugar']?.toString() ?? '')
+      ..addListener(_markDirty);
 
     _originalPriceController.addListener(_calculatePrice);
     _discountController.addListener(_calculatePrice);
@@ -95,13 +113,19 @@ class _EditProductSheetState extends ConsumerState<EditProductSheet> {
     _priceController.dispose();
     _originalPriceController.dispose();
     _discountController.dispose();
+    _calController.dispose();
+    _proController.dispose();
+    _carbController.dispose();
+    _fatController.dispose();
+    _fiberController.dispose();
+    _sugarController.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final allTags = [..._selectedGoalTags, _serviceType];
+    final allTags = [_serviceType];
     final tagsString = allTags.join(',');
     final descriptionWithTags = '${_descController.text} [TAGS:$tagsString]';
 
@@ -115,6 +139,14 @@ class _EditProductSheetState extends ConsumerState<EditProductSheet> {
       isVeg: _isVeg,
       isAvailable: _isAvailable,
       dietTags: allTags,
+      nutritionalInfo: {
+        'calories': double.tryParse(_calController.text),
+        'protein': double.tryParse(_proController.text),
+        'carbs': double.tryParse(_carbController.text),
+        'fat': double.tryParse(_fatController.text),
+        'fiber': double.tryParse(_fiberController.text),
+        'sugar': double.tryParse(_sugarController.text),
+      },
     ) ?? Product(
       id: '',
       vendorId: '', 
@@ -129,6 +161,14 @@ class _EditProductSheetState extends ConsumerState<EditProductSheet> {
       image: '',
       createdAt: DateTime.now(),
       dietTags: allTags,
+      nutritionalInfo: {
+        'calories': double.tryParse(_calController.text),
+        'protein': double.tryParse(_proController.text),
+        'carbs': double.tryParse(_carbController.text),
+        'fat': double.tryParse(_fatController.text),
+        'fiber': double.tryParse(_fiberController.text),
+        'sugar': double.tryParse(_sugarController.text),
+      },
     );
 
     try {
@@ -156,14 +196,6 @@ class _EditProductSheetState extends ConsumerState<EditProductSheet> {
               widget.product == null ? 'ADD PRODUCT' : 'EDIT PRODUCT',
               style: GoogleFonts.inter(fontWeight: FontWeight.w800, fontSize: 13, letterSpacing: 0.5),
             ),
-            trailing: CupertinoButton(
-              padding: EdgeInsets.zero,
-              onPressed: _isDirty ? _save : null,
-              child: Text(
-                'Save',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: _isDirty ? AppColors.brandGreen : CupertinoColors.inactiveGray),
-              ),
-            ),
           ) as PreferredSizeWidget
         : AppBar(
             leading: IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.pop(context)),
@@ -171,14 +203,6 @@ class _EditProductSheetState extends ConsumerState<EditProductSheet> {
               widget.product == null ? 'ADD PRODUCT' : 'EDIT PRODUCT',
               style: GoogleFonts.inter(fontWeight: FontWeight.w900, fontSize: 14, letterSpacing: 1.2),
             ),
-            actions: [
-              if (_isDirty)
-                TextButton(
-                  onPressed: _save,
-                  child: Text('SAVE', style: GoogleFonts.inter(fontWeight: FontWeight.w900, color: AppColors.brandGreen)),
-                ),
-              const SizedBox(width: 8),
-            ],
           ),
       body: AdaptiveWrapper(
         child: Column(
@@ -282,43 +306,103 @@ class _EditProductSheetState extends ConsumerState<EditProductSheet> {
                     _buildCard(
                       children: [
                         _buildCategorySelector(),
-                        const SizedBox(height: 20),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    _buildSectionHeader('NUTRITIONAL FACTS'),
+                    _buildCard(
+                      children: [
                         Row(
                           children: [
-                            Icon(isIOS ? CupertinoIcons.circle_grid_hex : Icons.label_rounded, size: 14, color: AppColors.textSub),
-                            const SizedBox(width: 6),
-                            Text(
-                              'DIETARY GOALS',
-                              style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w900, color: AppColors.textSub, letterSpacing: 0.5),
+                            Expanded(
+                              child: _buildTextField(
+                                controller: _calController,
+                                label: 'CALORIES (kcal)',
+                                placeholder: '0',
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                isNumeric: true,
+                                icon: isIOS ? CupertinoIcons.bolt_fill : Icons.bolt_rounded,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _buildTextField(
+                                controller: _proController,
+                                label: 'PROTEIN (g)',
+                                placeholder: '0',
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                isNumeric: true,
+                                color: Colors.blue[700],
+                                icon: isIOS ? CupertinoIcons.square_stack_3d_up_fill : Icons.fitness_center_rounded,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildTextField(
+                                controller: _carbController,
+                                label: 'CARBS (g)',
+                                placeholder: '0',
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                isNumeric: true,
+                                color: Colors.orange[700],
+                                icon: isIOS ? CupertinoIcons.graph_circle : Icons.grain_rounded,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _buildTextField(
+                                controller: _fatController,
+                                label: 'FATS (g)',
+                                placeholder: '0',
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                isNumeric: true,
+                                color: Colors.red[700],
+                                icon: isIOS ? CupertinoIcons.drop_fill : Icons.water_drop_rounded,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16), // Added breathing room
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildTextField(
+                                controller: _fiberController,
+                                label: 'FIBER (g)',
+                                placeholder: '0',
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                isNumeric: true,
+                                color: Colors.green[700],
+                                icon: isIOS ? CupertinoIcons.leaf_arrow_circlepath : Icons.grass_rounded,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _buildTextField(
+                                controller: _sugarController,
+                                label: 'SUGAR (g)',
+                                placeholder: '0',
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                isNumeric: true,
+                                color: Colors.pink[700],
+                                icon: isIOS ? CupertinoIcons.nosign : Icons.block_rounded,
+                              ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: _goalTagsList.map((tag) {
-                            final isSelected = _selectedGoalTags.contains(tag);
-                            return _buildTagChip(
-                              label: tag,
-                              isSelected: isSelected,
-                              onSelected: (val) {
-                                _markDirty();
-                                setState(() {
-                                  if (isSelected) {
-                                    _selectedGoalTags.remove(tag);
-                                  } else {
-                                    _selectedGoalTags.add(tag);
-                                  }
-                                });
-                              }
-                            );
-                          }).toList(),
+                        Text(
+                          'Detailed macros build trust with healthy mission users.',
                         ),
-                      ]
+                      ],
                     ),
                     const SizedBox(height: 24),
-  
+
                     _buildSectionHeader('OPERATIONS'),
                     _buildCard(
                       children: [
@@ -344,7 +428,7 @@ class _EditProductSheetState extends ConsumerState<EditProductSheet> {
                           icon: isIOS ? CupertinoIcons.checkmark_circle_fill : Icons.check_circle_rounded,
                           activeColor: AppColors.brandGreen,
                         ),
-                      ]
+                      ],
                     ),
                     const SizedBox(height: 40),
                   ],
@@ -425,7 +509,7 @@ class _EditProductSheetState extends ConsumerState<EditProductSheet> {
             elevation: 0,
           ),
           child: Text(
-            _isDirty ? 'SAVE PRODUCT CHANGES' : 'NO MODIFICATIONS',
+            'SAVE PRODUCT CHANGES',
             style: GoogleFonts.inter(fontWeight: FontWeight.w900, letterSpacing: 0.5, fontSize: 13),
           ),
         ),

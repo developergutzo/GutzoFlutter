@@ -587,6 +587,26 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
                     ),
                   ],
                 ),
+                if (product.nutritionalInfo != null) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(Icons.bolt_rounded, size: 12, color: Colors.orange[700]),
+                      const SizedBox(width: 2),
+                      Text(
+                        '${product.nutritionalInfo!['calories'] ?? 0} kcal',
+                        style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.orange[900]),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(Icons.fitness_center_rounded, size: 12, color: Colors.blue[700]),
+                      const SizedBox(width: 2),
+                      Text(
+                        '${product.nutritionalInfo!['protein'] ?? 0}g Pro',
+                        style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.blue[900]),
+                      ),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 8),
                 const SizedBox(height: 6),
                 const SizedBox(height: 6),

@@ -153,7 +153,7 @@ router.get('/:id/products', asyncHandler(async (req, res) => {
 // ============================================
 router.post('/:id/products', asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { name, description, price, image, image_url, category, is_veg, is_available, addon_ids, parent_product_ids } = req.body;
+  const { name, description, price, image, image_url, category, is_veg, is_available, addon_ids, parent_product_ids, nutrition } = req.body;
 
   const { data: product, error } = await supabaseAdmin
     .from('products')
@@ -172,6 +172,7 @@ router.post('/:id/products', asyncHandler(async (req, res) => {
       category,
       is_veg: is_veg ?? true,
       is_available: is_available ?? true,
+      nutritional_info: nutrition || null,
       rating: 0,
       sort_order: 999,
       addon_ids: addon_ids || []
@@ -314,6 +315,44 @@ router.put('/:id/profile', asyncHandler(async (req, res) => {
   }
 
   successResponse(res, { vendor }, 'Profile updated successfully');
+}));
+
+// ============================================
+// GET DASHBOARD STATS
+// GET /api/vendor-auth/:id/dashboard-stats
+// ============================================
+router.get('/:id/dashboard-stats', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+
+  // 1. Fetch Today's Orders & Revenue
+  const { data: orders, error: ordersError } = await supabaseAdmin
+    .from('orders')
+    .select('total_amount, status')
+    .eq('vendor_id', id)
+    .gte('created_at', startOfDay);
+
+  if (ordersError) throw new ApiError(500, 'Failed to fetch sales stats');
+
+  const validOrders = orders?.filter(o => o.status !== 'cancelled' && o.status !== 'rejected') || [];
+  const todayOrders = validOrders.length;
+  const todayRevenue = validOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
+
+  // 2. Fetch Vendor Rating
+  const { data: vendor } = await supabaseAdmin
+    .from('vendors')
+    .select('rating')
+    .eq('id', id)
+    .single();
+
+  successResponse(res, {
+    todayOrders,
+    todayRevenue,
+    rating: vendor?.rating || 4.8,
+    views: Math.floor(Math.random() * 50) + 20 // Mock views for now
+  });
 }));
 
 

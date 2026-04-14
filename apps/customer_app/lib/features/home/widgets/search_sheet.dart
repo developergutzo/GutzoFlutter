@@ -126,7 +126,7 @@ class _SearchSheetState extends State<SearchSheet> {
                     children: [
                       // Upper Label (Pixel Perfect match)
                       const Text(
-                        "what's your gut feeling today?",
+                        "let's fuel your mission",
                         style: TextStyle(
                           fontSize: 14,
                           color: Color(0xFF6B7280),

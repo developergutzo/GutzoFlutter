@@ -180,6 +180,34 @@ class _VendorCardState extends ConsumerState<VendorCard> {
                             ),
                           ),
                         ),
+                        if (widget.displayProduct != null && widget.displayProduct!.healthGoals.isNotEmpty)
+                          Positioned(
+                            top: 12,
+                            right: 12,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: AppColors.brandGreen,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.brandGreen.withValues(alpha: 0.3),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
+                                  )
+                                ],
+                              ),
+                              child: Text(
+                                widget.displayProduct!.healthGoals.first.toUpperCase(),
+                                style: GoogleFonts.poppins(
+                                  fontSize: 7, 
+                                  fontWeight: FontWeight.w900, 
+                                  color: Colors.white,
+                                  letterSpacing: 0.8,
+                                ),
+                              ),
+                            ),
+                          ),
                         if (widget.vendorModel?.isServiceable == false)
                           Positioned.fill(
                             child: Container(

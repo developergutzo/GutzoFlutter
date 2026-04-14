@@ -21,8 +21,10 @@ class DashboardStatsNotifier extends Notifier<AsyncValue<Map<String, dynamic>>> 
     try {
       final apiService = ref.read(nodeApiServiceProvider);
       final response = await apiService.getVendorDashboardStats(vendorId);
-      if (response['success'] == true) {
-        state = AsyncValue.data(response['data']['stats'] as Map<String, dynamic>);
+      if (response['success'] == true && response['data'] != null) {
+        state = AsyncValue.data(Map<String, dynamic>.from(response['data']));
+      } else {
+        state = const AsyncValue.data({});
       }
     } catch (e, st) {
       state = AsyncValue.error(e, st);

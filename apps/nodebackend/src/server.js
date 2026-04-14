@@ -33,7 +33,6 @@ import supportRoutes from './routes/support.js';
 import searchRoutes from './routes/search.js';
 import deliveryZoneRoutes from './routes/deliveryZones.js';
 import bannerRoutes from './routes/banners.js';
-import moodCategoryRoutes from './routes/moodCategories.js'; // [NEW]
 import deliveryRoutes from './routes/delivery.js';
 import vendorLeadsRoutes from './routes/vendorLeads.js';
 import vendorAuthRoutes from './routes/vendorAuth.js'; // [NEW]
@@ -148,7 +147,6 @@ app.use('/api/users', userRoutes);
 app.use('/api/vendors', vendorRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
-app.use('/api/mood-categories', moodCategoryRoutes); // [NEW]
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);

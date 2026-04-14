@@ -19,6 +19,8 @@ class Product {
   final List<String>? tags;
   final Map<String, dynamic>? variants; // For future customization
   final Map<String, dynamic>? addons;   // For future customization
+  final Map<String, dynamic>? nutritionalInfo; // Nutritional facts (calories, protein, carbs, fat, fiber, sugar)
+  final String? nutritionalInfoText; // Description of nutritional value
 
   Product({
     required this.id,
@@ -41,6 +43,8 @@ class Product {
     this.tags,
     this.variants,
     this.addons,
+    this.nutritionalInfo,
+    this.nutritionalInfoText,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -80,12 +84,59 @@ class Product {
       tags: (json['tags'] as List?)?.cast<String>(),
       variants: json['variants'] is Map ? json['variants'] as Map<String, dynamic> : null,
       addons: json['addons'] is Map ? json['addons'] as Map<String, dynamic> : null,
+      nutritionalInfo: (json['nutritional_info'] ?? json['nutritionalInfo'] ?? json['nutrition']) is Map 
+          ? (json['nutritional_info'] ?? json['nutritionalInfo'] ?? json['nutrition']) as Map<String, dynamic> 
+          : null,
+      nutritionalInfoText: json['nutritional_info_text'] ?? json['nutritionalInfoText'] as String?,
     );
   }
 
   String get displayImage => (imageUrl != null && imageUrl!.isNotEmpty) 
     ? imageUrl! 
     : (image.isNotEmpty ? image : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c');
+
+  /// Returns the matching Health Missions for this product
+  List<String> get healthGoals {
+    final List<String> goals = [];
+    final String c = category.toLowerCase();
+    final List<String> allTags = [
+      ...(dietTags ?? []),
+      ...(tags ?? []),
+      name.toLowerCase(),
+      description.toLowerCase(),
+    ];
+
+    bool hasTag(String term) => allTags.any((t) => t.contains(term.toLowerCase()));
+
+    // --- MACRO-INTELLIGENCE (Verifiable Data) ---
+    final macros = nutritionalInfo ?? {};
+    final calories = (macros['calories'] as num?)?.toDouble() ?? (macros['kcal'] as num?)?.toDouble() ?? 1000.0;
+    final protein = (macros['protein'] as num?)?.toDouble() ?? 0.0;
+    final fiber = (macros['fiber'] as num?)?.toDouble() ?? (macros['fibre'] as num?)?.toDouble() ?? 0.0;
+    final sugar = (macros['sugar'] as num?)?.toDouble() ?? 100.0;
+
+    // 1. Flat Tummy (Low Calorie / Weight Loss)
+    if (calories <= 400 || c.contains('low calorie') || hasTag('low calorie')) {
+      goals.add('Flat Tummy');
+    }
+
+    // 2. Muscle Gain (High Protein)
+    if (protein >= 15.0 || c.contains('high protein') || hasTag('high protein')) {
+      goals.add('Muscle Gain');
+    }
+
+    // 3. Skin Glow (High Fiber / Antioxidants)
+    if (fiber >= 5.0 || c.contains('high fiber') || hasTag('high fiber')) {
+      goals.add('Skin Glow');
+    }
+
+    // 4. Clinical/Sugar (Sugar Free / Diabetic Friendly)
+    if (sugar <= 2.0 || c.contains('sugar free') || hasTag('sugar free')) {
+      goals.add('Clinical/Sugar');
+    }
+
+    return goals;
+  }
 
   Product copyWith({
     String? id,
@@ -108,6 +159,8 @@ class Product {
     List<String>? tags,
     Map<String, dynamic>? variants,
     Map<String, dynamic>? addons,
+    Map<String, dynamic>? nutritionalInfo,
+    String? nutritionalInfoText,
   }) {
     return Product(
       id: id ?? this.id,
@@ -130,6 +183,8 @@ class Product {
       tags: tags ?? this.tags,
       variants: variants ?? this.variants,
       addons: addons ?? this.addons,
+      nutritionalInfo: nutritionalInfo ?? this.nutritionalInfo,
+      nutritionalInfoText: nutritionalInfoText ?? this.nutritionalInfoText,
     );
   }
 
@@ -146,6 +201,12 @@ class Product {
       'image_url': imageUrl ?? image,
       'is_available': isAvailable,
       'is_veg': isVeg,
+      'diet_tags': dietTags,
+      'tags': tags,
+      'variants': variants,
+      'addons': addons,
+      'nutritional_info': nutritionalInfo,
+      'nutritional_info_text': nutritionalInfoText,
       'created_at': createdAt.toIso8601String(),
     };
   }

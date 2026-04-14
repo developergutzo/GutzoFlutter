@@ -85,8 +85,20 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
             if (filteredProducts.isEmpty && query.isNotEmpty) return _buildNoSearchResultsState();
   
             final groupedProducts = <String, List<Product>>{};
+            final automatedGoals = ['low calorie', 'high protein', 'high fiber', 'high fibre', 'sugar free', 'sugar-free', 'gut friendly', 'detox', 'post workout'];
+            
             for (var product in filteredProducts) {
-              final category = product.category.isEmpty ? 'Other' : product.category;
+              String rawCat = product.category.trim();
+              if (rawCat.isEmpty) rawCat = 'Other';
+              
+              // Skip if it's an automated goal (keep primary categories only)
+              if (automatedGoals.contains(rawCat.toLowerCase())) continue;
+              
+              // Normalize to Title Case for grouping consistency
+              final category = rawCat.split(' ')
+                  .map((s) => s.isNotEmpty ? s[0].toUpperCase() + s.substring(1).toLowerCase() : '')
+                  .join(' ');
+                  
               groupedProducts.putIfAbsent(category, () => []).add(product);
               if (!_categoryKeys.containsKey(category)) _categoryKeys[category] = GlobalKey();
             }
@@ -679,13 +691,11 @@ class _MenuItemCard extends ConsumerWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 6),
-                Expanded(
-                  child: Text(
-                    product.description,
-                    style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSub, height: 1.5, fontWeight: FontWeight.w500),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                Text(
+                  product.description,
+                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSub, height: 1.5, fontWeight: FontWeight.w500),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 20),
                 Row(

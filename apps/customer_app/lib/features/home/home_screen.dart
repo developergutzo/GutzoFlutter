@@ -67,30 +67,13 @@ class _MarketplaceBody extends ConsumerWidget {
     final vendorsAsync = ref.watch(vendorProvider);
     final selectedFilter = ref.watch(homeFilterProvider);
     
-    final goalsMapping = {
-      'All': 'All',
-      'Flat Tummy': 'Low Calorie',
-      'Muscle Gain': 'High Protein',
-      'Skin Glow': 'High Fiber',
-      'Clinical/Sugar': 'Sugar Free',
-    };
-    final backendFilter = goalsMapping[selectedFilter] ?? 'All';
-
     final filteredDishesAsync = vendorsAsync.whenData((vendors) {
       final List<Map<String, dynamic>> items = [];
-      final filter = backendFilter.toLowerCase();
       
       for (final v in vendors) {
-        // 🛡️ Discovery Logic: Show all kitchens (unserviceable ones will have a card overlay)
-        
         if (v.products == null) continue;
         for (final p in v.products!) {
-          final nameMatch = p.name.toLowerCase().contains(filter);
-          final descMatch = p.description.toLowerCase().contains(filter);
-          final tagMatch = p.tags?.any((t) => t.toLowerCase().contains(filter)) ?? false;
-          final cuisineMatch = v.cuisineType.toLowerCase().contains(filter);
-          
-          if (filter == 'all' || nameMatch || descMatch || tagMatch || cuisineMatch) {
+          if (selectedFilter == 'All' || p.healthGoals.contains(selectedFilter)) {
             items.add({'product': p, 'vendor': v});
           }
         }

@@ -105,6 +105,10 @@ class _ProductDetailsSheetState extends ConsumerState<ProductDetailsSheet> {
                 ),
                 
                 const SizedBox(height: 24),
+                if (widget.product.nutritionalInfo != null) ...[
+                  _buildNutritionStrip(widget.product.nutritionalInfo!),
+                  const SizedBox(height: 24),
+                ],
                 const Divider(),
                 const SizedBox(height: 12),
                 
@@ -152,6 +156,55 @@ class _ProductDetailsSheetState extends ConsumerState<ProductDetailsSheet> {
           ),
         ],
       ),
+    );
+  Widget _buildNutritionStrip(Map<String, dynamic> nutrition) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9FAFB),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.black.withOpacity(0.03)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildNutritionItem('Calories', '${nutrition['calories'] ?? 0}', 'kcal', Icons.bolt, Colors.orange),
+              _buildNutritionItem('Protein', '${nutrition['protein'] ?? 0}g', '💪', Icons.fitness_center, Colors.blue),
+              _buildNutritionItem('Carbs', '${nutrition['carbs'] ?? 0}g', '🌾', Icons.grain, Colors.amber),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Divider(height: 1),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildNutritionItem('Fats', '${nutrition['fat'] ?? 0}g', '💧', Icons.water_drop, Colors.red),
+              _buildNutritionItem('Fiber', '${nutrition['fiber'] ?? 0}g', '🌿', Icons.grass, Colors.green),
+              _buildNutritionItem('Sugar', '${nutrition['sugar'] ?? 0}g', '🚫', Icons.block, Colors.pink),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNutritionItem(String label, String value, String unit, IconData icon, Color color) {
+    return Column(
+      children: [
+        Icon(icon, size: 16, color: color.withOpacity(0.7)),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: AppColors.textMain),
+        ),
+        Text(
+          label.toUpperCase(),
+          style: TextStyle(fontSize: 8, fontWeight: FontWeight.w800, color: AppColors.textDisabled, letterSpacing: 0.5),
+        ),
+      ],
     );
   }
 }

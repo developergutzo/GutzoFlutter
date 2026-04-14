@@ -52,8 +52,8 @@ class DashboardScreen extends ConsumerWidget {
               data: (vendor) {
                 final ordersAsync = ref.watch(orderListProvider);
                 final statsAsync = ref.watch(dashboardStatsProvider);
-                final List<Order> orders = ordersAsync.value ?? [];
-                final stats = statsAsync.value ?? {};
+                final List<Order> orders = ordersAsync.valueOrNull ?? [];
+                final stats = statsAsync.valueOrNull ?? <String, dynamic>{};
                 
                 final now = DateTime.now();
                 final todayOrders = orders.where((o) => 
@@ -94,7 +94,7 @@ class DashboardScreen extends ConsumerWidget {
                             const SizedBox(height: 32),
                             _buildSectionHeader('RECENT ACTIVITY'),
                             const SizedBox(height: 12),
-                            _buildRecentActivityList(orders),
+                            _buildRecentActivityList(context, orders),
                             const SizedBox(height: 120),
                           ],
                         ),
@@ -146,7 +146,7 @@ class DashboardScreen extends ConsumerWidget {
                     flex: 3,
                     child: Column(
                       children: [
-                        _buildRecentActivityBento(orders),
+                        _buildRecentActivityList(context, orders), // 🎯 Fixed: Pass context here
                         const SizedBox(height: 24),
                         _buildOperationalBento(context, stats),
                       ],
@@ -346,7 +346,7 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildRecentActivityBento(List<Order> orders) {
+  Widget _buildRecentActivityBento(BuildContext context, List<Order> orders) {
     return Container(
       padding: const EdgeInsets.all(40),
       decoration: BoxDecoration(
@@ -376,7 +376,7 @@ class DashboardScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 40),
-          _buildRecentActivityList(orders),
+          _buildRecentActivityList(context, orders),
         ],
       ),
     );
@@ -682,7 +682,7 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildRecentActivityList(List<Order> orders) {
+  Widget _buildRecentActivityList(BuildContext context, List<Order> orders) {
     if (orders.isEmpty) {
       return _buildPlaceholderCard('No transactions found yet');
     }
