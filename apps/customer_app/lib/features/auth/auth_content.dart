@@ -12,11 +12,13 @@ enum AuthStep { phone, otp }
 class AuthContent extends ConsumerStatefulWidget {
   final VoidCallback? onComplete;
   final bool isPanel;
+  final String? initialPhone;
 
   const AuthContent({
     super.key, 
     this.onComplete,
     this.isPanel = false,
+    this.initialPhone,
   });
 
   @override
@@ -38,6 +40,9 @@ class _AuthContentState extends ConsumerState<AuthContent> {
   void initState() {
     super.initState();
     _lastPhoneNumber = ref.read(authServiceProvider).getLastPhone();
+    if (widget.initialPhone != null && widget.initialPhone!.length >= 10) {
+      _phoneController.text = widget.initialPhone!;
+    }
   }
 
   @override

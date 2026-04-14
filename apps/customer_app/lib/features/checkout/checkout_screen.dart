@@ -18,6 +18,7 @@ import 'package:shared_core/services/location_service.dart';
 import '../home/widgets/location_sheet.dart';
 import '../../providers/location_sync_provider.dart';
 import 'package:shimmer/shimmer.dart';
+final checkoutPhoneProvider = StateProvider<String>((ref) => '');
 
 class CheckoutScreen extends ConsumerWidget {
   const CheckoutScreen({super.key});
@@ -259,6 +260,7 @@ class CheckoutScreen extends ConsumerWidget {
             ),
             child: TextField(
               keyboardType: TextInputType.phone,
+              onChanged: (val) => ref.read(checkoutPhoneProvider.notifier).state = val,
               decoration: InputDecoration(
                 border: InputBorder.none,
                 hintText: "10 Digit Mobile Number",
@@ -273,8 +275,8 @@ class CheckoutScreen extends ConsumerWidget {
             height: 56,
             child: ElevatedButton(
               onPressed: () {
-                // Trigger OTP logic via AuthService
-                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AuthScreen()));
+                final phone = ref.read(checkoutPhoneProvider);
+                Navigator.of(context).push(MaterialPageRoute(builder: (_) => AuthScreen(initialPhone: phone)));
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.brandGreen,
@@ -718,7 +720,8 @@ class CheckoutScreen extends ConsumerWidget {
       child: ElevatedButton(
         onPressed: isDisabled ? null : () async {
           if (user == null) {
-            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AuthScreen()));
+            final phone = ref.read(checkoutPhoneProvider);
+            Navigator.of(context).push(MaterialPageRoute(builder: (_) => AuthScreen(initialPhone: phone)));
             return;
           }
           final result = await ref.read(checkoutProvider.notifier).placeOrder();

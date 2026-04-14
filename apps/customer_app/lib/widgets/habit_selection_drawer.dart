@@ -128,17 +128,6 @@ class _HabitSelectionDrawerState extends ConsumerState<HabitSelectionDrawer> {
   }
 
   void _handleSelection(BuildContext context, bool isHabitSelected) {
-    final user = ref.read(currentUserProvider);
-    
-    // 🛡️ Edge Case: Guest Login
-    if (user == null) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please login to start your habit mission!'))
-      );
-      return;
-    }
-
     // 🎯 Set Action Intent & Add Item to Cart
     ref.read(cartProvider.notifier).addItem(
       widget.product, 

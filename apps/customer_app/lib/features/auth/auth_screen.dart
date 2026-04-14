@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'auth_content.dart';
 
 class AuthScreen extends ConsumerWidget {
-  const AuthScreen({super.key});
+  final String? initialPhone;
+  const AuthScreen({super.key, this.initialPhone});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -11,8 +12,8 @@ class AuthScreen extends ConsumerWidget {
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          const SingleChildScrollView(
-            child: AuthContent(),
+          SingleChildScrollView(
+            child: AuthContent(initialPhone: initialPhone),
           ),
           SafeArea(
             child: Padding(
