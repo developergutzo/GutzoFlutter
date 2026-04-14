@@ -355,6 +355,10 @@ class NodeApiService {
   Future<Map<String, dynamic>> createShadowfaxOrder(String orderId) async {
     return _request("/shadowfax/create-order", method: "POST", body: {"orderId": orderId});
   }
+
+  Future<Map<String, dynamic>> dispatchHabitOrder(String vendorId, String orderId) async {
+    return _request("/vendor-auth/$vendorId/orders/$orderId/dispatch-habit", method: "POST");
+  }
 }
 
 final nodeApiServiceProvider = Provider<NodeApiService>((ref) {

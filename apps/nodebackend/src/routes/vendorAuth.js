@@ -586,6 +586,100 @@ router.patch('/:id/orders/:orderId/status', asyncHandler(async (req, res) => {
 }));
 
 // ============================================
+// DISPATCH HABIT ORDER (DAILY RITUAL)
+// POST /api/vendor-auth/:id/orders/:orderId/dispatch-habit
+// ============================================
+router.post('/:id/orders/:orderId/dispatch-habit', asyncHandler(async (req, res) => {
+  const { id, orderId } = req.params;
+
+  // 1. Fetch Order and Verify Mission Status
+  const { data: order, error: orderError } = await supabaseAdmin
+    .from('orders')
+    .select('*, items:order_items(*), vendor:vendors(*)')
+    .eq('id', orderId)
+    .eq('vendor_id', id)
+    .single();
+
+  if (orderError || !order) throw new ApiError(404, 'Order not found');
+  if (!order.is_habit_pack) throw new ApiError(400, 'Only habit packs can be dispatched iteratively.');
+
+  // Check progress (defaulting if columns don't exist yet, but logic relies on them)
+  const currentDay = order.current_fulfillment_day || 0;
+  const totalDays = order.total_fulfillment_days || 5;
+
+  if (currentDay >= totalDays) {
+    throw new ApiError(400, `This mission is already $100% complete (${currentDay}/${totalDays})`);
+  }
+
+  const nextDay = currentDay + 1;
+  console.log(`🚀 [Dispatch Habit] Triggering Day ${nextDay}/${totalDays} for Order ${order.order_number}`);
+
+  // 2. Trigger Programmatic On-Demand Delivery (Shadowfax)
+  let sfResponse = null;
+  const { createShadowfaxOrder } = await import('../utils/shadowfax.js');
+
+  // Generate Unique Day Segment ID (e.g. GZ...-D1)
+  const segmentOrder = {
+    ...order,
+    order_number: `${order.order_number}-D${nextDay}`
+  };
+
+  // Generate Fresh OTPs for today's pickup
+  const pickupOtp = Math.floor(1000 + Math.random() * 9000).toString();
+  const deliveryOtp = Math.floor(1000 + Math.random() * 9000).toString();
+
+  sfResponse = await createShadowfaxOrder(segmentOrder, order.vendor, { pickup_otp: pickupOtp, delivery_otp: deliveryOtp });
+
+  if (!sfResponse || !sfResponse.success) {
+    console.error(`❌ [Shadowfax Error] Failed to trigger iterative dispatch: ${sfResponse?.error}`);
+    throw new ApiError(500, `Shadowfax rejection: ${sfResponse?.error || 'Unknown'}`);
+  }
+
+  const shadowfaxId = sfResponse.data.sfx_order_id || sfResponse.data.id;
+
+  // 3. Update Fulfillment State and Create Delivery Record
+  // Increment progress
+  await supabaseAdmin
+    .from('orders')
+    .update({ 
+      current_fulfillment_day: nextDay,
+      status: nextDay === totalDays ? 'completed' : 'preparing' // Status management for multi-day
+    })
+    .eq('id', orderId);
+
+  // Store new delivery segment
+  await supabaseAdmin.from('deliveries').insert({
+    order_id: order.id,
+    partner_id: 'shadowfax',
+    external_order_id: shadowfaxId,
+    status: 'searching_rider',
+    pickup_otp: pickupOtp,
+    delivery_otp: deliveryOtp,
+    history: [{
+      status: 'searching_rider',
+      timestamp: new Date().toISOString(),
+      note: `Iterative Dispatch Triggered: Day ${nextDay}/${totalDays}`
+    }]
+  });
+
+  // 4. Notify User of Mission Progress
+  await supabaseAdmin.from('notifications').insert({
+    user_id: order.user_id,
+    type: 'order_update',
+    title: `Day ${nextDay} In-Flight! 🛵`,
+    message: `Your Day ${nextDay} health ritual is out for delivery (#${order.order_number}).`,
+    data: { order_id: order.id, day: nextDay }
+  });
+
+  successResponse(res, { 
+    success: true, 
+    current_day: nextDay,
+    total_days: totalDays,
+    message: `Day ${nextDay} mission successfully dispatched via Shadowfax!` 
+  });
+}));
+
+// ============================================
 // GET VENDOR GST REPORT
 // GET /api/vendor-auth/:vendorId/gst-report
 // ============================================

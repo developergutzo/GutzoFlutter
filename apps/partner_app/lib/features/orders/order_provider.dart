@@ -87,6 +87,24 @@ class OrderListNotifier extends Notifier<AsyncValue<List<Order>>> {
     }
   }
 
+  Future<void> dispatchHabitOrder(String orderId) async {
+    final vId = ref.read(vendorProvider).value?.id;
+    if (vId == null) return;
+
+    ref.read(globalLoadingProvider.notifier).state = true;
+    try {
+      final apiService = ref.read(nodeApiServiceProvider);
+      final response = await apiService.dispatchHabitOrder(vId, orderId);
+      if (response['success'] == true) {
+        await _fetchOrdersSilently(vId);
+      }
+    } catch (e) {
+      print('❌ OrderListNotifier: Dispatch habit failed: $e');
+    } finally {
+      ref.read(globalLoadingProvider.notifier).state = false;
+    }
+  }
+
   Future<void> _fetchOrdersSilently(String vId) async {
     try {
       final apiService = ref.read(nodeApiServiceProvider);

@@ -507,7 +507,7 @@ class _OrderCard extends ConsumerWidget {
                         const Icon(Icons.auto_awesome, color: AppColors.brandGreen, size: 14),
                         const SizedBox(width: 4),
                         Text(
-                          "5-DAY ${order.selectedGoal?.toUpperCase() ?? 'HABIT'} PACK",
+                          "DAY ${order.currentFulfillmentDay} / ${order.totalFulfillmentDays} ${order.selectedGoal?.toUpperCase() ?? 'HABIT'} PACK",
                           style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w900, color: AppColors.brandGreen),
                         ),
                       ],
@@ -615,7 +615,25 @@ class _ActionButton extends ConsumerWidget {
     } else if (order.status == 'preparing') {
       label = 'Mark Ready';
       nextStatus = 'ready';
-    } else if (order.status == 'ready') {
+    } else if (order.status == 'ready' || (order.isHabitPack && order.currentFulfillmentDay < order.totalFulfillmentDays)) {
+      if (order.isHabitPack && order.status != 'ready') {
+         label = 'Dispatch Day ${order.currentFulfillmentDay + 1}';
+         return ElevatedButton(
+            onPressed: () => ref.read(orderListProvider.notifier).dispatchHabitOrder(order.id),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.brandGreen,
+              foregroundColor: Colors.white,
+              minimumSize: const Size(100, 44),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              elevation: 0,
+            ),
+            child: Text(
+              label.toUpperCase(),
+              style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+            ),
+          );
+      }
       label = 'Dispatch';
       nextStatus = 'dispatched';
     } else {
@@ -696,7 +714,7 @@ class _OrderDetailsSheet extends StatelessWidget {
                           style: GoogleFonts.inter(fontWeight: FontWeight.w900, fontSize: 14, color: AppColors.brandGreen),
                         ),
                         Text(
-                          "Day 1 / 5 • Deliver by 1:00 PM",
+                          "Day ${order.currentFulfillmentDay} / ${order.totalFulfillmentDays} • Dispatch Next Segment",
                           style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12, color: AppColors.brandGreen.withValues(alpha: 0.7)),
                         ),
                       ],
