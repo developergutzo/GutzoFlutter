@@ -31,6 +31,8 @@ class LocationPromptNotifier extends StateNotifier<bool> {
   void setPrompted() => state = true;
 }
 
+final homeTabProvider = StateProvider<int>((ref) => 0);
+
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -39,11 +41,10 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  int _selectedTab = 0;
-
   @override
   Widget build(BuildContext context) {
     final isNavVisible = ref.watch(_navVisibleProvider);
+    final selectedTab = ref.watch(homeTabProvider);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -62,13 +63,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               }
               return false;
             },
-            child: _selectedTab == 0
+            child: selectedTab == 0
                 ? const _MarketplaceBody()
                 : const HabitDashboardScreen(),
           ),
 
           // 🛒 CartStrips above the nav bar (only on Home tab)
-          if (_selectedTab == 0)
+          if (selectedTab == 0)
             Positioned(
               left: 0,
               right: 0,
@@ -95,8 +96,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: Padding(
                   padding: const EdgeInsets.only(bottom: 20),
                   child: _FloatingNavBar(
-                    selectedIndex: _selectedTab,
-                    onTap: (idx) => setState(() => _selectedTab = idx),
+                    selectedIndex: selectedTab,
+                    onTap: (idx) => ref.read(homeTabProvider.notifier).state = idx,
                   ),
                 ),
               ),

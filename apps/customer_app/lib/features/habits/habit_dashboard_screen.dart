@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_core/models/habit_pack.dart';
 import 'package:shared_core/theme/app_colors.dart';
 import '../../providers/habit_provider.dart';
+import '../home/home_screen.dart';
 
 class HabitDashboardScreen extends ConsumerWidget {
   const HabitDashboardScreen({super.key});
@@ -91,11 +92,11 @@ class HabitDashboardScreen extends ConsumerWidget {
 // ═══════════════════════════════════════════════════════════
 // STATE 1: EMPTY
 // ═══════════════════════════════════════════════════════════
-class _EmptyState extends StatelessWidget {
+class _EmptyState extends ConsumerWidget {
   const _EmptyState();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 60),
@@ -127,7 +128,7 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: 32),
             ElevatedButton(
               onPressed: () {
-                Navigator.of(context).maybePop();
+                ref.read(homeTabProvider.notifier).state = 0;
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.brandGreen,
