@@ -333,7 +333,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
         color: Colors.white.withOpacity(0.85),
         border: Border(bottom: BorderSide(color: Colors.grey[100]!, width: 1)),
       ),
-      child: ClipRRect(
+      child: ClipRect(
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
           child: ListView.builder(

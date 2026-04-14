@@ -533,9 +533,9 @@ class DashboardScreen extends ConsumerWidget {
             color: Colors.white.withOpacity(0.85),
             border: Border(bottom: BorderSide(color: Colors.grey[200]!, width: 0.5)),
           ),
-          child: ClipRRect(
+          child: ClipRect(
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
               child: Container(color: Colors.transparent),
             ),
           ),

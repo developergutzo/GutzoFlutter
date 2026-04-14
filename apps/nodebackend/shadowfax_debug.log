@@ -1047,3 +1047,21 @@ Data: [
     "status": "created"
   }
 ]
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50e
+Raw Count: 1
+Data: [
+  {
+    "id": "GZ202603280838YFSJ",
+    "status": "created"
+  }
+]
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50e
+Raw Count: 1
+Data: [
+  {
+    "id": "GZ202603280838YFSJ",
+    "status": "created"
+  }
+]

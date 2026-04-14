@@ -209,17 +209,12 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> with SingleTickerPr
               ),
             ),
             centerTitle: Theme.of(context).platform == TargetPlatform.iOS,
+            backgroundColor: Colors.white,
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.85),
-                  border: Border(bottom: BorderSide(color: Colors.grey[200]!, width: 0.5)),
-                ),
-                child: ClipRRect(
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                    child: Container(color: Colors.transparent),
-                  ),
+                  color: Colors.white,
+                  border: Border(bottom: BorderSide(color: Colors.grey[100]!, width: 0.5)),
                 ),
               ),
             ),
@@ -228,14 +223,11 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> with SingleTickerPr
             pinned: true,
             delegate: _TabHeaderDelegate(
               child: Container(
-                color: Colors.white.withOpacity(0.85),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border(bottom: BorderSide(color: Colors.grey[100]!, width: 1)),
-                    ),
-                    child: TabBar(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border(bottom: BorderSide(color: Colors.grey[100]!, width: 0.5)),
+                ),
+                child: TabBar(
                       controller: _tabController,
                       indicatorColor: AppColors.brandGreen,
                       indicatorWeight: 3,
@@ -252,10 +244,8 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> with SingleTickerPr
                   ),
                 ),
               ),
-            ),
-          ),
-        ],
-        body: TabBarView(
+            ],
+            body: TabBarView(
           controller: _tabController,
           children: const [
             _OrderList(statusFilter: 'preparing,ready,dispatched'),

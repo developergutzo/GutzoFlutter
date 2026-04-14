@@ -194,8 +194,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
         );
       }
     } finally {
+      ref.read(globalLoadingProvider.notifier).state = false;
       if (mounted) {
-        ref.read(globalLoadingProvider.notifier).state = false;
+        // Any remaining widget-specific state can go here
       }
     }
   }
@@ -272,9 +273,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
                           color: Colors.white.withOpacity(0.85),
                           border: Border(bottom: BorderSide(color: Colors.grey[200]!, width: 0.5)),
                         ),
-                        child: ClipRRect(
+                        child: ClipRect(
                           child: BackdropFilter(
-                            filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
                             child: Container(color: Colors.transparent),
                           ),
                         ),
