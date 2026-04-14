@@ -526,14 +526,18 @@ class _EditProductSheetState extends ConsumerState<EditProductSheet> {
           },
           selectedColor: AppColors.brandGreen,
           checkmarkColor: Colors.white,
+          side: BorderSide(
+            color: isSelected ? Colors.transparent : Colors.grey[100]!,
+            width: 1,
+          ),
           labelStyle: GoogleFonts.inter(
             fontSize: 9, 
             fontWeight: FontWeight.w900, 
             color: isSelected ? Colors.white : AppColors.textMain,
             letterSpacing: 0.5,
           ),
-          backgroundColor: const Color(0xFFF1F5F9),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide.none),
+          backgroundColor: const Color(0xFFF8FAFC),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           padding: const EdgeInsets.symmetric(horizontal: 4),
         );
       }).toList(),
