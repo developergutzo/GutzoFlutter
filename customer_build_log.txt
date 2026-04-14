@@ -1,0 +1,35 @@
+Launching lib/main.dart on sdk gphone64 arm64 in debug mode...
+Running Gradle task 'assembleDebug'...                          
+lib/features/vendor/vendor_detail_screen.dart:807:32: Error: Can't find ')' to match '('.
+                      Container(
+                               ^
+lib/features/vendor/vendor_detail_screen.dart:39:39: Error: The getter 'nodeApiServiceProvider' isn't defined for the class '_VendorDetailScreenState'.
+ - '_VendorDetailScreenState' is from 'package:customer_app/features/vendor/vendor_detail_screen.dart' ('lib/features/vendor/vendor_detail_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named 'nodeApiServiceProvider'.
+      final response = await ref.read(nodeApiServiceProvider).getVendorProducts(widget.vendor.id);
+                                      ^^^^^^^^^^^^^^^^^^^^^^
+lib/features/vendor/vendor_detail_screen.dart:807:32: Error: Too many positional arguments: 0 allowed, but 1 found.
+Try removing the extra positional arguments.
+                      Container(
+                               ^
+../../../../../../Development/flutter/packages/flutter/lib/src/widgets/container.dart:255:3: Context: Found this candidate, but the arguments don't match.
+  Container({
+  ^^^^^^^^^
+Target kernel_snapshot_program failed: Exception
+
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileFlutterBuildDebug'.
+> Process 'command '/Users/apple/Development/flutter/bin/flutter'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 7s
+Running Gradle task 'assembleDebug'...                              7.6s
+Error: Gradle task assembleDebug failed with exit code 1

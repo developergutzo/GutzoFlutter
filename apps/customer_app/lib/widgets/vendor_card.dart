@@ -138,17 +138,17 @@ class _VendorCardState extends ConsumerState<VendorCard> {
                               context),
                         ),
                         Positioned(
-                          top: 12,
-                          left: 12, // 🎯 Standardized to Left for consistent grid symmetry
+                          top: 10,
+                          left: 10,
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.95),
-                              borderRadius: BorderRadius.circular(12),
+                              color: Colors.white.withValues(alpha: 0.9), // Glassmorphic base
+                              borderRadius: BorderRadius.circular(10),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.1),
-                                  blurRadius: 8,
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  blurRadius: 10,
                                   offset: const Offset(0, 4),
                                 )
                               ],
@@ -156,25 +156,25 @@ class _VendorCardState extends ConsumerState<VendorCard> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.star_rounded, color: Colors.amber, size: 16),
+                                const Icon(Icons.star_rounded, color: Colors.amber, size: 14),
                                 const SizedBox(width: 4),
                                 Text(
                                   (widget.rating == 0.0 ? 4.5 : widget.rating).toStringAsFixed(1),
-                                  style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.black),
+                                  style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.black),
                                 ),
                                 Container(
-                                  margin: const EdgeInsets.symmetric(horizontal: 6),
+                                  margin: const EdgeInsets.symmetric(horizontal: 8),
                                   width: 1,
                                   height: 10,
                                   color: Colors.black.withValues(alpha: 0.1),
                                 ),
                                 Text(
                                   widget.deliveryTime.isNotEmpty ? widget.deliveryTime.split(' ').first : '25',
-                                  style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.black),
+                                  style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.black),
                                 ),
                                 Text(
                                   ' MINS',
-                                  style: GoogleFonts.poppins(fontSize: 8, fontWeight: FontWeight.w700, color: Colors.black.withValues(alpha: 0.5)),
+                                  style: GoogleFonts.poppins(fontSize: 7, fontWeight: FontWeight.w800, color: Colors.black.withValues(alpha: 0.4)),
                                 ),
                               ],
                             ),
@@ -182,17 +182,17 @@ class _VendorCardState extends ConsumerState<VendorCard> {
                         ),
                         if (widget.displayProduct != null && widget.displayProduct!.healthGoals.isNotEmpty)
                           Positioned(
-                            top: 12,
-                            right: 12,
+                            bottom: 10,
+                            left: 10,
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                               decoration: BoxDecoration(
                                 color: AppColors.brandGreen,
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(10),
                                 boxShadow: [
                                   BoxShadow(
                                     color: AppColors.brandGreen.withValues(alpha: 0.3),
-                                    blurRadius: 8,
+                                    blurRadius: 10,
                                     offset: const Offset(0, 4),
                                   )
                                 ],
@@ -236,23 +236,24 @@ class _VendorCardState extends ConsumerState<VendorCard> {
                         children: [
                           Text(
                             featuredName,
-                            style: const TextStyle(
-                              fontSize: 14,
+                            style: GoogleFonts.poppins(
+                              fontSize: 15,
                               fontWeight: FontWeight.w800,
                               color: AppColors.textMain,
-                              letterSpacing: -0.4,
-                              height: 1.1,
+                              letterSpacing: -0.2,
+                              height: 1.2,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 2),
                           Text(
                             'by ${widget.title}',
-                            style: const TextStyle(
+                            style: GoogleFonts.poppins(
                               color: AppColors.textSub,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w400,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: -0.1,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,

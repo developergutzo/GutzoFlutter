@@ -155,6 +155,8 @@ class _ProductDetailsSheetState extends ConsumerState<ProductDetailsSheet> {
         ],
       ),
     );
+  }
+
   Widget _buildNutritionStrip(Map<String, dynamic> nutrition) {
     return Container(
       padding: const EdgeInsets.all(16),

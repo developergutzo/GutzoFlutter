@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_core/shared_core.dart';
+import 'package:shared_core/services/node_api_service.dart';
 import 'package:customer_app/widgets/cart_strip.dart';
 import 'package:customer_app/widgets/quantity_selector.dart';
 import 'package:customer_app/widgets/habit_selection_drawer.dart';
@@ -804,9 +805,6 @@ class _WebProductCardState extends State<_WebProductCard> {
                 children: [
                   Row(
                     children: [
-                      Container(
-                        width: 12,
-                        height: 12,
                       DietaryBadge(dietaryType: widget.product.dietaryType, size: 16),
                     ],
                   ),
