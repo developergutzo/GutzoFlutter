@@ -299,4 +299,14 @@ class CartNotifier extends Notifier<CartState> {
     state = CartState();
     _saveCart();
   }
+
+  /// Removes only items of a specific type (habit or today) without touching the other.
+  void clearByType(bool isHabit) {
+    final remaining = state.items.where((item) => item.isHabit != isHabit).toList();
+    state = state.copyWith(
+      items: remaining,
+      vendorId: remaining.isEmpty ? null : state.vendorId,
+    );
+    _saveCart();
+  }
 }

@@ -368,12 +368,16 @@ class CartStrip extends ConsumerWidget {
       context: context,
       builder: (context) => ModernDialog(
         title: 'Clear cart?',
-        message: 'Are you sure you want to clear your cart from $vendorName?',
+        message: 'Are you sure you want to remove these items from $vendorName?',
         primaryLabel: 'Clear',
         secondaryLabel: 'Cancel',
         isDestructive: true,
         onPrimary: () {
-          ref.read(cartProvider.notifier).clear();
+          if (filterHabit != null) {
+            ref.read(cartProvider.notifier).clearByType(filterHabit!);
+          } else {
+            ref.read(cartProvider.notifier).clear();
+          }
           Navigator.pop(context);
         },
       ),
