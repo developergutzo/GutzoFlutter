@@ -402,10 +402,10 @@ class _MarketplaceBody extends ConsumerWidget {
 class GoalConstants {
   static const Map<String, String> goalMapping = {
     'All': 'All',
-    'Flat Tummy': 'Low Calorie',
-    'Muscle Gain': 'High Protein',
-    'Skin Glow': 'High Fiber',
-    'Sugar Free': 'Sugar Free',
+    'Flat Tummy': 'Flat Tummy',
+    'Muscle Gain': 'Muscle Gain',
+    'Skin Glow': 'Skin Glow',
+    'Sugar Free': 'Clinical/Sugar',
   };
 }
 
