@@ -359,6 +359,27 @@ class NodeApiService {
   Future<Map<String, dynamic>> dispatchHabitOrder(String vendorId, String orderId) async {
     return _request("/vendor-auth/$vendorId/orders/$orderId/dispatch-habit", method: "POST");
   }
+
+  // --- Habit Packs ---
+  Future<Map<String, dynamic>> getHabits() async {
+    return _request("/habits");
+  }
+
+  Future<Map<String, dynamic>> skipHabitDay(String habitId) async {
+    return _request("/habits/$habitId/skip", method: "POST", body: {});
+  }
+
+  Future<Map<String, dynamic>> cancelHabitPack(String habitId, String reason) async {
+    return _request("/habits/$habitId/cancel", method: "POST", body: {"reason": reason});
+  }
+
+  Future<Map<String, dynamic>> triggerHabitToday(String habitId) async {
+    return _request("/habits/$habitId/trigger-today", method: "POST", body: {});
+  }
+
+  Future<Map<String, dynamic>> getVendorTodayHabits(String vendorId) async {
+    return _request("/habits/vendor/today?vendor_id=$vendorId");
+  }
 }
 
 final nodeApiServiceProvider = Provider<NodeApiService>((ref) {

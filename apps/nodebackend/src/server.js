@@ -40,6 +40,7 @@ import uploadRoutes from './routes/upload.js'; // [NEW]
 import shadowfaxRoutes from './routes/shadowfax.js'; // [NEW]
 import mealTemplateRoutes from './routes/mealTemplates.js'; // [NEW]
 import mealCalendarRoutes from './routes/mealCalendar.js'; // [NEW]
+import habitRoutes from './routes/habits.js'; // [NEW]
 
 // Import middleware
 import { errorHandler, notFound } from './middleware/errorHandler.js';
@@ -167,6 +168,7 @@ app.use('/api/vendor-leads', vendorLeadsRoutes);
 app.use('/api/vendor-auth', vendorAuthRoutes);
 app.use('/api/upload', uploadRoutes); // [NEW]
 app.use('/api/shadowfax', shadowfaxRoutes); // [NEW]
+app.use('/api/habits', habitRoutes); // [NEW]
 
 
 // 404 handler

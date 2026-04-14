@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import '../../common/widgets/loading_overlay.dart';
 import '../../common/widgets/skeletons.dart';
 import 'order_provider.dart';
+import 'today_habits_banner.dart';
 
 class OrdersScreen extends ConsumerStatefulWidget {
   final String? initialOrderId;
@@ -414,13 +415,20 @@ class _OrderList extends ConsumerWidget {
           onRefresh: () => ref.read(orderListProvider.notifier).fetchOrders(),
           color: AppColors.brandGreen,
           child: ListView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 24, 16, 100),
-            itemCount: filtered.length,
-            itemBuilder: (context, index) => _OrderCard(
-              order: filtered[index], 
-              onTap: onSelect,
-              isSelected: selectedId == filtered[index].id,
-            ),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+            itemCount: filtered.length + (statusFilter.contains('preparing') ? 1 : 0),
+            itemBuilder: (context, index) {
+              // Insert habit banner as first item in ACTIVE tab
+              if (statusFilter.contains('preparing') && index == 0) {
+                return const TodayHabitsBanner();
+              }
+              final orderIndex = statusFilter.contains('preparing') ? index - 1 : index;
+              return _OrderCard(
+                order: filtered[orderIndex],
+                onTap: onSelect,
+                isSelected: selectedId == filtered[orderIndex].id,
+              );
+            },
           ),
         );
       },
