@@ -30,6 +30,7 @@ class _EditProductSheetState extends ConsumerState<EditProductSheet> {
   late String _dietaryType; // 'veg', 'non-veg', 'egg', 'vegan'
   late bool _isAvailable;
   late String _serviceType;
+  late List<String> _selectedMissionTags;
   late TextEditingController _calController;
   late TextEditingController _proController;
   late TextEditingController _carbController;
@@ -74,6 +75,11 @@ class _EditProductSheetState extends ConsumerState<EditProductSheet> {
     
     final existingTags = widget.product?.dietTags ?? [];
     _serviceType = existingTags.firstWhere((t) => t.startsWith('Type:'), orElse: () => 'Type:Instant');
+    
+    // Mission Tags Mapping
+    _selectedMissionTags = existingTags.where((t) => 
+      ['low calorie', 'high protein', 'high fiber', 'sugar free'].contains(t)
+    ).toList();
 
     final nutrition = widget.product?.nutritionalInfo;
     _calController = TextEditingController(text: nutrition?['calories']?.toString() ?? '')
@@ -126,11 +132,11 @@ class _EditProductSheetState extends ConsumerState<EditProductSheet> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-
-    final allTags = [_serviceType];
+  
+    final allTags = [_serviceType, ..._selectedMissionTags];
     final tagsString = allTags.join(',');
     final descriptionWithTags = '${_descController.text} [TAGS:$tagsString]';
-
+  
     final updatedProduct = widget.product?.copyWith(
       name: _nameController.text,
       description: descriptionWithTags,
@@ -358,6 +364,14 @@ class _EditProductSheetState extends ConsumerState<EditProductSheet> {
                     ),
                     const SizedBox(height: 24),
 
+                    _buildSectionHeader('HEALTH MISSIONS (GOALS)'),
+                    _buildCard(
+                      children: [
+                        _buildMissionSelector(),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
                     _buildSectionHeader('NUTRITIONAL FACTS'),
                     _buildCard(
                       children: [
@@ -484,6 +498,45 @@ class _EditProductSheetState extends ConsumerState<EditProductSheet> {
           letterSpacing: 1.2,
         ),
       ),
+    );
+  }
+
+  Widget _buildMissionSelector() {
+    final missions = [
+      {'label': 'Weight Loss', 'tag': 'low calorie'},
+      {'label': 'Muscle Gain', 'tag': 'high protein'},
+      {'label': 'Skin Glow', 'tag': 'high fiber'},
+      {'label': 'Diabetic Friendly', 'tag': 'sugar free'},
+    ];
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 10,
+      children: missions.map((m) {
+        final isSelected = _selectedMissionTags.contains(m['tag']);
+        return FilterChip(
+          label: Text(m['label']!.toUpperCase()),
+          selected: isSelected,
+          onSelected: (val) {
+            _markDirty();
+            setState(() {
+              if (val) _selectedMissionTags.add(m['tag']!);
+              else _selectedMissionTags.remove(m['tag']);
+            });
+          },
+          selectedColor: AppColors.brandGreen,
+          checkmarkColor: Colors.white,
+          labelStyle: GoogleFonts.inter(
+            fontSize: 9, 
+            fontWeight: FontWeight.w900, 
+            color: isSelected ? Colors.white : AppColors.textMain,
+            letterSpacing: 0.5,
+          ),
+          backgroundColor: const Color(0xFFF1F5F9),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide.none),
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+        );
+      }).toList(),
     );
   }
 
