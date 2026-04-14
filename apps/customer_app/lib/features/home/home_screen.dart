@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_core/models/vendor.dart';
 import 'package:shared_core/models/product.dart';
 import 'package:shared_core/models/banner.dart' as model;
@@ -15,6 +16,7 @@ import '../../widgets/vendor_card.dart';
 import '../../widgets/cart_strip.dart';
 import '../../providers/location_sync_provider.dart';
 import '../auth/auth_screen.dart';
+import '../habits/habit_dashboard_screen.dart';
 import '../profile/profile_screen.dart';
 import '../profile/widgets/web_profile_panel.dart';
 import 'widgets/location_sheet.dart';
@@ -22,35 +24,184 @@ import 'widgets/search_sheet.dart';
 
 final homeFilterProvider = StateProvider<String>((ref) => 'All');
 final locationAutoPromptProvider = StateNotifierProvider<LocationPromptNotifier, bool>((ref) => LocationPromptNotifier());
+final _navVisibleProvider = StateProvider<bool>((ref) => true);
 
 class LocationPromptNotifier extends StateNotifier<bool> {
   LocationPromptNotifier() : super(false);
   void setPrompted() => state = true;
 }
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return const Scaffold(
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  int _selectedTab = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final isNavVisible = ref.watch(_navVisibleProvider);
+
+    return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          _MarketplaceBody(),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CartStrip(filterHabit: true, isPremium: true),
-                CartStrip(filterHabit: false, isPremium: true),
-              ],
+          // 🗺️ Main marketplace body with scroll detection
+          NotificationListener<ScrollNotification>(
+            onNotification: (notification) {
+              if (notification is ScrollUpdateNotification) {
+                final delta = notification.scrollDelta ?? 0;
+                if (delta > 6) {
+                  ref.read(_navVisibleProvider.notifier).state = false;
+                } else if (delta < -6) {
+                  ref.read(_navVisibleProvider.notifier).state = true;
+                }
+              }
+              return false;
+            },
+            child: _selectedTab == 0
+                ? const _MarketplaceBody()
+                : const HabitDashboardScreen(),
+          ),
+
+          // 🛒 CartStrips above the nav bar (only on Home tab)
+          if (_selectedTab == 0)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 80, // above nav bar
+              child: const Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CartStrip(filterHabit: true, isPremium: true),
+                  CartStrip(filterHabit: false, isPremium: true),
+                ],
+              ),
+            ),
+
+          // 🏠 Floating Nav Bar
+          AnimatedSlide(
+            duration: const Duration(milliseconds: 280),
+            curve: Curves.easeInOut,
+            offset: isNavVisible ? Offset.zero : const Offset(0, 2),
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 280),
+              opacity: isNavVisible ? 1.0 : 0.0,
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 20),
+                  child: _FloatingNavBar(
+                    selectedIndex: _selectedTab,
+                    onTap: (idx) => setState(() => _selectedTab = idx),
+                  ),
+                ),
+              ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ─── Floating Pill Navigation Bar ────────────────────────────────────────────
+class _FloatingNavBar extends StatelessWidget {
+  final int selectedIndex;
+  final ValueChanged<int> onTap;
+
+  const _FloatingNavBar({required this.selectedIndex, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 56,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: AppColors.brandGreen.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _NavTab(
+            icon: Icons.storefront_rounded,
+            label: 'Home',
+            isActive: selectedIndex == 0,
+            onTap: () => onTap(0),
+          ),
+          const SizedBox(width: 4),
+          _NavTab(
+            icon: Icons.auto_awesome_rounded,
+            label: 'My Habits',
+            isActive: selectedIndex == 1,
+            onTap: () => onTap(1),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NavTab extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _NavTab({
+    required this.icon,
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 260),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        decoration: BoxDecoration(
+          color: isActive ? AppColors.brandGreen : Colors.transparent,
+          borderRadius: BorderRadius.circular(28),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: isActive ? Colors.white : Colors.grey[400],
+            ),
+            const SizedBox(width: 7),
+            Text(
+              label,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                color: isActive ? Colors.white : Colors.grey[400],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -151,7 +302,7 @@ class _MarketplaceBody extends ConsumerWidget {
           );
         }
         return SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 200),
           sliver: SliverGrid(
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
