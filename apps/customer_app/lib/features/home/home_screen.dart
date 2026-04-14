@@ -357,7 +357,7 @@ class _MarketplaceBody extends ConsumerWidget {
                   const SizedBox(width: 8),
                   const Text('GUTZO', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textMain, letterSpacing: -0.5)),
                   const Spacer(),
-                  IconButton(onPressed: () => SearchSheet.show(context), icon: const Icon(Icons.search, color: AppColors.textMain, size: 24)),
+                  // IconButton(onPressed: () => SearchSheet.show(context), icon: const Icon(Icons.search, color: AppColors.textMain, size: 24)),
                   _buildProfileButton(context, ref, currentUser),
                 ],
               ),
