@@ -216,4 +216,14 @@ class Product {
       'created_at': createdAt.toIso8601String(),
     };
   }
+
+  /// Specialized mapping for Node.js Backend expectations
+  Map<String, dynamic> toApiJson() {
+    final data = toJson();
+    // Map nutritional_info to 'nutrition' as expected by backend POST/PUT handlers
+    if (data.containsKey('nutritional_info')) {
+      data['nutrition'] = data.remove('nutritional_info');
+    }
+    return data;
+  }
 }

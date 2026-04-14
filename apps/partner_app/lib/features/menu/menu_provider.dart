@@ -85,20 +85,7 @@ class MenuNotifier extends Notifier<AsyncValue<List<Product>>> {
     try {
       final apiService = ref.read(nodeApiServiceProvider);
       
-      // Sanitized map for the API
-      final sanitizedData = {
-        'name': product.name,
-        'description': product.description,
-        'price': product.price,
-        'original_price': product.originalPrice,
-        'discount_pct': product.discountPct,
-        'category': product.category,
-        'image_url': product.imageUrl ?? product.image,
-        'is_available': product.isAvailable,
-        'is_veg': product.isVeg,
-      };
-
-      final response = await apiService.updateVendorProduct(vId, product.id, sanitizedData);
+      final response = await apiService.updateVendorProduct(vId, product.id, product.toApiJson());
       if (response['success'] == true) {
         state = state.whenData((products) => products.map<Product>((p) {
           if (p.id == product.id) {

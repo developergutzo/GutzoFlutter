@@ -6,9 +6,9 @@ plugins {
 }
 
 android {
-    namespace = "in.gutzo.partner_app"
+    namespace = "com.developer.gutzo.partner"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

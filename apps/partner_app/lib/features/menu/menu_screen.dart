@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_core/shared_core.dart';
@@ -41,17 +42,26 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
   }
 
   void _scrollToCategory(String category) {
-    final key = _categoryKeys[category];
-    if (key != null && key.currentContext != null) {
-      Scrollable.ensureVisible(
-        key.currentContext!,
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeInOut,
-        alignment: 0.0,
-      );
-      setState(() => _activeCategory = category);
-    } else {
-      setState(() => _activeCategory = category);
+    HapticFeedback.mediumImpact();
+    setState(() => _activeCategory = category);
+    
+    final context = _categoryKeys[category]?.currentContext;
+    if (context != null) {
+      final box = context.findRenderObject() as RenderBox?;
+      if (box != null) {
+        // Calculate absolute offset within the scrollable
+        final scrollable = Scrollable.of(context);
+        final viewport = scrollable.position.viewportDimension;
+        final position = box.localToGlobal(Offset.zero, ancestor: scrollable.context.findRenderObject());
+        
+        final targetOffset = (_scrollController.offset + position.dy).clamp(0.0, _scrollController.position.maxScrollExtent);
+        
+        _scrollController.animateTo(
+          targetOffset,
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeOutCubic,
+        );
+      }
     }
   }
 
@@ -111,74 +121,31 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
               return _buildWebMenu(context, ref, categories, groupedProducts, filteredProducts);
             }
   
-            return NestedScrollView(
-              controller: _scrollController,
-              headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                SliverAppBar(
-                  expandedHeight: 80,
-                  floating: true,
-                  pinned: true,
-                  elevation: 0,
-                  backgroundColor: Colors.white.withOpacity(0.1),
-                  centerTitle: Theme.of(context).platform == TargetPlatform.iOS,
-                  title: Text(
-                    'MENU MANAGEMENT',
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 14,
-                      letterSpacing: 1.2,
-                      color: AppColors.textMain,
-                    ),
-                  ),
-                  flexibleSpace: FlexibleSpaceBar(
-                    background: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.85),
-                        border: Border(bottom: BorderSide(color: Colors.grey[200]!, width: 0.5)),
-                      ),
-                      child: ClipRRect(
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                          child: Container(color: Colors.transparent),
-                        ),
+            return Column(
+              children: [
+                _buildSearchBar(),
+                _buildCategoryNavigator(categories),
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: () => ref.read(menuProvider.notifier).fetchMenu(),
+                    color: AppColors.brandGreen,
+                    child: SingleChildScrollView(
+                      controller: _scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                      child: Column(
+                        children: [
+                          ...categories.map((category) {
+                            final items = groupedProducts[category]!;
+                            return _buildCategorySection(category, items);
+                          }),
+                          const SizedBox(height: 600), // Bottom spacer for coverage
+                        ],
                       ),
                     ),
-                  ),
-                  actions: [
-                    IconButton(
-                      icon: Icon(
-                        Theme.of(context).platform == TargetPlatform.iOS 
-                          ? CupertinoIcons.add_circled_solid 
-                          : Icons.add_circle_rounded, 
-                        color: AppColors.brandGreen, 
-                        size: 28
-                      ),
-                      onPressed: () => _showEditProductSheet(context, null),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                ),
-                SliverToBoxAdapter(child: _buildSearchBar()),
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: _CategoryHeaderDelegate(
-                    child: _buildCategoryNavigator(categories),
                   ),
                 ),
               ],
-              body: RefreshIndicator(
-                onRefresh: () => ref.read(menuProvider.notifier).fetchMenu(),
-                color: AppColors.brandGreen,
-                child: ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 120),
-                  itemCount: categories.length,
-                  itemBuilder: (context, catIndex) {
-                    final category = categories[catIndex];
-                    final items = groupedProducts[category]!;
-                    return _buildCategorySection(category, items);
-                  },
-                ),
-              ),
             );
           },
         ),
@@ -595,7 +562,8 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
 
 class _CategoryHeaderDelegate extends SliverPersistentHeaderDelegate {
   final Widget child;
-  _CategoryHeaderDelegate({required this.child});
+  final String activeCategory;
+  _CategoryHeaderDelegate({required this.child, required this.activeCategory});
 
   @override
   double get minExtent => 54;
@@ -606,7 +574,8 @@ class _CategoryHeaderDelegate extends SliverPersistentHeaderDelegate {
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) => child;
 
   @override
-  bool shouldRebuild(covariant _CategoryHeaderDelegate oldDelegate) => false;
+  bool shouldRebuild(covariant _CategoryHeaderDelegate oldDelegate) => 
+    oldDelegate.activeCategory != activeCategory;
 }
 
 class _MenuItemCard extends ConsumerWidget {
