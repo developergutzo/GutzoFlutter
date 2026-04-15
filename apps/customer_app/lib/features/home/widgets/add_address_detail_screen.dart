@@ -9,6 +9,7 @@ import 'package:shared_core/services/node_api_service.dart';
 import 'package:shared_core/theme/app_colors.dart';
 import 'package:shared_core/models/address.dart';
 import '../../../providers/address_provider.dart';
+import '../../auth/auth_screen.dart';
 
 class AddAddressDetailScreen extends StatelessWidget {
   final LatLng position;
@@ -160,7 +161,13 @@ class _AddAddressDetailViewState extends ConsumerState<AddAddressDetailView> {
     if (!_formKey.currentState!.validate()) return;
 
     final user = ref.read(currentUserProvider);
-    if (user == null) return;
+    if (user == null) {
+      // Not logged in — redirect to login flow
+      Navigator.of(context).push(
+        CupertinoPageRoute(builder: (_) => const AuthScreen()),
+      );
+      return;
+    }
 
     setState(() => _isSaving = true);
 

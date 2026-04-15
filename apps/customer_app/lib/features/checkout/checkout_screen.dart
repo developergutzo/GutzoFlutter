@@ -200,7 +200,7 @@ class CheckoutScreen extends ConsumerWidget {
         children: [
           const SizedBox(height: 12),
           // 1. Identity Block (High-Velocity Login)
-          if (user == null) _buildIdentityBlock(context, ref),
+          // if (user == null) _buildIdentityBlock(context, ref), // Removed: login handled by bottom CTA button
           
           // 2. Habit Summary (The Commitment Card)
           _buildHabitSummaryCard(checkout, ref),

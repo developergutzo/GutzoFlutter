@@ -462,7 +462,15 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
                   icon: Icons.my_location,
                   label: 'Current Location',
                   isLoading: isDetecting,
-                  onTap: () => ref.read(locationProvider.notifier).refreshLocation(),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      CupertinoPageRoute(
+                        builder: (_) => const LocationPickScreen(
+                          isAddingAddress: false,
+                        ),
+                      ),
+                    );
+                  },
                 )),
                 const SizedBox(width: 12),
                 Expanded(child: _buildActionButton(
