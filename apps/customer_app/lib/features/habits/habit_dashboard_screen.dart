@@ -1,9 +1,12 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_core/models/habit_pack.dart';
 import 'package:shared_core/theme/app_colors.dart';
+import 'package:shared_core/services/auth_service.dart';
 import '../../providers/habit_provider.dart';
+import '../auth/auth_screen.dart';
 import '../home/home_screen.dart';
 
 class HabitDashboardScreen extends ConsumerWidget {
@@ -11,6 +14,76 @@ class HabitDashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(currentUserProvider);
+
+    // Guest user OR stale session with no phone — show login prompt
+    if (user == null || user.phone.isEmpty) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF7F8FA),
+        appBar: AppBar(
+          backgroundColor: const Color(0xFFF7F8FA),
+          elevation: 0,
+          centerTitle: true,
+          title: Text(
+            'MY HABITS',
+            style: GoogleFonts.inter(
+              fontWeight: FontWeight.w900,
+              fontSize: 18,
+              letterSpacing: 1.4,
+              color: AppColors.textMain,
+            ),
+          ),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: AppColors.brandGreen.withOpacity(0.08),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.lock_outline_rounded, size: 48, color: AppColors.brandGreen),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Login to View Your Habits',
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w800, fontSize: 20, color: AppColors.textMain),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Track your 5-day missions, streaks, and deliveries by logging in.',
+                  style: GoogleFonts.inter(fontSize: 14, color: AppColors.textSub, height: 1.5),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(context).push(
+                      CupertinoPageRoute(builder: (_) => const AuthScreen()),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.brandGreen,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      elevation: 0,
+                    ),
+                    child: Text('Login / Sign Up', style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final habitsAsync = ref.watch(habitPacksProvider);
 
     return Scaffold(
@@ -31,7 +104,14 @@ class HabitDashboardScreen extends ConsumerWidget {
       ),
       body: habitsAsync.when(
         loading: () => const _HabitShimmer(),
-        error: (e, _) => _buildError(e.toString()),
+        error: (e, _) {
+          final msg = e.toString();
+          // Auth error — show login prompt instead of dead error
+          if (msg.toLowerCase().contains('authentication') || msg.contains('401') || msg.contains('x-user-phone')) {
+            return _buildLoginPrompt(context);
+          }
+          return _buildError(msg);
+        },
         data: (habits) {
           if (habits.isEmpty) return const _EmptyState();
 
@@ -71,6 +151,54 @@ class HabitDashboardScreen extends ConsumerWidget {
       ),
     );
   }
+
+  Widget _buildLoginPrompt(BuildContext context) => Center(
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 40),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: AppColors.brandGreen.withOpacity(0.08),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.lock_outline_rounded, size: 48, color: AppColors.brandGreen),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Login to View Your Habits',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w800, fontSize: 20, color: AppColors.textMain),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Track your 5-day missions, streaks, and deliveries by logging in.',
+            style: GoogleFonts.inter(fontSize: 14, color: AppColors.textSub, height: 1.5),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 32),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => Navigator.of(context).push(
+                CupertinoPageRoute(builder: (_) => const AuthScreen()),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.brandGreen,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                elevation: 0,
+              ),
+              child: Text('Login / Sign Up', style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15)),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 
   Widget _buildError(String msg) => Center(
     child: Padding(

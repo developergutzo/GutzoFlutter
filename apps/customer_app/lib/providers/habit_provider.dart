@@ -10,7 +10,9 @@ final habitPacksProvider = FutureProvider<List<HabitPack>>((ref) async {
   if (user == null || user.phone.isEmpty) return [];
   
   final api = ref.watch(nodeApiServiceProvider);
-  final response = await api.getHabits();
+  // Explicitly pass phone so x-user-phone header is sent correctly
+  // (Supabase currentUser?.phone is null for WhatsApp OTP users)
+  final response = await api.getHabits(phone: user.phone);
   final List<dynamic> data = response['data'] ?? [];
   return data.map((e) => HabitPack.fromJson(e as Map<String, dynamic>)).toList();
 });

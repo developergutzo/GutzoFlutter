@@ -361,8 +361,8 @@ class NodeApiService {
   }
 
   // --- Habit Packs ---
-  Future<Map<String, dynamic>> getHabits() async {
-    return _request("/habits");
+  Future<Map<String, dynamic>> getHabits({String? phone}) async {
+    return _request("/habits", overridePhone: phone);
   }
 
   Future<Map<String, dynamic>> skipHabitDay(String habitId) async {
