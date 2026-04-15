@@ -23,6 +23,7 @@ class CheckoutState {
   final bool dontAddCutlery;
   final bool isDonationChecked;
   final double donationAmount;
+  final String mockPaymentOutcome;
 
   final bool isHabitSubscription;
   final String? selectedGoal;
@@ -45,6 +46,7 @@ class CheckoutState {
     this.donationAmount = 3.0,
     this.isHabitSubscription = false,
     this.selectedGoal,
+    this.mockPaymentOutcome = 'success',
   });
 
   CheckoutState copyWith({
@@ -65,6 +67,7 @@ class CheckoutState {
     double? donationAmount,
     bool? isHabitSubscription,
     String? selectedGoal,
+    String? mockPaymentOutcome,
   }) {
     return CheckoutState(
       isCheckingServiceability: isCheckingServiceability ?? this.isCheckingServiceability,
@@ -84,6 +87,7 @@ class CheckoutState {
       donationAmount: donationAmount ?? this.donationAmount,
       isHabitSubscription: isHabitSubscription ?? this.isHabitSubscription,
       selectedGoal: selectedGoal ?? this.selectedGoal,
+      mockPaymentOutcome: mockPaymentOutcome ?? this.mockPaymentOutcome,
     );
   }
 }
@@ -231,6 +235,10 @@ class CheckoutNotifier extends AutoDisposeNotifier<CheckoutState> {
     state = state.copyWith(devEnvironment: env);
   }
 
+  void setMockPaymentOutcome(String outcome) {
+    state = state.copyWith(mockPaymentOutcome: outcome);
+  }
+
   void setUseFreeFees(bool value) {
     state = state.copyWith(useFreeFees: value);
     updateTaxes();
@@ -340,11 +348,20 @@ class CheckoutNotifier extends AutoDisposeNotifier<CheckoutState> {
         final orderId = orderObj['id'];
 
         if (useMockPayment) {
-          await _api.triggerMockPayment(
-            orderNumber, 
-            mockShadowfax: useMockShadowfax,
-            overridePhone: user.phone
-          );
+          if (currentState.mockPaymentOutcome == 'success') {
+            await _api.triggerMockPayment(
+              orderNumber, 
+              mockShadowfax: useMockShadowfax,
+              overridePhone: user.phone
+            );
+          } else {
+            await _api.triggerMockFailure(
+              orderNumber,
+              overridePhone: user.phone
+            );
+            state = state.copyWith(isProcessing: false);
+            return "Payment Failed|Simulated mock failure. No money was deducted.";
+          }
         } else {
           // 🚀 REAL PAYTM FLOW
           try {

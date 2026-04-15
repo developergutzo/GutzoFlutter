@@ -279,6 +279,12 @@ class NodeApiService {
     }, overridePhone: overridePhone);
   }
 
+  Future<dynamic> triggerMockFailure(String orderNumber, {String? overridePhone}) async {
+    return _request("/payments/mock-failure", method: "POST", body: {
+      "orderId": orderNumber
+    }, overridePhone: overridePhone);
+  }
+
   Future<dynamic> initiatePaytmTransaction({
     required String orderId,
     required double amount,

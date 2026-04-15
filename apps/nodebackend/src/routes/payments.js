@@ -1187,6 +1187,33 @@ if (process.env.NODE_ENV === 'development') {
 
     successResponse(res, { order, mockTriggered: !!mockShadowfax }, "Order marked as paid (Mock)");
   }));
+
+  router.post('/mock-failure', asyncHandler(async (req, res) => {
+    const { orderId } = req.body;
+
+    // Mark order as failed
+    const { data: order } = await supabaseAdmin.from('orders').update({
+      payment_status: 'failed',
+      status: 'payment_failed',
+      payment_method: 'mock',
+      updated_at: new Date().toISOString(),
+    }).eq('order_number', orderId).select().single();
+    
+    if (!order) {
+      throw new ApiError(404, `Order ${orderId} not found`);
+    }
+ 
+    // Notify
+    await supabaseAdmin.from('notifications').insert({
+      user_id: order.user_id,
+      type: 'payment_failed',
+      title: 'Mock Payment Failed',
+      message: `Simulated payment failure for order #${orderId}. No money was deducted.`,
+      data: { order_id: orderId }
+    });
+
+    successResponse(res, { orderId, status: 'failed' }, 'Mock payment failure triggered');
+  }));
 }
 
 export default router;

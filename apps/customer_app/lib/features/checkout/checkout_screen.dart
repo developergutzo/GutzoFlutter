@@ -32,11 +32,12 @@ class CheckoutScreen extends ConsumerWidget {
     // 📍 Sync location from database if logged in
     ref.watch(locationSyncProvider);
     
-    // Automatically pop screen if last item is deleted to match gutzo.in UX
+    // Automatically pop screen if last item is deleted (except during successful checkout)
     ref.listen(cartProvider, (previous, next) {
       if (next.items.isEmpty && (previous?.items.isNotEmpty ?? false)) {
-        if (context.mounted) {
-          Navigator.of(context).pop();
+        // If we are NOT currently processing a checkout, it means the user manually deleted the last item
+        if (!checkout.isProcessing && context.mounted) {
+          Future.microtask(() => Navigator.of(context).pop());
         }
       }
     });
@@ -222,9 +223,7 @@ class CheckoutScreen extends ConsumerWidget {
           // 6. Direct Payment Strip (Tiny Actions)
           if (user != null && checkout.isServiceable) _buildUpiStripped(context, ref, checkout, cart),
           
-          const SizedBox(height: 12),
-          _buildDevSettings(context, ref, checkout),
-          const SizedBox(height: 48),
+          const SizedBox(height: 100), // Space for footer
         ],
       ),
     );
@@ -688,9 +687,9 @@ class CheckoutScreen extends ConsumerWidget {
             hasAddress: location.location != null,
             isHabitSubscription: checkout.isHabitSubscription,
           ),
-          const SizedBox(height: 24),
-          if (!checkout.isServiceable) _buildServiceabilityWarning(),
           const SizedBox(height: 40),
+          _buildDevSettings(context, ref, checkout),
+          const SizedBox(height: 16),
           _buildPayButton(context, ref, checkout, total),
           const SizedBox(height: 24),
           Center(
@@ -725,8 +724,9 @@ class CheckoutScreen extends ConsumerWidget {
             return;
           }
           final result = await ref.read(checkoutProvider.notifier).placeOrder();
-          if (result != null && result.length > 30 && !result.contains(' ')) { 
-             Navigator.of(context).pushReplacement(
+          if (result != null && RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$').hasMatch(result)) { 
+             if (!context.mounted) return;
+             Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => OrderTrackingScreen(orderId: result)),
              );
           } else if (result != null) {
@@ -989,23 +989,29 @@ class CheckoutScreen extends ConsumerWidget {
   Widget _buildDevSettings(BuildContext context, WidgetRef ref, CheckoutState state) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.grey[50], // Very subtle background
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[200]!),
+        color: const Color(0xFFF0F7FF), // Distinct light blue for visibility
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFCCE0FF), width: 1.5),
       ),
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Test Environment (Dev Only)'.toUpperCase(),
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w800,
-              color: Colors.grey[600],
-              letterSpacing: 1.2,
-            ),
+          Row(
+            children: [
+              const Icon(Icons.bug_report, size: 14, color: Color(0xFF0066FF)),
+              const SizedBox(width: 8),
+              Text(
+                'DEVELOPER CONTROLS'.toUpperCase(),
+                style: GoogleFonts.poppins(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF0066FF),
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           Container(
@@ -1025,15 +1031,84 @@ class CheckoutScreen extends ConsumerWidget {
                   color: Colors.black87,
                 ),
                 items: const [
-                  DropdownMenuItem(value: 'full_mock', child: Text('Full Mock (Mock Pay, Mock Del)')),
-                  DropdownMenuItem(value: 'real_pay_mock_del', child: Text('Real Payment, Mock Delivery')),
-                  DropdownMenuItem(value: 'mock_pay_real_del', child: Text('Mock Payment, Real Delivery')),
-                  DropdownMenuItem(value: 'production', child: Text('Full Production (Real Pay/Del)')),
+                  DropdownMenuItem(value: 'full_mock', child: Text('Mock Test (Mock Pay, Mock Del)')),
+                  DropdownMenuItem(value: 'mock_pay_real_del', child: Text('Mock Test (Mock Pay, Real Del)')),
+                  DropdownMenuItem(value: 'real_pay_mock_del', child: Text('Another Option (Real Pay, Mock Del)')),
+                  DropdownMenuItem(value: 'production', child: Text('Real (Full Production)')),
                 ],
                 onChanged: (val) => ref.read(checkoutProvider.notifier).setDevEnvironment(val!),
               ),
             ),
           ),
+          
+          if (state.devEnvironment != 'production' && state.devEnvironment != 'real_pay_mock_del') ...[
+            const SizedBox(height: 16),
+            Text(
+              'Mock Payment Outcome'.toUpperCase(),
+              style: GoogleFonts.poppins(
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                color: Colors.grey[600],
+                letterSpacing: 1.2,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: () => ref.read(checkoutProvider.notifier).setMockPaymentOutcome('success'),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: state.mockPaymentOutcome == 'success' ? AppColors.brandGreen.withOpacity(0.1) : Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: state.mockPaymentOutcome == 'success' ? AppColors.brandGreen : Colors.grey[200]!,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'SUCCESS',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: state.mockPaymentOutcome == 'success' ? AppColors.brandGreen : Colors.grey[600],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: InkWell(
+                    onTap: () => ref.read(checkoutProvider.notifier).setMockPaymentOutcome('failure'),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: state.mockPaymentOutcome == 'failure' ? Colors.red.withOpacity(0.1) : Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: state.mockPaymentOutcome == 'failure' ? Colors.red : Colors.grey[200]!,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'FAILURE',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: state.mockPaymentOutcome == 'failure' ? Colors.red : Colors.grey[600],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 16),
           InkWell(
             onTap: () => ref.read(checkoutProvider.notifier).setUseFreeFees(!state.useFreeFees),
@@ -1116,6 +1191,7 @@ class CheckoutScreen extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            _buildDevSettings(context, ref, checkout),
             if (user == null)
               ElevatedButton(
                 onPressed: () {
@@ -1142,11 +1218,10 @@ class CheckoutScreen extends ConsumerWidget {
                   if (!context.mounted) return;
 
                   // 🏁 Check for Success (Result is a UUID)
-                  final isSuccess = result != null && result.length > 30 && !result.contains('|');
+                  final isSuccess = result != null && RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$').hasMatch(result);
 
                   if (isSuccess) {
-                    // 🎉 Webapp Style: Brief success pause for premium feel
-                    Navigator.of(context).pushReplacement(
+                    Navigator.of(context).push(
                       MaterialPageRoute(builder: (context) => OrderTrackingScreen(orderId: result!)),
                     );
                   } else if (result != null) {
