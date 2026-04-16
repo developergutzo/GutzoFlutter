@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../features/home/home_screen.dart';
+import '../features/orders/order_tracking_screen.dart';
 
 final goRouter = GoRouter(
   initialLocation: '/',
@@ -9,6 +10,12 @@ final goRouter = GoRouter(
       path: '/',
       builder: (context, state) => const HomeScreen(),
     ),
-    // Add more routes here as we build features (Auth, Vendor, Details)
+    GoRoute(
+      path: '/tracking/:orderId',
+      builder: (context, state) {
+        final orderId = state.pathParameters['orderId']!;
+        return OrderTrackingScreen(orderId: orderId);
+      },
+    ),
   ],
 );

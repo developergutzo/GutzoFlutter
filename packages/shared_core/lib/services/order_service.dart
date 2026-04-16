@@ -26,6 +26,9 @@ final ordersProvider = FutureProvider<List<Order>>((ref) async {
   return data.map((json) => Order.fromJson(json)).toList();
 });
 
+/// 🎯 Tracks the order ID currently being followed by the user (shown in the Home Screen strip)
+final currentTrackingOrderIdProvider = StateProvider<String?>((ref) => null);
+
 // Real-time tracking stream provider
 final activeOrderTrackingProvider = StreamProvider.family<OrderTrackingData, String>((ref, orderId) async* {
   final api = ref.read(nodeApiServiceProvider);
@@ -68,6 +71,55 @@ final activeOrderTrackingProvider = StreamProvider.family<OrderTrackingData, Str
           } catch (e) {
             // ignore
           }
+        },
+      )
+      .subscribe();
+
+  ref.onDispose(() {
+    channel.unsubscribe();
+    controller.close();
+  });
+
+  yield* controller.stream;
+});
+
+/// 🎯 Tracks all orders that are NOT in a final state (delivered, cancelled)
+final liveActiveOrdersProvider = StreamProvider<List<Order>>((ref) async* {
+  final supabase = Supabase.instance.client;
+  final user = ref.watch(currentUserProvider);
+  if (user == null) {
+     yield [];
+     return;
+  }
+
+  // Poll for initially active orders
+  Future<List<Order>> fetchActive() async {
+    final response = await ref.read(nodeApiServiceProvider).getUserOrders(overridePhone: user.phone);
+    List<dynamic> data = (response is List) ? response : (response is Map ? response['data'] ?? [] : []);
+    return data
+        .map((json) => Order.fromJson(json))
+        .where((o) => !['delivered', 'cancelled', 'completed'].contains(o.status.toLowerCase()))
+        .toList();
+  }
+
+  yield await fetchActive();
+
+  // Listen for ANY order changes for this user
+  final controller = StreamController<List<Order>>();
+  final channel = supabase
+      .channel('live_orders_${user.phone}')
+      .onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'orders',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'user_phone',
+          value: user.phone,
+        ),
+        callback: (payload) async {
+          final active = await fetchActive();
+          controller.add(active);
         },
       )
       .subscribe();

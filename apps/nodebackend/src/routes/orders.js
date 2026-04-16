@@ -666,7 +666,7 @@ router.get('/:id/track', asyncHandler(async (req, res) => {
       id, order_number, status, 
       estimated_delivery_time, actual_delivery_time,
       rider_id, 
-      vendor:vendors(id, name, latitude, longitude),
+      vendor:vendors(id, name, phone, address, latitude, longitude),
       delivery:deliveries(*)
     `)
     .eq('id', id)
@@ -680,11 +680,10 @@ router.get('/:id/track', asyncHandler(async (req, res) => {
   */
   const statusFlow = [
     { status: 'searching_rider', label: 'Finding Delivery Partner', icon: '🛵' },
-    { status: 'placed', label: 'Waiting for Confirmation', icon: '📝' },
-    { status: 'confirmed', label: 'Confirmed', icon: '✅' },
-    { status: 'preparing', label: 'Preparing', icon: '👨‍🍳' },
-    { status: 'ready', label: 'Ready for Pickup', icon: '📦' },
-    { status: 'out_for_delivery', label: 'Out for Delivery', icon: '🚴' },
+    { status: 'allotted', label: 'Delivery Partner Assigned', icon: '👤' },
+    { status: 'arrived', label: 'Rider reached Kitchen', icon: '📍' },
+    { status: 'picked_up', label: 'Order Picked Up', icon: '📦' },
+    { status: 'on_way', label: 'Out for Delivery', icon: '🚴' },
     { status: 'delivered', label: 'Delivered', icon: '✨' }
   ];
 

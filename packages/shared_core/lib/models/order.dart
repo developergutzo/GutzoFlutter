@@ -112,6 +112,8 @@ class OrderTrackingData {
   final List<StatusStep> statusFlow;
   final Map<String, dynamic>? rider;
   final Map<String, dynamic>? vendorLocation;
+  final String? estimatedDelivery;
+  final Map<String, dynamic>? vendor;
 
   OrderTrackingData({
     required this.orderNumber,
@@ -119,6 +121,8 @@ class OrderTrackingData {
     required this.statusFlow,
     this.rider,
     this.vendorLocation,
+    this.estimatedDelivery,
+    this.vendor,
   });
 
   factory OrderTrackingData.fromJson(Map<String, dynamic> json) {
@@ -130,7 +134,25 @@ class OrderTrackingData {
           .toList(),
       rider: json['rider'],
       vendorLocation: json['vendor_location'],
+      estimatedDelivery: json['estimated_delivery'],
+      vendor: json['vendor'],
     );
+  }
+
+  String get displayStatus {
+    final status = currentStatus.toLowerCase();
+    final dStatus = (rider?['status'] ?? '').toString().toLowerCase();
+    
+    // Status Logic Match with Web:
+    if (['cancelled', 'rejected'].contains(status)) return 'cancelled';
+    if (['searching_rider', 'created'].contains(status)) return 'searching_rider';
+    
+    // Prioritize delivery status if it's active
+    if (['allotted', 'driver_assigned', 'rider_assigned', 'arrived', 'picked_up', 'on_way', 'arrived_at_drop', 'customer_door_step', 'delivered', 'completed'].contains(dStatus)) {
+      return dStatus;
+    }
+    
+    return status;
   }
 }
 

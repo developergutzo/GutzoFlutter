@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_core/services/order_service.dart';
 import 'package:shared_core/models/order.dart';
 import 'package:shared_core/theme/app_colors.dart';
@@ -455,10 +456,7 @@ class _OrdersHistoryScreenState extends ConsumerState<OrdersHistoryScreen> {
                           elevation: 0,
                         ),
                         onPressed: () {
-                           Navigator.push(
-                            context,
-                            CupertinoPageRoute(builder: (context) => OrderTrackingScreen(orderId: order.id)),
-                          );
+                           context.push('/tracking/${order.id}');
                         },
                         child: Text('Track Order', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
                       ),

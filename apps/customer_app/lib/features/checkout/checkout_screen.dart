@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_core/theme/app_colors.dart';
 import 'package:shared_core/models/vendor.dart';
@@ -726,9 +727,7 @@ class CheckoutScreen extends ConsumerWidget {
           final result = await ref.read(checkoutProvider.notifier).placeOrder();
           if (result != null && RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$').hasMatch(result)) { 
              if (!context.mounted) return;
-             Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => OrderTrackingScreen(orderId: result)),
-             );
+             context.push('/tracking/$result');
           } else if (result != null) {
             // 🛡️ Premium Failure UI
             final parts = result.split('|');
@@ -1221,9 +1220,7 @@ class CheckoutScreen extends ConsumerWidget {
                   final isSuccess = result != null && RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$').hasMatch(result);
 
                   if (isSuccess) {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (context) => OrderTrackingScreen(orderId: result!)),
-                    );
+                    context.push('/tracking/$result');
                   } else if (result != null) {
                     // 🛡️ Premium Failure UI (Matches Webapp Bento Style)
                     final parts = result.split('|');

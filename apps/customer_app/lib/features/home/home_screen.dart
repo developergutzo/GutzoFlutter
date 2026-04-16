@@ -21,6 +21,8 @@ import '../profile/profile_screen.dart';
 import '../profile/widgets/web_profile_panel.dart';
 import 'widgets/location_sheet.dart';
 import 'widgets/search_sheet.dart';
+import '../../widgets/tracking_strip.dart';
+import 'package:shared_core/services/order_service.dart';
 
 final homeFilterProvider = StateProvider<String>((ref) => 'All');
 final locationAutoPromptProvider = StateNotifierProvider<LocationPromptNotifier, bool>((ref) => LocationPromptNotifier());
@@ -68,18 +70,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 : const HabitDashboardScreen(),
           ),
 
-          // 🛒 CartStrips above the nav bar (only on Home tab)
+          // 🛒 Tracking & Cart Panels (above nav bar)
           if (selectedTab == 0)
             Positioned(
               left: 0,
               right: 0,
-              bottom: 80, // above nav bar
-              child: const Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CartStrip(filterHabit: true, isPremium: true),
-                  CartStrip(filterHabit: false, isPremium: true),
-                ],
+              bottom: 80, 
+              child: AnimatedSlide(
+                duration: const Duration(milliseconds: 280),
+                curve: Curves.easeInOut,
+                offset: isNavVisible ? Offset.zero : const Offset(0, 2),
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 280),
+                  opacity: isNavVisible ? 1.0 : 0.0,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const TrackingStrip(),
+                      const CartStrip(filterHabit: true, isPremium: true),
+                      const CartStrip(filterHabit: false, isPremium: true),
+                    ],
+                  ),
+                ),
               ),
             ),
 
