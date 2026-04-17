@@ -23,6 +23,7 @@ import 'widgets/location_sheet.dart';
 import 'widgets/search_sheet.dart';
 import '../../widgets/tracking_strip.dart';
 import 'package:shared_core/services/order_service.dart';
+import 'package:shared_core/services/notification_service.dart';
 
 final homeFilterProvider = StateProvider<String>((ref) => 'All');
 final locationAutoPromptProvider = StateNotifierProvider<LocationPromptNotifier, bool>((ref) => LocationPromptNotifier());
@@ -43,6 +44,21 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // 🔔 Listen for order updates via backend notifications
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(notificationServiceProvider).init(context);
+    });
+  }
+
+  @override
+  void dispose() {
+    ref.read(notificationServiceProvider).dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final isNavVisible = ref.watch(_navVisibleProvider);

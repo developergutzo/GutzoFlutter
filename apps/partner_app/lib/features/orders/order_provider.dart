@@ -1,8 +1,63 @@
+import 'dart:async';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_core/models/order.dart';
 import 'package:shared_core/services/node_api_service.dart';
 import '../auth/vendor_provider.dart';
 import '../../common/providers/loading_provider.dart';
+
+/// 🎯 Live Stream of orders for the current vendor
+final liveVendorOrdersProvider = StreamProvider<List<Order>>((ref) async* {
+  final vendor = ref.watch(vendorProvider).value;
+  if (vendor == null) {
+    yield [];
+    return;
+  }
+
+  final supabase = Supabase.instance.client;
+  final apiService = ref.read(nodeApiServiceProvider);
+
+  // Initial fetch
+  Future<List<Order>> fetch() async {
+    try {
+      final response = await apiService.getPartnerVendorOrders(vendor.id);
+      if (response['success'] == true) {
+        final List<dynamic> ordersData = response['data']['orders'] ?? [];
+        return ordersData.map((o) => Order.fromJson(o)).toList();
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  yield await fetch();
+
+  // Real-time listener for any change in the orders table for this vendor
+  final controller = StreamController<List<Order>>();
+  final channel = supabase
+      .channel('vendor_orders_${vendor.id}')
+      .onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'orders',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'vendor_id',
+          value: vendor.id,
+        ),
+        callback: (payload) async {
+          final orders = await fetch();
+          controller.add(orders);
+        },
+      )
+      .subscribe();
+
+  ref.onDispose(() {
+    channel.unsubscribe();
+    controller.close();
+  });
+
+  yield* controller.stream;
+});
 
 final orderListProvider = NotifierProvider<OrderListNotifier, AsyncValue<List<Order>>>(() {
   return OrderListNotifier();

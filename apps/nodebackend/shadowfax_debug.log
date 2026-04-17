@@ -1269,3 +1269,71 @@ FetchError: request to http://localhost:3002/order/create/ failed, reason:
     at emitErrorNT (node:internal/streams/destroy:170:8)
     at emitErrorCloseNT (node:internal/streams/destroy:129:3)
     at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50e
+Raw Count: 3
+Data: [
+  {
+    "id": "GZ202604161407YOH0",
+    "status": "searching_rider"
+  },
+  {
+    "id": "GZ2026041518112ZI0",
+    "status": "searching_rider"
+  },
+  {
+    "id": "GZ202603280838YFSJ",
+    "status": "created"
+  }
+]
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50e
+Raw Count: 3
+Data: [
+  {
+    "id": "GZ202604161407YOH0",
+    "status": "searching_rider"
+  },
+  {
+    "id": "GZ2026041518112ZI0",
+    "status": "searching_rider"
+  },
+  {
+    "id": "GZ202603280838YFSJ",
+    "status": "created"
+  }
+]
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50e
+Raw Count: 3
+Data: [
+  {
+    "id": "GZ202604161407YOH0",
+    "status": "searching_rider"
+  },
+  {
+    "id": "GZ2026041518112ZI0",
+    "status": "searching_rider"
+  },
+  {
+    "id": "GZ202603280838YFSJ",
+    "status": "created"
+  }
+]
+
+📦 [Vendor Orders Debug] Fetching for Vendor: 3109c7d3-95e0-4a7a-86dd-9783e778d50e
+Raw Count: 3
+Data: [
+  {
+    "id": "GZ202604161407YOH0",
+    "status": "searching_rider"
+  },
+  {
+    "id": "GZ2026041518112ZI0",
+    "status": "searching_rider"
+  },
+  {
+    "id": "GZ202603280838YFSJ",
+    "status": "created"
+  }
+]

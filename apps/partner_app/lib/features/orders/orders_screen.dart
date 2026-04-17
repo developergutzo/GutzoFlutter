@@ -382,7 +382,7 @@ class _OrderList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final orderAsync = ref.watch(orderListProvider);
+    final orderAsync = ref.watch(liveVendorOrdersProvider);
 
     return orderAsync.when(
       loading: () => ListView.builder(
