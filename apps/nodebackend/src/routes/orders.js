@@ -730,6 +730,7 @@ router.get('/:id/track', asyncHandler(async (req, res) => {
       location: deliveryTracking.rider_location
     } : null,
     delivery_tracking: deliveryTracking,
+    vendor: order.vendor, // Added missing vendor info
     vendor_location: order.vendor ? {
       lat: order.vendor.latitude,
       lng: order.vendor.longitude

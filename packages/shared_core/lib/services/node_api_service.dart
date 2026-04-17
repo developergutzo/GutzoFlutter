@@ -10,7 +10,7 @@ class NodeApiService {
     if (kIsWeb) return "http://localhost:5000";
     // Android emulator special alias for host loopback
     try {
-      if (Platform.isAndroid) return "http://10.0.2.2:5000";
+      if (Platform.isAndroid) return "http://192.168.1.38:5000";
     } catch (_) {
       // Platform check might fail on web if not careful, but kIsWeb handles it
     }

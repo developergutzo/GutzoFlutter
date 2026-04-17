@@ -235,7 +235,7 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> with 
                     ),
                   ),
                   Text(
-                    data.vendor?['name'] ?? 'Track Order',
+                    data.vendor?['name'] ?? 'Coimbatore Cafe, GK Nagar',
                     style: GoogleFonts.poppins(color: Colors.white.withOpacity(0.9), fontSize: 13, fontWeight: FontWeight.w600),
                   ),
                 ],
@@ -244,7 +244,7 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> with 
             const SizedBox(height: 12),
             Text(
               statusText,
-              style: GoogleFonts.poppins(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800),
+              style: GoogleFonts.poppins(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w900, letterSpacing: -0.8),
               textAlign: TextAlign.center,
             ),
             if (!isCancelled) ...[
@@ -352,14 +352,14 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> with 
       decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFF1F5F9))),
       child: Row(
         children: [
-          _buildCircleIcon(isAssigned ? (status == 'on_way' ? '🛵' : '👤') : '👤', isAssigned ? const Color(0xFFE8F6F1) : const Color(0xFFF1F5F9)),
+          _buildCircleIcon(Icons.person_outline_rounded, isAssigned ? const Color(0xFFE8F6F1) : const Color(0xFFF1F5F9)),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('DELIVERY PARTNER', style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.grey[500], letterSpacing: 1.2)),
-                Text(isAssigned ? (rider['name'] ?? 'Delivery Partner') : 'Searching...', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.black)),
+                Text(isAssigned ? (rider['name'] ?? 'Delivery Partner') : 'Delivery Partner', style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.black)),
                 Text(_getRiderStatusText(status), style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[500], fontWeight: FontWeight.w500)),
               ],
             ),
@@ -381,14 +381,14 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> with 
       decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFF1F5F9))),
       child: Row(
         children: [
-          _buildCircleIcon(isReady ? '📦' : '🏗️', const Color(0xFFF8FAFC)),
+          _buildCircleIcon(Icons.storefront_outlined, const Color(0xFFF1F5F9)),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('KITCHEN STATUS', style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.grey[500], letterSpacing: 1.2)),
-                Text(vendor?['name'] ?? 'The Kitchen', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.black)),
+                Text(vendor?['name'] ?? 'Coimbatore Cafe, GK Nagar', style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.black)),
                 Text(_getKitchenStatusText(status), style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[500], fontWeight: FontWeight.w500)),
               ],
             ),
@@ -400,12 +400,12 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> with 
     );
   }
 
-  Widget _buildCircleIcon(String emoji, Color bg) {
+  Widget _buildCircleIcon(IconData icon, Color bg) {
     return Container(
       width: 44, height: 44,
       decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
       alignment: Alignment.center,
-      child: Text(emoji, style: const TextStyle(fontSize: 20)),
+      child: Icon(icon, size: 22, color: Colors.black.withOpacity(0.6)),
     );
   }
 

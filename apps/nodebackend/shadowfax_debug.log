@@ -1256,3 +1256,16 @@ FetchError: request to http://localhost:3002/order/create/ failed, reason:
     at emitErrorNT (node:internal/streams/destroy:170:8)
     at emitErrorCloseNT (node:internal/streams/destroy:129:3)
     at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+
+[2026-04-17T07:55:46.727Z] Creating Order: GZ202604171325RDZO
+Payload: {"order_details":{"order_id":"GZ202604171325RDZO","actual_order_value":499,"paid":true,"is_prepaid":true,"cash_to_be_collected":0,"payment_mode":"prepaid","delivery_charge_to_be_collected_from_customer":0},"pickup_details":{"name":"Coimbatore Cafe, GK Nagar","contact_number":"8903589068","address":"164/165, Avinashi Rd, Coimbatore, Tamil Nadu 641004","latitude":11.0469961850896,"longitude":77.0557655766639},"drop_details":{"contact_number":"9876543210","address":"2/304, Teachers Colony, Chinniyampalayam, Coimbatore, Tamil Nadu 641062, India","city":"Coimbatore","state":"Tamil Nadu","latitude":11.05193407,"longitude":77.06765581},"user_details":{"name":"Gutzo","contact_number":"9003802398","credits_key":"2f184788-0daa-47c1-b887-f4e7c8f6ddbf"},"communications":{"send_sms_to_pickup_person":true,"send_sms_to_drop_person":true,"send_rts_sms_to_pickup_person":true},"validations":{"pickup":{"is_otp_required":true,"otp":"1234"},"drop":{"is_otp_required":true,"otp":"5678"}}}
+ERROR: request to http://localhost:3002/order/create/ failed, reason: 
+FetchError: request to http://localhost:3002/order/create/ failed, reason: 
+    at ClientRequest.<anonymous> (/Users/apple/Desktop/gutzo/flutter/GutzoFlutter_NEW/apps/nodebackend/node_modules/node-fetch/lib/index.js:1501:11)
+    at ClientRequest.emit (node:events:507:28)
+    at emitErrorEvent (node:_http_client:106:11)
+    at Socket.socketErrorListener (node:_http_client:574:5)
+    at Socket.emit (node:events:507:28)
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
