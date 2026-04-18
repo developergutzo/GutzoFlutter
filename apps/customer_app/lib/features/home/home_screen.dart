@@ -81,17 +81,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               }
               return false;
             },
+            child: const _MarketplaceBody(),
+/*
             child: selectedTab == 0
                 ? const _MarketplaceBody()
                 : const HabitDashboardScreen(),
+*/
           ),
 
           // 🛒 Tracking & Cart Panels (above nav bar)
-          if (selectedTab == 0)
+          // if (selectedTab == 0) // Always show if marketplace is active
             Positioned(
               left: 0,
               right: 0,
-              bottom: 80, 
+              bottom: 20, // Moved down since Nav Bar is gone
               child: AnimatedSlide(
                 duration: const Duration(milliseconds: 280),
                 curve: Curves.easeInOut,
@@ -103,14 +106,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const TrackingStrip(),
-                      const CartStrip(filterHabit: true, isPremium: true),
-                      const CartStrip(filterHabit: false, isPremium: true),
+                      CartStrip(filterHabit: false, isPremium: true),
                     ],
                   ),
                 ),
               ),
             ),
 
+/*
           // 🏠 Floating Nav Bar
           AnimatedSlide(
             duration: const Duration(milliseconds: 280),
@@ -131,6 +134,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
           ),
+*/
         ],
       ),
     );
@@ -277,24 +281,19 @@ class _MarketplaceBody extends ConsumerWidget {
   }
 
   Widget _buildMobileBase(BuildContext context, WidgetRef ref, AsyncValue bannersAsync, AsyncValue<List<Map<String, dynamic>>> filteredDishesAsync, dynamic currentUser, String selectedFilter) {
-    return Column(
-      children: [
-        Expanded(
-          child: CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              _buildMobileHeader(context, ref, currentUser),
-              const _FilterChipsRow(),
-              _buildBannersSection(bannersAsync),
-              _buildDishGridMobile(filteredDishesAsync, ref, selectedFilter),
-            ],
-          ),
-        ),
+    return CustomScrollView(
+      physics: const BouncingScrollPhysics(),
+      slivers: [
+        _buildMobileHeader(context, ref, currentUser),
+        const _FilterChipsRow(),
+        _buildBannersSection(bannersAsync),
+        _buildDishGridMobile(filteredDishesAsync, ref, selectedFilter),
       ],
     );
   }
 
   Widget _buildDishGridMobile(AsyncValue<List<Map<String, dynamic>>> dishesAsync, WidgetRef ref, String selectedFilter) {
+    debugPrint('HomeScreen: Building dish grid with ${dishesAsync.hasValue ? dishesAsync.value!.length : "no"} items');
     return dishesAsync.when(
       data: (items) {
         final allUnavailable = items.isNotEmpty && items.every((item) => item['vendor'].isServiceable == false);
@@ -499,7 +498,7 @@ class _MarketplaceBody extends ConsumerWidget {
         );
       },
       loading: () => SliverToBoxAdapter(child: Container(height: 180, margin: const EdgeInsets.all(16), decoration: BoxDecoration(color: AppColors.shimmerBase, borderRadius: BorderRadius.circular(16)))),
-      error: (_, __) => const SliverToBoxAdapter(child: SizedBox.shrink()),
+      error: (err, stack) => const SliverToBoxAdapter(child: SizedBox.shrink()),
     );
   }
 
@@ -603,79 +602,87 @@ class GoalConstants {
 }
 
 class _FilterChipsRow extends ConsumerWidget {
-  const _FilterChipsRow();
+  final bool isSliver;
+  const _FilterChipsRow({this.isSliver = true});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedGoal = ref.watch(homeFilterProvider);
     final goals = GoalConstants.goalMapping.keys.toList();
-    return SliverPadding(
-      padding: const EdgeInsets.only(top: 16, bottom: 8),
-      sliver: SliverToBoxAdapter(
-        child: SizedBox(
-          height: 72, // Taller to fit Icon + Text vertically
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: goals.length,
-            physics: const BouncingScrollPhysics(),
-            itemBuilder: (context, index) {
-              final goal = goals[index];
-              final isSelected = selectedGoal == goal;
-              final icon = GoalConstants.goalIcons[goal] ?? Icons.fastfood_rounded;
 
-              return Padding(
-                padding: const EdgeInsets.only(right: 24), // More spacing between items
-                child: GestureDetector(
-                  onTap: () => ref.read(homeFilterProvider.notifier).state = goal,
-                  behavior: HitTestBehavior.opaque,
-                  child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 200),
-                    opacity: isSelected ? 1.0 : 0.5, // Unselected items are faded out
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        goal == 'Flat Tummy'
-                          ? FlatTummyIcon(
-                              size: 28,
-                              color: isSelected ? AppColors.brandGreen : AppColors.textMain,
-                            )
-                          : Icon(
-                              icon,
-                              size: 28,
-                              color: isSelected ? AppColors.brandGreen : AppColors.textMain,
-                            ),
-                        const SizedBox(height: 6),
-                        Text(
-                          goal,
-                          style: TextStyle(
-                            color: isSelected ? AppColors.brandGreen : AppColors.textMain,
-                            fontSize: 13,
-                            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                            letterSpacing: -0.3,
-                          ),
+    final content = SizedBox(
+      height: 72,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: goals.length,
+        physics: const BouncingScrollPhysics(),
+        itemBuilder: (context, index) {
+          final goal = goals[index];
+          final isSelected = selectedGoal == goal;
+          final icon = GoalConstants.goalIcons[goal] ?? Icons.fastfood_rounded;
+
+          return Padding(
+            padding: const EdgeInsets.only(right: 24),
+            child: GestureDetector(
+              onTap: () => ref.read(homeFilterProvider.notifier).state = goal,
+              behavior: HitTestBehavior.opaque,
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 200),
+                opacity: isSelected ? 1.0 : 0.5,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    goal == 'Flat Tummy'
+                      ? FlatTummyIcon(
+                          size: 28,
+                          color: isSelected ? AppColors.brandGreen : AppColors.textMain,
+                        )
+                      : Icon(
+                          icon,
+                          size: 28,
+                          color: isSelected ? AppColors.brandGreen : AppColors.textMain,
                         ),
-                        const SizedBox(height: 6),
-                        // Active Indicator underline
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          height: 3,
-                          width: isSelected ? 24 : 0,
-                          decoration: BoxDecoration(
-                            color: AppColors.brandGreen,
-                            borderRadius: BorderRadius.circular(100),
-                          ),
-                        ),
-                      ],
+                    const SizedBox(height: 6),
+                    Text(
+                      goal,
+                      style: TextStyle(
+                        color: isSelected ? AppColors.brandGreen : AppColors.textMain,
+                        fontSize: 13,
+                        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                        letterSpacing: -0.3,
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 6),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      height: 3,
+                      width: isSelected ? 24 : 0,
+                      decoration: BoxDecoration(
+                        color: AppColors.brandGreen,
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                    ),
+                  ],
                 ),
-              );
-            },
-          ),
-        ),
+              ),
+            ),
+          );
+        },
       ),
+    );
+
+    if (isSliver) {
+      return SliverPadding(
+        padding: const EdgeInsets.only(top: 16, bottom: 8),
+        sliver: SliverToBoxAdapter(child: content),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: content,
     );
   }
 }

@@ -7,14 +7,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class NodeApiService {
   String get baseUrl {
-    if (kIsWeb) return "http://localhost:5000";
+    if (kIsWeb) return "http://192.168.1.35:5000";
     // Android emulator special alias for host loopback
     try {
-      if (Platform.isAndroid) return "http://10.0.2.2:5000";
+      if (Platform.isAndroid) return "http://192.168.1.35:5000";
     } catch (_) {
       // Platform check might fail on web if not careful, but kIsWeb handles it
     }
-    return "http://localhost:5000";
+    return "http://192.168.1.35:5000";
   }
 
   final SupabaseClient _supabase;

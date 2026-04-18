@@ -71,14 +71,7 @@ class QuantitySelector extends ConsumerWidget {
               ),
             );
           } else {
-            final currentGoal = ref.read(homeFilterProvider);
-            HabitSelectionDrawer.show(
-              context, 
-              vendor, 
-              product, 
-              currentGoal, 
-              navigateToVendor: navigateToVendor // 🎯 Pass the directive
-            );
+            ref.read(cartProvider.notifier).addItem(product, vendor, 1);
           }
         } : null,
         style: ElevatedButton.styleFrom(
@@ -109,39 +102,7 @@ class QuantitySelector extends ConsumerWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (habitQty > 0)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: primaryColor,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                "MISSION 5-DAY",
-                style: GoogleFonts.poppins(
-                  fontSize: 7,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ),
-          )
-        else if (todayQty > 0)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Text(
-              "JUST TODAY",
-              style: GoogleFonts.poppins(
-                fontSize: 8,
-                fontWeight: FontWeight.w900,
-                color: AppColors.brandGreen,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ),
+        // Removed MISSION 5-DAY label for pure marketplace mode
         Container(
           key: const ValueKey('quantity_selector'),
           width: isFullWidth ? double.infinity : 100, // 🎯 Scale to layout

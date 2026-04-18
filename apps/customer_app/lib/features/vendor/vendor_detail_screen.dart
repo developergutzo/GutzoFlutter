@@ -118,8 +118,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: const [
-                    CartStrip(filterHabit: true),
-                    CartStrip(filterHabit: false),
+                    CartStrip(filterHabit: false, isPremium: true),
                   ],
                 ),
               ),
@@ -464,7 +463,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        _buildMissionActiveBanner(),
+        // _buildMissionActiveBanner(), // Removed habit mission banner
       ],
     );
   }
