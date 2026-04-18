@@ -98,7 +98,7 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
               }).toList()
             : <Product>[];
 
-        final List<Product> filteredProducts = products;
+        final List<Product> filteredProducts = products.where((p) => p.isAvailable).toList();
 
         final isWeb = context.isDesktop || context.isTablet;
 

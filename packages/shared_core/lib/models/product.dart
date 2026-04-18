@@ -76,7 +76,7 @@ class Product {
       category: json['category'] as String? ?? '',
       image: json['image'] as String? ?? '',
       imageUrl: (json['imageUrl'] ?? json['image_url']) as String?,
-      isAvailable: json['isAvailable'] ?? json['is_available'] ?? json['available'] as bool? ?? true,
+      isAvailable: _parseBool(json['isAvailable'] ?? json['is_available'] ?? json['available']) ?? true,
       isVeg: json['isVeg'] ?? json['is_veg'] as bool? ?? false,
       dietaryType: (json['dietary_type'] ?? json['dietaryType'])?.toString() ?? (json['is_veg'] == false ? 'non-veg' : 'veg'),
       createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : DateTime.now(),
@@ -92,6 +92,14 @@ class Product {
           : null,
       nutritionalInfoText: json['nutritional_info_text'] ?? json['nutritionalInfoText'] as String?,
     );
+  }
+
+  static bool? _parseBool(dynamic value) {
+    if (value == null) return null;
+    if (value is bool) return value;
+    if (value is int) return value == 1;
+    if (value is String) return value.toLowerCase() == 'true' || value == '1';
+    return null;
   }
 
   String get displayImage => (imageUrl != null && imageUrl!.isNotEmpty) 

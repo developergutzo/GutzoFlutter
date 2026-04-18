@@ -77,6 +77,13 @@ class _VendorCardState extends ConsumerState<VendorCard> {
                          (widget.vendorModel?.products?.isNotEmpty == true ? widget.vendorModel!.products!.first.displayImage : widget.imageUrl);
 
     final featuredPrice = widget.displayProduct?.price ?? 299.0;
+    
+    final isAvailable = widget.displayProduct?.isAvailable ?? true;
+    final isServiceable = widget.vendorModel?.isServiceable ?? true;
+    
+    if (kDebugMode) {
+      print('🎴 Card: ${widget.title} - ${widget.displayProduct?.name} | Avail: $isAvailable, Svc: $isServiceable');
+    }
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),

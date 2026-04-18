@@ -239,7 +239,6 @@ class _NavTab extends StatelessWidget {
 class _MarketplaceBody extends ConsumerWidget {
   const _MarketplaceBody();
 
-  @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(locationSyncProvider);
 
@@ -252,7 +251,14 @@ class _MarketplaceBody extends ConsumerWidget {
       
       for (final v in vendors) {
         if (v.products == null) continue;
+        
+        // 🎯 Skip unserviceable vendors entirely from the home page
+        if (v.isServiceable != true) continue;
+        
         for (final p in v.products!) {
+          // 🎯 Skip truly unavailable products
+          if (p.isAvailable == false) continue;
+
           final mappedValue = GoalConstants.goalMapping[selectedFilter] ?? selectedFilter;
           if (selectedFilter == 'All' || p.healthGoals.contains(mappedValue)) {
             items.add({'product': p, 'vendor': v});
